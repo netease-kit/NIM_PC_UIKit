@@ -23,7 +23,7 @@ bool SessionManager::IsSessionWndActive(const std::string& id)
 	return nim_comp::SessionManager::GetInstance()->IsSessionWndActive(id);
 }
 
-void SessionManager::AddNewMsg(const MsgData &msg)
+void SessionManager::AddNewMsg(const nim::IMMessage &msg)
 {
 	nim_comp::SessionManager::GetInstance()->AddNewMsg(msg);
 }

@@ -169,17 +169,12 @@ bool AddFriendWindow::Search(ui::EventArgs* param)
 	if (key.empty())
 		return false;
 
-	OnGetUserInfoCallback cb = ToWeakCallback([this](bool ret, const std::list<UserInfo> uinfos) {
+	OnGetUserInfoCallback cb = ToWeakCallback([this](const std::list<nim::UserNameCard> uinfos) {
 		assert(nbase::MessageLoop::current()->ToUIMessageLoop());
-		if (ret)
-		{
 			if (!uinfos.empty())
 				InitUserProfile(*uinfos.cbegin());
 			else
 				PreOrNextClick(NULL, g_ADDFRIEND_NOTFOUND_PAGE, AddFriendWindow::NONE);
-		}
-		else
-			PreOrNextClick(NULL, g_ADDFRIEND_NET_ABNORMAL_PAGE, AddFriendWindow::NONE);
 
 		SetFocus(nullptr);
 	});
@@ -221,7 +216,7 @@ bool AddFriendWindow::RemoveFromBlack(ui::EventArgs* args)
 	nim::User::SetBlackCallback cb = ToWeakCallback([this](int res_code, const std::string& accid, bool opt){
 		if (res_code == 200)
 		{
-			if (UserService::GetInstance()->GetUserType(id_) == UT_FRIEND)
+			if (UserService::GetInstance()->GetUserType(id_) == nim::kNIMFriendFlagNormal)
 				addfriend_or_chat_->SelectItem(1);
 			else
 				addfriend_or_chat_->SelectItem(0);
@@ -289,9 +284,11 @@ void AddFriendWindow::StartSearch(const std::wstring& search_key)
 	Search(nullptr);
 }
 
-void AddFriendWindow::InitUserProfile(const UserInfo& uinfo)
+void AddFriendWindow::InitUserProfile(const nim::UserNameCard& uinfo)
 {
-	if (LoginManager::GetInstance()->IsEqual(uinfo.account))
+	id_ = uinfo.GetAccId();
+
+	if (LoginManager::GetInstance()->IsEqual(id_))
 	{
 		userinfo_page_add_friend_->SetEnabled(false);
 	}
@@ -300,24 +297,22 @@ void AddFriendWindow::InitUserProfile(const UserInfo& uinfo)
 
 	tablayout_->SelectItem(g_ADDFRIEND_USERINFO_PAGE);
 
-	id_ = uinfo.account;
-
 	VBox* userinfo_page = static_cast<VBox*>(FindControl(_T("userinfo_page")));
 	Button* headimage = (Button*)userinfo_page->FindSubControl(L"headimage");
-	headimage->SetBkImage(UserService::GetInstance()->GetUserPhoto(uinfo.account));
+	headimage->SetBkImage(UserService::GetInstance()->GetUserPhoto(uinfo.GetAccId()));
 
 	Label* nick_name = (Label*)userinfo_page->FindSubControl(L"nick_name");
-	nick_name->SetUTF8Text(uinfo.name);
+	nick_name->SetUTF8Text(uinfo.GetName());
 
 	Label* id = (Label*)userinfo_page->FindSubControl(L"id");
-	id->SetUTF8Text(uinfo.account);
+	id->SetUTF8Text(id_);
 
-	UserType user_type = UserService::GetInstance()->GetUserType(id_);
+	nim::NIMFriendFlag user_type = UserService::GetInstance()->GetUserType(id_);
 	if (MuteBlackService::GetInstance()->IsInBlackList(id_))
 		addfriend_or_chat_->SelectItem(2);
-	else if (user_type == UT_UNKNOWN)
+	else if (user_type == nim::kNIMFriendFlagNotFriend)
 		addfriend_or_chat_->SelectItem(0);
-	else if (user_type == UT_FRIEND)
+	else if (user_type == nim::kNIMFriendFlagNormal)
 		addfriend_or_chat_->SelectItem(1);
 }
 

@@ -22,23 +22,24 @@ void MsgBubbleText::InitControl(bool bubble_right)
 	IRichEditOleCallbackEx* richedit_cb = new IRichEditOleCallbackEx( text_services, std::function<void()>() );
 	text_services->Release();
 	text_->SetOleCallback( richedit_cb );
-
+	text_->SetEventMask(ENM_LINK);
+	text_->SetAutoURLDetect(true);
 	text_->AttachMenu(nbase::Bind(&MsgBubbleText::OnMenu, this, std::placeholders::_1));
 }
 
-void MsgBubbleText::InitInfo(const MsgData &msg)
+void MsgBubbleText::InitInfo(const nim::IMMessage &msg)
 {
 	__super::InitInfo(msg);
 
-	std::wstring str = nbase::UTF8ToUTF16(msg.msg_body);
-	if (IsNetCallMsg((nim::NIMMessageType)msg.msg_type, msg.msg_attach))
+	std::wstring str = nbase::UTF8ToUTF16(msg.content_);
+	if (IsNetCallMsg((nim::NIMMessageType)msg.type_, msg.attach_))
 	{
-		GetNotifyMsg(msg.msg_attach, msg.from_account, msg.to_account, str);
-		msg_.msg_body = nbase::UTF16ToUTF8(str);
+		GetNotifyMsg(msg.attach_, msg.sender_accid_, msg.receiver_accid_, str);
+		msg_.content_ = nbase::UTF16ToUTF8(str);
 	}
-	else if (msg.msg_type == nim::kNIMMessageTypeCustom)
+	else if (msg.type_ == nim::kNIMMessageTypeCustom)
 	{
-		str = GetCustomMsg(msg.msg_attach);
+		str = GetCustomMsg(msg.attach_);
 	}
 	SetMsgText(str);
 }
@@ -58,7 +59,7 @@ void MsgBubbleText::SetMsgText( const std::wstring &str )
 
 ui::CSize MsgBubbleText::EstimateSize(ui::CSize szAvailable)
 {
-	if (msg_.msg_body.empty())
+	if (msg_.content_.empty())
 		return Box::EstimateSize(szAvailable);
 
 	int width = szAvailable.cx - 200;

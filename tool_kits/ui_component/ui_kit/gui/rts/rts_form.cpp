@@ -400,9 +400,9 @@ void RtsForm::ShowBoardUI()
 }
 void RtsForm::ShowHeader()
 {
-	UserInfo info;
+	nim::UserNameCard info;
 	UserService::GetInstance()->GetUserInfo(uid_, info);
-	std::wstring name = nbase::UTF8ToUTF16(info.name);
+	std::wstring name = nbase::UTF8ToUTF16(info.GetName());
 	Label* friend_name = (Label*)FindControl(L"friend_name");
 	friend_name->SetText(name);
 
@@ -411,7 +411,7 @@ void RtsForm::ShowHeader()
 	Label* title = (Label*)FindControl(L"title");
 	title->SetText(title_text);
 
-	std::wstring photo = UserService::GetInstance()->GetUserPhoto(info.account);
+	std::wstring photo = UserService::GetInstance()->GetUserPhoto(info.GetAccId());
 	Button* headicon = (Button*)FindControl(L"headicon");
 	headicon->SetBkImage(photo);
 }
@@ -545,27 +545,25 @@ void RtsForm::SetAudioStatus(bool show)
 void RtsForm::SendCreateMsg()
 {
 	show_endmsg_ = true;
-	MsgData msg;
-	msg.to_type = nim::kNIMSessionTypeP2P;
-	msg.to_account = uid_;
-	msg.from_account = LoginManager::GetInstance()->GetAccount();
-	msg.client_msg_id = QString::GetGUID();
-	msg.resend_flag = 0;
+	nim::IMMessage msg;
+	msg.session_type_ = nim::kNIMSessionTypeP2P;
+	msg.receiver_accid_ = uid_;
+	msg.sender_accid_ = LoginManager::GetInstance()->GetAccount();
+	msg.client_msg_id_ = QString::GetGUID();
+
 	//base获取的时间单位是s，服务器的时间单位是ms
-	msg.msg_time = 1000 * nbase::Time::Now().ToTimeT();
-	msg.msg_status = nim::kNIMMsgLogStatusSending;
-	msg.msg_type = nim::kNIMMessageTypeCustom;
+	msg.timetag_ = 1000 * nbase::Time::Now().ToTimeT();
+	msg.status_ = nim::kNIMMsgLogStatusSending;
+	msg.type_ = nim::kNIMMessageTypeCustom;
 
 	Json::Value json;
 	json["type"] = CustomMsgType_Rts;
 	json["data"]["flag"] = 0;
 
-	msg.msg_body = nbase::UTF16ToUTF8(L"白板");
-	msg.msg_attach = json.toStyledString();
+	msg.content_ = nbase::UTF16ToUTF8(L"白板");
+	msg.attach_ = json.toStyledString();
 
-	Json::Value value;
-	MsgToJson(msg, value);
-	nim::Talk::SendMsg(value.toStyledString());
+	nim::Talk::SendMsg(msg.ToJsonString(true));
 	SessionForm* session = SessionManager::GetInstance()->Find(uid_);
 	if (session)
 	{
@@ -574,43 +572,42 @@ void RtsForm::SendCreateMsg()
 }
 void RtsForm::ShowEndMsg()
 {
-	MsgData msg;
-	msg.to_type = nim::kNIMSessionTypeP2P;
-	msg.to_account = uid_;
-	msg.from_account = LoginManager::GetInstance()->GetAccount();
-	msg.client_msg_id = QString::GetGUID();
-	msg.resend_flag = 0;
+	nim::IMMessage msg;
+	msg.session_type_ = nim::kNIMSessionTypeP2P;
+	msg.receiver_accid_ = uid_;
+	msg.sender_accid_ = LoginManager::GetInstance()->GetAccount();
+	msg.client_msg_id_ = QString::GetGUID();
 	//base获取的时间单位是s，服务器的时间单位是ms
-	msg.msg_time = 1000 * nbase::Time::Now().ToTimeT();
-	msg.msg_status = nim::kNIMMsgLogStatusSent;
-	msg.msg_type = nim::kNIMMessageTypeCustom;
+	msg.timetag_ = 1000 * nbase::Time::Now().ToTimeT();
+	msg.status_ = nim::kNIMMsgLogStatusSent;
+	msg.type_ = nim::kNIMMessageTypeCustom;
 
 	Json::Value json;
 	json["type"] = CustomMsgType_Rts;
 	json["data"]["flag"] = 1;
 
-	msg.msg_body = nbase::UTF16ToUTF8(L"白板");
-	msg.msg_attach = json.toStyledString();
+	msg.content_ = nbase::UTF16ToUTF8(L"白板");
+	msg.attach_ = json.toStyledString();
 
-	Json::Value value;
-	MsgToJson(msg, value);
-	nim::MsgLog::WriteMsglogOnlyAsync(uid_, msg.to_type, msg.client_msg_id, value.toStyledString(), nim::MsgLog::WriteMsglogCallback());
+	nim::MsgLog::WriteMsglogOnlyAsync(uid_, msg.session_type_, msg.client_msg_id_, msg, nim::MsgLog::WriteMsglogCallback());
 	SessionForm* session = SessionManager::GetInstance()->Find(uid_);
 	if (session)
 	{
 		session->AddNewMsg(msg, false);
 	}
 }
+
 void RtsForm::OnControlNotify(const std::string& session_id, const std::string& uid, const std::string& text)
 {
-	UserInfo info;
+	nim::UserNameCard info;
 	UserService::GetInstance()->GetUserInfo(uid, info);
-	std::string name = info.name.empty() ? uid : info.name;
+	std::string name = info.GetName().empty() ? uid : info.GetName();
 	ctrl_notify_->SetUTF8Text(name + ":" + text);
 	ctrl_notify_->SetVisible(true);
 	auto closure = nbase::Bind(&RtsForm::HideCtrlNotifyTip, this);
 	nbase::ThreadManager::PostDelayedTask(kThreadUI, closure, nbase::TimeDelta::FromSeconds(3));
 }
+
 void RtsForm::HideCtrlNotifyTip()
 {
 	ctrl_notify_->SetVisible(false);

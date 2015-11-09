@@ -15,7 +15,7 @@ class FriendItem : public ui::TreeNode
 public:
 	FriendItem();
 	virtual ~FriendItem();
-	virtual void Init(bool is_team, const UserInfo &user_info);
+	virtual void Init(bool is_team, const nim::UserNameCard &user_info);
 	bool GetIsTeam() const
 	{
 		return is_team_;
@@ -24,7 +24,7 @@ public:
 	{
 		return id_;
 	}
-	UserInfo GetUserInfo();
+	nim::UserNameCard GetUserInfo();
 
 	bool Match(const UTF8String& search_key)
 	{

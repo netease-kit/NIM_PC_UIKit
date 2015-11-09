@@ -24,8 +24,9 @@ public:
 	UnregisterCallback RegSyncSetBlackCallback(const SetStateCallback& cb);	//注册黑名单事件的响应函数
 
 private:
-	void OnGetMuteAndBlackListCallback(int res_code, const std::string& mute_black_list_json);		//静态对象创建时，获取并填充两个列表
-	void OnMuteBlackEventCallback(nim::NIMUserSpecialRelationshipChangeType type, const std::string& result_json);	//收到静音或黑名单事件时的响应
+	void OnGetMuteListCallback(nim::NIMResCode res_code, const std::list<nim::MuteListInfo>& lists);		//静态对象创建时，获取并填充两个列表
+	void OnGetBlackListCallback(nim::NIMResCode res_code, const std::list<nim::BlackListInfo>& lists);		//静态对象创建时，获取并填充两个列表
+	void OnMuteBlackEventCallback(const nim::SpecialRelationshipChangeEvent& change_event);	//收到静音或黑名单事件时的响应
 	void ModifyMuteList(const std::string& id, bool mute);		//修改m_mute_list
 	void ModifyBlackList(const std::string& id, bool black);	//修改m_black_list
 

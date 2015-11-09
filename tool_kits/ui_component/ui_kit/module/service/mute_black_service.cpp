@@ -4,8 +4,9 @@ namespace nim_comp
 {
 MuteBlackService::MuteBlackService()
 {
-	nim::User::RegSpecialRelationshipChangedCb(nbase::Bind(&MuteBlackService::OnMuteBlackEventCallback, this, std::placeholders::_1, std::placeholders::_2));
-	nim::User::GetMuteAndBlacklist(nbase::Bind(&MuteBlackService::OnGetMuteAndBlackListCallback, this, std::placeholders::_1, std::placeholders::_2));
+	nim::User::RegSpecialRelationshipChangedCb(nbase::Bind(&MuteBlackService::OnMuteBlackEventCallback, this, std::placeholders::_1));
+	nim::User::GetBlacklist(nbase::Bind(&MuteBlackService::OnGetBlackListCallback, this, std::placeholders::_1, std::placeholders::_2));
+	nim::User::GetMutelist(nbase::Bind(&MuteBlackService::OnGetMuteListCallback, this, std::placeholders::_1, std::placeholders::_2));
 }
 
 const std::set<std::string> &MuteBlackService::GetMuteList()
@@ -28,76 +29,68 @@ bool MuteBlackService::IsInBlackList(const std::string& accid)
 	return (m_black_list.find(accid) != m_black_list.end());
 }
 
-void MuteBlackService::OnGetMuteAndBlackListCallback(int res_code, const std::string& mute_black_list_json)
+void MuteBlackService::OnGetMuteListCallback(nim::NIMResCode res_code, const std::list<nim::MuteListInfo>& lists)
 {
 	m_mute_list.clear();
-	m_black_list.clear();
-	if (res_code == 200)
+	if (res_code == nim::kNIMResSuccess)
 	{
-		Json::Value j_mute_black_list;
-		Json::Reader reader;
-		if (reader.parse(mute_black_list_json, j_mute_black_list))
+		for (auto& info : lists)
 		{
-			int size = j_mute_black_list.size();
-			for (int i = 0; i < size; i++)
-			{
-				if (j_mute_black_list[i][nim::kNIMSpecialRelationKeyIsMute].asBool())
-					m_mute_list.insert(j_mute_black_list[i][nim::kNIMSpecialRelationKeyAccid].asString());
-				if (j_mute_black_list[i][nim::kNIMSpecialRelationKeyIsBlackList].asBool())
-					m_black_list.insert(j_mute_black_list[i][nim::kNIMSpecialRelationKeyAccid].asString());
-			}
+			m_mute_list.insert(info.accid_);
 		}
-		else
-			QLOG_ERR(L"Get mute list error: Parse json string error: {0}") << nbase::UTF8ToUTF16(mute_black_list_json);
 	}
-	else
-		QLOG_ERR(L"Get mute list error: Res Error: {0}") << res_code;
 }
 
-void MuteBlackService::OnMuteBlackEventCallback(nim::NIMUserSpecialRelationshipChangeType type, const std::string& result_json)
+void MuteBlackService::OnGetBlackListCallback(nim::NIMResCode res_code, const std::list<nim::BlackListInfo>& lists)
 {
-	Json::Value ret;
-	Json::Reader reader;
-	if (reader.parse(result_json, ret))
+	m_black_list.clear();
+	if (res_code == nim::kNIMResSuccess)
 	{
-		switch (type)
+		for (auto& info : lists)
 		{
-		case nim::NIMUserSpecialRelationshipChangeType::kNIMUserSpecialRelationshipChangeTypeMarkBlack:
+			m_black_list.insert(info.accid_);
+		}
+	}
+}
+
+void MuteBlackService::OnMuteBlackEventCallback(const nim::SpecialRelationshipChangeEvent& change_event)
+{
+	switch (change_event.type_)
+	{
+	case nim::NIMUserSpecialRelationshipChangeType::kNIMUserSpecialRelationshipChangeTypeMarkBlack:
+	{
+		nim::BlackListInfo info;
+		nim::User::ParseBlackListInfoChange(change_event, info);
+		ModifyBlackList(info.accid_, info.set_black_);
+		for (auto &cb : sync_set_black_cb_list)
+			(*cb.second)(info.accid_, info.set_black_);
+		break;
+	}
+	case nim::NIMUserSpecialRelationshipChangeType::kNIMUserSpecialRelationshipChangeTypeMarkMute:
+	{
+		nim::MuteListInfo info;
+		nim::User::ParseMuteListInfoChange(change_event, info);
+		ModifyMuteList(info.accid_, info.set_mute_);
+		for (auto &cb : sync_set_mute_cb_list)
+			(*cb.second)(info.accid_, info.set_mute_);
+		break;
+	}
+	case nim::NIMUserSpecialRelationshipChangeType::kNIMUserSpecialRelationshipChangeTypeSyncMuteAndBlackList:
+	{
+		std::list<nim::BlackListInfo> black_list;
+		std::list<nim::MuteListInfo> mute_list;
+		nim::User::ParseSyncSpecialRelationshipChange(change_event, black_list, mute_list);
+		for (auto& info : black_list)
 		{
-			std::string accid = ret[nim::kNIMSpecialRelationKeyAccid].asString();
-			bool black = ret["black"].asBool();
-			ModifyBlackList(accid, black);
-			for (auto &cb : sync_set_black_cb_list)
-				(*cb.second)(accid, black);
-			break;
+			ModifyBlackList(info.accid_, info.set_black_);
 		}
-		case nim::NIMUserSpecialRelationshipChangeType::kNIMUserSpecialRelationshipChangeTypeMarkMute:
+
+		for (auto& info : mute_list)
 		{
-			std::string accid = ret[nim::kNIMSpecialRelationKeyAccid].asString();
-			bool mute = ret["mute"].asBool();
-			ModifyMuteList(accid, mute);
-			for (auto &cb : sync_set_mute_cb_list)
-				(*cb.second)(accid, mute);
-			break;
+			ModifyMuteList(info.accid_, info.set_mute_);
 		}
-		case nim::NIMUserSpecialRelationshipChangeType::kNIMUserSpecialRelationshipChangeTypeSyncMuteAndBlackList:
-		{
-			int size = ret.size();
-			for (int i = 0; i < size; i++)
-			{
-				std::string accid = ret[i][nim::kNIMSpecialRelationKeyAccid].asString();
-				bool mute = ret[i][nim::kNIMSpecialRelationKeyIsMute].asBool();
-				bool black = ret[i][nim::kNIMSpecialRelationKeyIsBlackList].asBool();
-				ModifyMuteList(accid, mute);
-				ModifyBlackList(accid, black);
-				for (auto &cb : sync_set_mute_cb_list)
-					(*cb.second)(accid, mute);
-				for (auto &cb : sync_set_black_cb_list)
-					(*cb.second)(accid, black);
-			}
-			break;
-		}
-		}
+		break;
+	}
 	}
 }
 

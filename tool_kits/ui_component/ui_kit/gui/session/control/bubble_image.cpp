@@ -24,28 +24,22 @@ void MsgBubbleImage::InitControl(bool bubble_right)
 	msg_image_->AttachMenu(nbase::Bind(&MsgBubbleImage::OnMenu, this, std::placeholders::_1));
 }
 
-void MsgBubbleImage::InitInfo(const MsgData &msg)
+void MsgBubbleImage::InitInfo(const nim::IMMessage &msg)
 {
 	__super::InitInfo(msg);
 
 	SetCanView(false);
 
-	std::wstring wpath = nbase::UTF8ToUTF16(msg.local_file_path);
+	std::wstring wpath = nbase::UTF8ToUTF16(msg.local_res_path_);
 
 	if( wpath.empty() )
 	{
-		Json::Value value;
-		if( StringToJson(msg.msg_attach, value) )
-		{
-			std::string md5 = value[nim::kNIMImgMsgKeyMd5].asString();
-			std::wstring filename = nbase::UTF8ToUTF16(md5);
-			thumb_ = GetUserImagePath() + L"thumb_" + filename; 
-			path_  = GetUserImagePath() + filename;
-		}
-		else
-		{
-			QLOG_ERR(L"parse image msg attach fail: {0}") <<msg.msg_attach;
-		}
+		nim::IMImage img;
+		nim::Talk::ParseImageMessageAttach(msg, img);
+		std::wstring filename = nbase::UTF8ToUTF16(img.md5_);
+		thumb_ = GetUserImagePath() + L"thumb_" + filename;
+		path_ = GetUserImagePath() + filename;
+
 	}
 	else
 	{
@@ -61,22 +55,22 @@ void MsgBubbleImage::InitInfo(const MsgData &msg)
 	}
 	else
 	{
-		if(msg_.msg_code == 0) //读取消息历史
+		if(msg_.rescode_ == 0) //读取消息历史
 		{
 			SetLoadStatus(RS_LOADING);
 		}
 		else //接收
 		{
-			if (msg_.msg_code == nim::kNIMResSuccess)
+			if (msg_.rescode_ == nim::kNIMResSuccess)
 				SetLoadStatus(RS_LOADING);
-			else if (msg_.msg_code == nim::kNIMLocalResMsgUrlInvalid)
+			else if (msg_.rescode_ == nim::kNIMLocalResMsgUrlInvalid)
 				SetLoadStatus(RS_LOAD_NO);
-			else if (msg_.msg_code == nim::kNIMLocalResMsgFileExist)
+			else if (msg_.rescode_ == nim::kNIMLocalResMsgFileExist)
 				DoZoom();
 			else
 			{
 				SetLoadStatus(RS_LOAD_NO);
-				QLOG_WAR(L"unknown receive msg code {0}") <<msg_.msg_code;
+				QLOG_WAR(L"unknown receive msg code {0}") << msg_.rescode_;
 			}
 		}
 	}

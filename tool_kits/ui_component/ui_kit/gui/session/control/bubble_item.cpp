@@ -54,15 +54,15 @@ void MsgBubbleItem::InitControl(bool bubble_right)
 	//unregister_cb.Add(UserService::GetInstance()->RegFriendListChange(cb));
 }
 
-void MsgBubbleItem::InitInfo(const MsgData &msg)
+void MsgBubbleItem::InitInfo(const nim::IMMessage &msg)
 {
 	msg_ = msg;
 
-	this->SetUTF8Name(msg.client_msg_id);
+	this->SetUTF8Name(msg.client_msg_id_);
 
 	SetShowHeader();
 
-	SetMsgStatus(msg.msg_status);
+	SetMsgStatus(msg.status_);
 }
 
 void MsgBubbleItem::SetSessionId( const std::string &sid )
@@ -80,7 +80,7 @@ void MsgBubbleItem::SetActionMenu( bool action )
 	action_menu_ = action;
 }
 
-MsgData MsgBubbleItem::GetMsg()
+nim::IMMessage MsgBubbleItem::GetMsg()
 {
 	return msg_;
 }
@@ -89,7 +89,7 @@ void MsgBubbleItem::SetShowTime(bool show)
 {
 	if(show)
 	{
-		std::wstring tm = GetMessageTime(msg_.msg_time, false);
+		std::wstring tm = GetMessageTime(msg_.timetag_, false);
 		msg_time_->SetText(tm);
 	}
 	msg_time_->SetVisible(show);
@@ -97,12 +97,12 @@ void MsgBubbleItem::SetShowTime(bool show)
 
 void MsgBubbleItem::SetShowHeader()
 {
-	OnGetUserInfoCallback cb = ToWeakCallback([this](bool ret, const std::list<UserInfo> uinfos) {
+	OnGetUserInfoCallback cb = ToWeakCallback([this](const std::list<nim::UserNameCard> uinfos) {
 		assert(nbase::MessageLoop::current()->ToUIMessageLoop());
-		if (!ret || uinfos.empty()) return;
-		msg_header_button_->SetBkImage(UserService::GetInstance()->GetUserPhoto(uinfos.cbegin()->account));
+		if (uinfos.empty()) return;
+		msg_header_button_->SetBkImage(UserService::GetInstance()->GetUserPhoto(uinfos.cbegin()->GetAccId()));
 	});
-	UserService::GetInstance()->GetUserInfoWithEffort(std::list<std::string>(1, msg_.from_account), cb);
+	UserService::GetInstance()->GetUserInfoWithEffort(std::list<std::string>(1, msg_.sender_accid_), cb);
 }
 
 void MsgBubbleItem::SetShowName(bool show, const std::string& from_nick)
@@ -179,7 +179,7 @@ bool MsgBubbleItem::OnClicked(ui::EventArgs* arg)
 	}
 	else if (name == L"msg_header_button")
 	{
-		ProfileForm::ShowProfileForm(msg_.from_account);
+		ProfileForm::ShowProfileForm(msg_.sender_accid_);
 	}
 	return true;
 }

@@ -99,14 +99,14 @@ bool TeamNotifyForm::OnClicked( ui::EventArgs* arg )
 	if(name == L"btn_ask_no")
 	{
 		QLOG_PRO(L"拒绝加入");
-		nim::Team::RejectJoinApplyAsync(tid_, uid_, "", nbase::Bind(&TeamEventItem::TeamEventCb, msg_id_, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
+		nim::Team::RejectJoinApplyAsync(tid_, uid_, "", nbase::Bind(&TeamEventItem::TeamEventCb, msg_id_, std::placeholders::_1));
 
 		this->Close();
 	}
 	else if(name == L"btn_ask_yes")
 	{
 		QLOG_PRO(L"同意加入");
-		nim::Team::PassJoinApplyAsync(tid_, uid_, nbase::Bind(&TeamEventItem::TeamEventCb, msg_id_, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
+		nim::Team::PassJoinApplyAsync(tid_, uid_, nbase::Bind(&TeamEventItem::TeamEventCb, msg_id_, std::placeholders::_1));
 
 		this->Close();
 	}
@@ -117,14 +117,14 @@ bool TeamNotifyForm::OnClicked( ui::EventArgs* arg )
 	else if(name == L"btn_reject")
 	{
 		QLOG_PRO(L"拒绝邀请");
-		nim::Team::RejectInvitationAsync(tid_, uid_, "", nbase::Bind(&TeamEventItem::TeamEventCb, msg_id_, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
+		nim::Team::RejectInvitationAsync(tid_, uid_, "", nbase::Bind(&TeamEventItem::TeamEventCb, msg_id_, std::placeholders::_1));
 
 		this->Close();
 	}
 	else if(name == L"btn_accept")
 	{
 		QLOG_PRO(L"接受邀请");
-		nim::Team::AcceptInvitationAsync(tid_, uid_, nbase::Bind(&TeamEventItem::TeamEventCb, msg_id_, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
+		nim::Team::AcceptInvitationAsync(tid_, uid_, nbase::Bind(&TeamEventItem::TeamEventCb, msg_id_, std::placeholders::_1));
 
 		this->Close();
 	}
@@ -147,11 +147,11 @@ void TeamNotifyForm::SetAskJoinText()
 	re_ask_join_->SetText( nbase::StringPrintf(L"%s 申请加入群 %s", user.c_str(), team.c_str()) );
 }
 
-void TeamNotifyForm::OnAskJoin(const Json::Value &json)
+void TeamNotifyForm::OnAskJoin(const nim::SysMessage &json)
 {
-	msg_id_ = json[nim::kNIMSysMsgKeyMsgId].asInt64();
+	msg_id_ = json.id_;
 	type_ = TNP_ASK_JOIN;
-	uid_ = json[nim::kNIMSysMsgKeyFromAccount].asString();
+	uid_ = json.sender_accid_;
 	SetAskJoinText();
 	GotoPage(0);
 }
@@ -162,11 +162,11 @@ void TeamNotifyForm::SetInviteText()
 	re_invite_->SetText( nbase::StringPrintf(L"群 %s 管理员邀请你加入群", team.c_str()) );
 }
 
-void TeamNotifyForm::OnInviteYou(const Json::Value &json)
+void TeamNotifyForm::OnInviteYou(const nim::SysMessage &json)
 {
-	msg_id_ = json[nim::kNIMSysMsgKeyMsgId].asInt64();
+	msg_id_ = json.id_;
 	type_ = TNP_INVITE_YOU;
-	uid_ = json[nim::kNIMSysMsgKeyFromAccount].asString();
+	uid_ = json.sender_accid_;
 	SetInviteText();
 	GotoPage(1);
 }
@@ -178,11 +178,11 @@ void TeamNotifyForm::SetRejectInviteText()
 	re_reject_->SetText( nbase::StringPrintf(L"%s 拒绝加入群 %s", user.c_str(), team.c_str()) );
 }
 
-void TeamNotifyForm::OnRejectInvite(const Json::Value &json)
+void TeamNotifyForm::OnRejectInvite(const nim::SysMessage &json)
 {
-	msg_id_ = json[nim::kNIMSysMsgKeyMsgId].asInt64();
+	msg_id_ = json.id_;
 	type_ = TNP_REJECT_INVITE;
-	uid_ = json[nim::kNIMSysMsgKeyFromAccount].asString();
+	uid_ = json.sender_accid_;
 	SetRejectInviteText();
 	GotoPage(2);
 }
@@ -193,11 +193,11 @@ void TeamNotifyForm::SetRejectJoinText()
 	re_reject_->SetText( nbase::StringPrintf(L"群 %s 管理员拒绝了你的入群请求", team.c_str()) );
 }
 
-void TeamNotifyForm::OnRejectJoin(const Json::Value &json)
+void TeamNotifyForm::OnRejectJoin(const nim::SysMessage &json)
 {
-	msg_id_ = json[nim::kNIMSysMsgKeyMsgId].asInt64();
+	msg_id_ = json.id_;
 	type_ = TNP_REJECT_JOIN;
-	uid_ = json[nim::kNIMSysMsgKeyFromAccount].asString();
+	uid_ = json.sender_accid_;
 	SetRejectJoinText();
 	GotoPage(2);
 }
@@ -216,7 +216,7 @@ void TeamNotifyForm::RefreshText()
 
 void TeamNotifyForm::OnTeamNameChange(const nim::TeamInfo& team_info)
 {
-	if (team_info.id == tid_)
+	if (team_info.GetTeamID() == tid_)
 	{
 		RefreshText();
 	}

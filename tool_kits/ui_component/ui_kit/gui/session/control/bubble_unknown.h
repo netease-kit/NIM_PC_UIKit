@@ -13,7 +13,7 @@ class MsgBubbleUnknown : public MsgBubbleItem
 {
 public:
 	virtual void InitControl(bool bubble_right);
-	virtual void InitInfo(const MsgData &msg);
+	virtual void InitInfo(const nim::IMMessage &msg);
 private:
 	ui::HBox*	msg_unknown_;
 

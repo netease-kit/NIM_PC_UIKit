@@ -35,7 +35,7 @@
             <Label class="menu_text" text="清空记录(保留会话)" margin="27,0,0,0"/>
         </MenuElement>
 		
-        <MenuElement class="MenuElement" name="clear_chat_record_p2p" width="180" visible="false">
+        <MenuElement class="MenuElement" name="clear_chat_record_p2p" width="180" visible="true">
             <Button normalimage="icon_recycle_normal.png" valign="center" mouse="false" />
             <Label class="menu_text" text="清空p2p聊天记录" margin="27,0,0,0"/>
         </MenuElement>

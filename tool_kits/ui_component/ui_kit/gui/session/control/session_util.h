@@ -43,11 +43,11 @@ enum SessionType
 namespace nim_comp
 {
 //获取会话类型
-SessionType GetSessionType(const MsgData &msg);
+SessionType GetSessionType(const nim::IMMessage &msg);
 //获取会话id
-std::string GetSessionId(const MsgData &msg);
+std::string GetSessionId(const nim::IMMessage &msg);
 //气泡显示位置，左 或 右
-bool IsBubbleRight(const MsgData &msg);
+bool IsBubbleRight(const nim::IMMessage &msg);
 
 //附加可获取表情对应的字符串
 std::wstring GetRichText(ui::RichEdit* re);

@@ -55,7 +55,7 @@ FriendListItemManager::~FriendListItemManager()
 
 }
 
-void FriendListItemManager::OnGetFriendList(const std::list<UserInfo> &user) 
+void FriendListItemManager::OnGetFriendList(const std::list<nim::UserNameCard> &user)
 {
 	for (std::size_t i = 2; i < friend_list_->GetRootNode()->GetChildNodeCount(); i++)
 	{
@@ -64,22 +64,22 @@ void FriendListItemManager::OnGetFriendList(const std::list<UserInfo> &user)
 	
 	UTF8String current_user_id = LoginManager::GetInstance()->GetAccount();
 	for(auto it = user.begin(); it != user.end(); it++) {
-		if (it->account != current_user_id
-			&& UserService::GetInstance()->GetUserType(it->account) == UT_FRIEND
-			&& !MuteBlackService::GetInstance()->IsInBlackList(it->account))
+		if (it->GetAccId() != current_user_id
+			&& UserService::GetInstance()->GetUserType(it->GetAccId()) == nim::kNIMFriendFlagNormal
+			&& !MuteBlackService::GetInstance()->IsInBlackList(it->GetAccId()))
 		{
 			AddListItem(*it);
 		}
 	}
 }
 
-void FriendListItemManager::OnFriendListChange(UserChangeType change_type, const UserInfo& user)
+void FriendListItemManager::OnFriendListChange(UserChangeType change_type, const nim::UserNameCard& user)
 {
 	if (change_type == kChangeTypeAdd)
 	{
-		if (user.account != LoginManager::GetInstance()->GetAccount() 
-			&& UserService::GetInstance()->GetUserType(user.account) == UT_FRIEND 
-			&& !MuteBlackService::GetInstance()->IsInBlackList(user.account))
+		if (user.GetAccId() != LoginManager::GetInstance()->GetAccount()
+			&& UserService::GetInstance()->GetUserType(user.GetAccId()) == nim::kNIMFriendFlagNormal
+			&& !MuteBlackService::GetInstance()->IsInBlackList(user.GetAccId()))
 		{
 			AddListItem(user);
 		}
@@ -90,13 +90,13 @@ void FriendListItemManager::OnFriendListChange(UserChangeType change_type, const
 	}
 }
 
-void FriendListItemManager::OnUserInfoChange(const std::list<UserInfo> &uinfos)
+void FriendListItemManager::OnUserInfoChange(const std::list<nim::UserNameCard> &uinfos)
 {
 	for (auto info : uinfos)
 	{
-		if (UserService::GetInstance()->GetUserType(info.account) == UT_FRIEND)
+		if (UserService::GetInstance()->GetUserType(info.GetAccId()) == nim::kNIMFriendFlagNormal)
 		{
-			FriendItem* item = dynamic_cast<FriendItem*>(friend_list_->FindSubControl(nbase::UTF8ToUTF16(info.account)));
+			FriendItem* item = dynamic_cast<FriendItem*>(friend_list_->FindSubControl(nbase::UTF8ToUTF16(info.GetAccId())));
 			if (item != NULL)
 				item->Init(false, info);
 		}
@@ -105,14 +105,14 @@ void FriendListItemManager::OnUserInfoChange(const std::list<UserInfo> &uinfos)
 
 void FriendListItemManager::OnBlackListChange(const std::string& id, bool is_black)
 {
-	UserInfo user;
+	nim::UserNameCard user;
 	UserService* user_service = UserService::GetInstance();
 	user_service->GetUserInfo(id, user);
 	if (is_black)
 	{
 		DeleteListItem(user);
 	}
-	else if (user_service->GetUserType(id) == UT_FRIEND)
+	else if (user_service->GetUserType(id) == nim::kNIMFriendFlagNormal)
 	{
 		AddListItem(user);
 	}
@@ -120,7 +120,7 @@ void FriendListItemManager::OnBlackListChange(const std::string& id, bool is_bla
 
 void FriendListItemManager::OnUserPhotoReady(const std::string& accid, const std::wstring &photo_path)
 {
-	if (UserService::GetInstance()->GetUserType(accid) == UT_FRIEND)
+	if (UserService::GetInstance()->GetUserType(accid) == nim::kNIMFriendFlagNormal)
 	{
 		FriendItem* item = (FriendItem*)friend_list_->FindSubControl(nbase::UTF8ToUTF16(accid));
 		if (item == NULL)
@@ -134,12 +134,12 @@ ui::TreeNode* FriendListItemManager::GetGroup(GroupType groupType, wchar_t lette
 	return tree_node_ver_[ListItemUtil::GetGroup(groupType, letter)];
 }
 
-void FriendListItemManager::AddListItem(const UserInfo& all_info)
+void FriendListItemManager::AddListItem(const nim::UserNameCard& all_info)
 {
-	if (friend_list_->FindSubControl(nbase::UTF8ToUTF16(all_info.account)) != NULL)
+	if (friend_list_->FindSubControl(nbase::UTF8ToUTF16(all_info.GetAccId())) != NULL)
 		return;
 
-	wstring ws_show_name = nbase::UTF8ToUTF16(all_info.name);
+	wstring ws_show_name = nbase::UTF8ToUTF16(all_info.GetName());
 	string spell = PinYinHelper::GetInstance()->ConvertToFullSpell(ws_show_name);
 	wstring ws_spell = nbase::UTF8ToUTF16(spell);
 	ui::TreeNode* tree_node;
@@ -155,7 +155,7 @@ void FriendListItemManager::AddListItem(const UserInfo& all_info)
 	AddListItemInGroup(all_info, tree_node);
 }
 
-void FriendListItemManager::AddListItemInGroup(const UserInfo& all_info, ui::TreeNode* tree_node)
+void FriendListItemManager::AddListItemInGroup(const nim::UserNameCard& all_info, ui::TreeNode* tree_node)
 {
 	if (tree_node->GetChildNodeCount() == 0)
 	{
@@ -164,10 +164,10 @@ void FriendListItemManager::AddListItemInGroup(const UserInfo& all_info, ui::Tre
 
 	FriendItem* item = new FriendItem;
 	ui::GlobalManager::FillBoxWithCache( item, L"main/friend_item.xml" );
-	item->SetUTF8Name(all_info.account);
+	item->SetUTF8Name(all_info.GetAccId());
 	item->Init(false, all_info);
 	ui::ButtonBox* head_image = (ui::ButtonBox*)(item->FindSubControl(L"head_image"));
-	head_image->AttachClick(nbase::Bind(&FriendListItemManager::OnHeadImageClick, this, all_info.account, std::placeholders::_1));
+	head_image->AttachClick(nbase::Bind(&FriendListItemManager::OnHeadImageClick, this, all_info.GetAccId(), std::placeholders::_1));
 	FriendItem* container_element = item;
 	std::size_t index = 0;
 	for (index = 0; index < tree_node->GetChildNodeCount(); index++)
@@ -192,9 +192,9 @@ void FriendListItemManager::AddListItemInGroup(const UserInfo& all_info, ui::Tre
 	}
 }
 
-void FriendListItemManager::DeleteListItem(const UserInfo& all_info)
+void FriendListItemManager::DeleteListItem(const nim::UserNameCard& all_info)
 {
-	wstring ws_show_name = nbase::UTF8ToUTF16(all_info.name);
+	wstring ws_show_name = nbase::UTF8ToUTF16(all_info.GetName());
 	string spell = PinYinHelper::GetInstance()->ConvertToFullSpell(ws_show_name);
 	wstring ws_spell = nbase::UTF8ToUTF16(spell);
 	ui::TreeNode* tree_node;
@@ -210,13 +210,13 @@ void FriendListItemManager::DeleteListItem(const UserInfo& all_info)
 	DeleteListItemInGroup(all_info, tree_node);
 }
 
-void FriendListItemManager::DeleteListItemInGroup(const UserInfo& all_info, ui::TreeNode* tree_node)
+void FriendListItemManager::DeleteListItemInGroup(const nim::UserNameCard& all_info, ui::TreeNode* tree_node)
 {
-	for (int index = 0; index < tree_node->GetChildNodeCount(); index++)
+	for (size_t index = 0; index < tree_node->GetChildNodeCount(); index++)
 	{
 		
 		FriendItem* temp = (FriendItem*)tree_node->GetChildNode(index);
-		if (all_info.account == temp->GetId())
+		if (all_info.GetAccId() == temp->GetId())
 		{
 			tree_node->RemoveChildNodeAt(index);
 			break;

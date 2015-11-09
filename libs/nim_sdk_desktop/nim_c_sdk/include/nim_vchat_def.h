@@ -81,8 +81,8 @@ enum NIMVChatConnectErrorCode{
 /** @name json extension params for nim_vchat_cb_func
   * @{
   */
-static const char *kNIMVChatUids			= "uids";			/**< StrArray 账号 */
-static const char *kNIMVChatUid				= "uid";			/**< string 账号 */
+static const char *kNIMVChatUids			= "uids";			/**< StrArray 帐号 */
+static const char *kNIMVChatUid				= "uid";			/**< string 帐号 */
 static const char *kNIMVChatStatus			= "status";			/**< int 状态 */
 static const char *kNIMVChatRecordAddr		= "record_addr";	/**< string 录制地址（服务器开启录制时有效） */
 static const char *kNIMVChatRecordFile		= "record_file";	/**< string 录制文件名（服务器开启录制时有效） */

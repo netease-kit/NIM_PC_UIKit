@@ -18,10 +18,10 @@ void MsgBubbleUnknown::InitControl(bool bubble_right)
 	unknown_tip_ = (Label*) msg_unknown_->FindSubControl(L"unknown_tip");
 }
 
-void MsgBubbleUnknown::InitInfo(const MsgData &msg)
+void MsgBubbleUnknown::InitInfo(const nim::IMMessage &msg)
 {
 	__super::InitInfo(msg);
-	if (msg.msg_type == nim::kNIMMessageTypeCustom)
+	if (msg.type_ == nim::kNIMMessageTypeCustom)
 		unknown_tip_->SetText(L"自定义消息");
 }
 }

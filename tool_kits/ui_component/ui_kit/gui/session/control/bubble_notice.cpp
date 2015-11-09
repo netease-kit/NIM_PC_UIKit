@@ -12,18 +12,18 @@ void MsgBubbleNotice::InitControl()
 	this->AttachResize(nbase::Bind(&MsgBubbleNotice::OnResize, this, std::placeholders::_1));
 }
 
-void MsgBubbleNotice::InitInfo(const MsgData &msg)
+void MsgBubbleNotice::InitInfo(const nim::IMMessage &msg)
 {
-	this->SetUTF8Name(msg.client_msg_id);
+	this->SetUTF8Name(msg.client_msg_id_);
 
 	std::wstring wstr;
-	if (msg.msg_type == nim::kNIMMessageTypeCustom)
+	if (msg.type_ == nim::kNIMMessageTypeCustom)
 	{
-		wstr = GetCustomMsg(msg.msg_attach);
+		wstr = GetCustomMsg(msg.attach_);
 	}
 	else
 	{
-		GetNotifyMsg(msg.msg_attach, msg.from_account, msg.to_account, wstr);
+		GetNotifyMsg(msg.attach_, msg.sender_accid_, msg.receiver_accid_, wstr);
 	}
 	notice_->SetText(wstr);
 

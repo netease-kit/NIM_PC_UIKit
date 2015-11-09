@@ -57,7 +57,7 @@ public:
 	* @param[in] result 消息体Json string,包含了获取的会话记录的信息
 	* @return void 无返回值
 	*/
-	void QueryMsgOnlineCb(nim::NIMResCode code, const std::string& id, nim::NIMSessionType type, const std::string& result);
+	void QueryMsgOnlineCb(nim::NIMResCode code, const std::string& id, nim::NIMSessionType type, const nim::QueryMsglogResult& result);
 
 	/**
 	* 添加一条新消息到聊天框里
@@ -66,14 +66,14 @@ public:
 	* @param[in] show_time	是否显示这条消息的接收时间
 	* @return void 无返回值
 	*/
-	void ShowMsg(const MsgData &msg, bool first, bool show_time);
+	void ShowMsg(const nim::IMMessage &msg, bool first, bool show_time);
 
 	/**
 	* 加载消息记录，把一组历史消息添加到聊天框的开头位置
 	* @param[in] msg	历史消息数据
 	* @return void 无返回值
 	*/
-	void ShowMsgs(const std::vector<MsgData> &msg);
+	void ShowMsgs(const std::vector<nim::IMMessage> &msg);
 
 	/**
 	* 对方发送文件过来，获取是否成功下载文件的回调函数

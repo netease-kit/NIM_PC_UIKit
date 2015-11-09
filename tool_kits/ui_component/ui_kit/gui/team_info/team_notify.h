@@ -37,10 +37,10 @@ public:
 	void SetRejectJoinText();
 	void RefreshText();
 
-	void OnAskJoin(const Json::Value &json); //sb请求加入team
-	void OnInviteYou(const Json::Value &json); //team邀请你加入
-	void OnRejectInvite(const Json::Value &json); //sb拒绝加入team
-	void OnRejectJoin(const Json::Value &json);	//team拒绝你的加入申请
+	void OnAskJoin(const nim::SysMessage &json); //sb请求加入team
+	void OnInviteYou(const nim::SysMessage &json); //team邀请你加入
+	void OnRejectInvite(const nim::SysMessage &json); //sb拒绝加入team
+	void OnRejectJoin(const nim::SysMessage &json);	//team拒绝你的加入申请
 
 	void GotoPage(int t); //0=ask_join; 1=invite_you; 2=reject_
 private:

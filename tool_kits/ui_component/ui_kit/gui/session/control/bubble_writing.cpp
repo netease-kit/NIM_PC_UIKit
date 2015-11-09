@@ -13,7 +13,7 @@ void MsgBubbleWriting::InitControl(bool bubble_right)
 	bubble_box_->Add(cell_);
 }
 
-void MsgBubbleWriting::InitInfo(const MsgData &msg)
+void MsgBubbleWriting::InitInfo(const nim::IMMessage &msg)
 {
 	__super::InitInfo(msg);
 }

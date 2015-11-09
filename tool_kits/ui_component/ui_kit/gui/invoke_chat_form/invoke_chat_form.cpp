@@ -89,10 +89,10 @@ void InvokeChatForm::InitWindow()
 
 	UTF8String current_user_id = LoginManager::GetInstance()->GetAccount();
 	UserService* user_service = UserService::GetInstance();
-	const std::map<std::string,UserInfo>& users = user_service->GetAllUserInfos();
+	const std::map<std::string, nim::UserNameCard>& users = user_service->GetAllUserInfos();
 	MuteBlackService* mb_service = MuteBlackService::GetInstance();
 	for(auto it = users.begin(); it != users.end(); it++) {
-		if (it->first != current_user_id && user_service->GetUserType(it->second.account) == UT_FRIEND && !mb_service->IsInBlackList(it->first)) {
+		if (it->first != current_user_id && user_service->GetUserType(it->second.GetAccId()) == nim::kNIMFriendFlagNormal && !mb_service->IsInBlackList(it->first)) {
 			AddListItem(it->second, true);
 		}
 	}
@@ -135,9 +135,9 @@ void InvokeChatForm::AddTreeNode(ui::TreeNode* tree_node)
 }
 
 
-void InvokeChatForm::AddListItem(const UserInfo& all_info, bool is_enable)
+void InvokeChatForm::AddListItem(const nim::UserNameCard& all_info, bool is_enable)
 {
-	wstring ws_show_name = nbase::UTF8ToUTF16(all_info.name);
+	wstring ws_show_name = nbase::UTF8ToUTF16(all_info.GetName());
 	string spell = PinYinHelper::GetInstance()->ConvertToFullSpell(ws_show_name);
 	wstring ws_spell = nbase::UTF8ToUTF16(spell);
 	CInvokeChatTileListUI* tile_layout;
@@ -163,9 +163,9 @@ void InvokeChatForm::AddListItem(const UserInfo& all_info, bool is_enable)
 	}
 }
 
-void InvokeChatForm::RemoveListItem(const UserInfo& all_info)
+void InvokeChatForm::RemoveListItem(const nim::UserNameCard& all_info)
 {
-	wstring ws_show_name = nbase::UTF8ToUTF16(all_info.name);
+	wstring ws_show_name = nbase::UTF8ToUTF16(all_info.GetName());
 	string spell = PinYinHelper::GetInstance()->ConvertToFullSpell(ws_show_name);
 	wstring ws_spell = nbase::UTF8ToUTF16(spell);
 	CInvokeChatTileListUI* tile_layout;
@@ -180,15 +180,15 @@ void InvokeChatForm::RemoveListItem(const UserInfo& all_info)
 	RemoveListItemInGroup(all_info, tile_layout);
 
 	//从已选列表和搜索列表中删除
-	auto selected_item = selected_user_list_->FindSubControl(nbase::UTF8ToUTF16(all_info.account));
+	auto selected_item = selected_user_list_->FindSubControl(nbase::UTF8ToUTF16(all_info.GetAccId()));
 	if (selected_item != NULL)
 		selected_user_list_->Remove(selected_item);
-	auto search_item = search_result_list_->FindSubControl(nbase::UTF8ToUTF16(all_info.account));
+	auto search_item = search_result_list_->FindSubControl(nbase::UTF8ToUTF16(all_info.GetAccId()));
 	if (search_item != NULL)
 		search_result_list_->Remove(search_item);
 }
 
-Box* InvokeChatForm::AddListItemInGroup(const UserInfo& all_info, CInvokeChatTileListUI* tile_layout)
+Box* InvokeChatForm::AddListItemInGroup(const nim::UserNameCard& all_info, CInvokeChatTileListUI* tile_layout)
 {
 	if (tile_layout->GetCount() == 0)
 	{
@@ -220,16 +220,16 @@ Box* InvokeChatForm::AddListItemInGroup(const UserInfo& all_info, CInvokeChatTil
 }
 
 
-bool InvokeChatForm::RemoveListItemInGroup(const UserInfo& all_info, CInvokeChatTileListUI* tile_layout)
+bool InvokeChatForm::RemoveListItemInGroup(const nim::UserNameCard& all_info, CInvokeChatTileListUI* tile_layout)
 {
 	bool ret = false;
 	int index = 0;
 	for (index = 0; index < tile_layout->GetCount(); index++)
 	{
 		CInvokeChatListItemUI* temp = (CInvokeChatListItemUI*)tile_layout->GetItemAt(index);
-		if (all_info.account == temp->GetUTF8DataID())
+		if (all_info.GetAccId() == temp->GetUTF8DataID())
 		{
-			OnCheckBox(all_info.account, false); //同时从已选择列表中删除这个帐号
+			OnCheckBox(all_info.GetAccId(), false); //同时从已选择列表中删除这个帐号
 			tile_layout->RemoveAt(index);
 			ret = true;
 			break;
@@ -245,12 +245,12 @@ bool InvokeChatForm::RemoveListItemInGroup(const UserInfo& all_info, CInvokeChat
 }
 
 
-CInvokeChatListItemUI* InvokeChatForm::CreateStartChatListItem(const UserInfo& user_info)
+CInvokeChatListItemUI* InvokeChatForm::CreateStartChatListItem(const nim::UserNameCard& user_info)
 {
 	CInvokeChatListItemUI* container_element = new CInvokeChatListItemUI();
 	container_element->Init(user_info);
 	
-	if (std::find(exclude_ids_.begin(), exclude_ids_.end(), user_info.account) != exclude_ids_.end())
+	if (std::find(exclude_ids_.begin(), exclude_ids_.end(), user_info.GetAccId()) != exclude_ids_.end())
 	{
 		((ui::CheckBox*)container_element->FindSubControl(L"checkbox"))->Selected(true);
 		container_element->SetEnabled(false);
@@ -359,7 +359,7 @@ bool InvokeChatForm::OnSearchResultListItemClick(ui::EventArgs* param)
 
 void InvokeChatForm::OnCheckBox(UTF8String id, bool check)
 {
-	UserInfo userInfo;
+	nim::UserNameCard userInfo;
 	UserService::GetInstance()->GetUserInfo(id, userInfo);
 	if(check) {
 		ui::HBox* selected_listitem = CreateSelectedListItem(userInfo);
@@ -379,15 +379,15 @@ void InvokeChatForm::OnCheckBox(UTF8String id, bool check)
 	}
 }
 
-ui::HBox* InvokeChatForm::CreateSelectedListItem(const UserInfo& user_info)
+ui::HBox* InvokeChatForm::CreateSelectedListItem(const nim::UserNameCard& user_info)
 {
 	ui::HBox* container_element = (ui::HBox*)GlobalManager::CreateBoxWithCache(L"invokechat/user_photo.xml");
-	container_element->SetUTF8Name(user_info.account);
-	container_element->SetUTF8DataID(user_info.account);
+	container_element->SetUTF8Name(user_info.GetAccId());
+	container_element->SetUTF8DataID(user_info.GetAccId());
 	Label* show_name_label = (Label*)container_element->FindSubControl(L"show_name");
-	show_name_label->SetUTF8Text(user_info.name);
+	show_name_label->SetUTF8Text(user_info.GetName());
 	Button* btn_delete = (Button*)container_element->FindSubControl(L"delete");
-	btn_delete->AttachClick(nbase::Bind(&InvokeChatForm::OnBtnDeleteClick, this, user_info.account, std::placeholders::_1));
+	btn_delete->AttachClick(nbase::Bind(&InvokeChatForm::OnBtnDeleteClick, this, user_info.GetAccId(), std::placeholders::_1));
 
 	return container_element;
 }
@@ -454,15 +454,16 @@ bool InvokeChatForm::OnBtnCancelClick(ui::EventArgs* param)
 	return true;
 }
 
-void InvokeChatForm::OnFriendListChange(UserChangeType change_type, const UserInfo& user)
+void InvokeChatForm::OnFriendListChange(UserChangeType change_type, const nim::UserNameCard& user)
 {
 	UTF8String current_user_id = LoginManager::GetInstance()->GetAccount();
-	if (current_user_id == user.account)
+	if (current_user_id == user.GetAccId())
 		return;
 
 	if (change_type == kChangeTypeAdd)
 	{
-		if (UserService::GetInstance()->GetUserType(user.account) == UT_FRIEND && !MuteBlackService::GetInstance()->IsInBlackList(user.account))
+		if (UserService::GetInstance()->GetUserType(user.GetAccId()) == nim::kNIMFriendFlagNormal 
+			&& !MuteBlackService::GetInstance()->IsInBlackList(user.GetAccId()))
 		{
 			AddListItem(user, true);
 		}
@@ -480,7 +481,7 @@ void InvokeChatForm::OnSetBlackCallback(const std::string& id, bool black)
 	if (current_user_id == id)
 		return;
 
-	UserInfo user;
+	nim::UserNameCard user;
 	UserService::GetInstance()->GetUserInfo(id, user);
 
 	if (black)

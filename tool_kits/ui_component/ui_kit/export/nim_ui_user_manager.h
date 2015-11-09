@@ -24,11 +24,11 @@ public:
 	void InvokeRegisterAccount(const std::string &username, const std::string &password, const std::string &nickname, const OnRegisterAccountCallback& cb);
 	void InvokeGetAllUserInfo(const OnGetUserInfoCallback& cb);
 	void GetUserInfoWithEffort(const std::list<std::string>& account_list, const OnGetUserInfoCallback& cb);
-	void InvokeUpdateUserInfo(const UserInfo &new_info, const OnUpdateUserInfoCallback& cb);
+	void InvokeUpdateUserInfo(const nim::UserNameCard &new_info, const OnUpdateUserInfoCallback& cb);
 	void InvokeChangeUserPhoto(const std::string &url, const OnUpdateUserInfoCallback& cb);
-	const std::map<std::string, UserInfo>& GetAllUserInfos();
-	bool GetUserInfo(const std::string &account, UserInfo &info);
-	UserType GetUserType(const std::string &id);
+	const std::map<std::string, nim::UserNameCard>& GetAllUserInfos();
+	bool GetUserInfo(const std::string &account, nim::UserNameCard &info);
+	nim::NIMFriendFlag GetUserType(const std::string &id);
 	std::wstring GetUserName(const std::string &id);
 	std::wstring GetUserPhoto(const std::string &icon);
 	std::wstring GetUserPhotoDir();

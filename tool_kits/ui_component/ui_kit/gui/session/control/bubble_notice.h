@@ -13,7 +13,7 @@ class MsgBubbleNotice : public ui::ListContainerElement
 {
 public:
 	void InitControl();
-	void InitInfo(const MsgData &msg);
+	void InitInfo(const nim::IMMessage &msg);
 private:
 
 	/**

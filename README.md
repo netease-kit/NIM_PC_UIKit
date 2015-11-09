@@ -16,7 +16,7 @@
 ## UI组件目录介绍
 
 * `bin`目录：UI组件依赖的DLL、界面图片资源、界面布局配置
-* `third_party`目录：UI组件依赖的第三方库的头文件。
+* `third_party`目录：UI组件依赖的第三方库的头文件
 * `libs`目录：UI组件依赖的第三方库的静态编译文件
 * `tool_kits`目录：UI组件依赖的基础库。
 * `doc`目录：UI组件帮助文档
@@ -30,6 +30,7 @@
 
 * UI组件及其依赖的库有：
 	* base
+	* nim_cpp_sdk（将C接口的sdk封装为C++接口）
 	* db
 	* duilib
 	* net
@@ -285,6 +286,12 @@ void MainForm::InitWindow()
 
 UI组件会自动在适当的时候最近会话列表的顶端位置显示`消息中心按钮`和`多端登录按钮`。单击`消息中心按钮`会打开`消息中心窗口`，其中包含`系统通知消息列表`和`自定义消息通知列表`；单击`多端登录按钮`会打开`多端登录管理窗口`,可以看到其他端是否同时登录了云信，并且可以踢出其他端。
 
+当集成最近会话列表的窗体销毁时，应该解除对`VListBox`控件的依附，解除代码如下：
+
+```
+nim_ui::SessionListManager::GetInstance()->AttachListBox(nullptr);
+```
+
 ### 集成好友列表
 
 好友列表组件位于`ContactsListManager`类中。在您需要集成好友列表的窗口类中，为其对应的XML布局中增加一个`TreeView`控件，在窗口类初始化时获取对应`TreeView`控件的指针，调用`ContactsListManager`类的`AttachFriendListBox`函数，让UI组件依附到您的`TreeView`控件中。之后调用`InvokeGetAllUserInfo`函数来加载好友列表项，示例代码如下：
@@ -302,6 +309,12 @@ void MainForm::InitWindow()
 
 UI组件会自动好友列表的顶端位置显示`添加好友按钮`和`黑名单按钮`。单击`添加好友按钮`会打开`添加好友窗口`，单击`黑名单按钮`会打开`黑名单管理窗口`。
 
+当集成好友列表的窗体销毁时，应该解除对`TreeView`控件的依附，解除代码如下：
+
+```
+nim_ui::ContactsListManager::GetInstance()->AttachFriendListBox(nullptr);
+```
+
 ### 集成群组列表
 
 群组列表组件位于`ContactsListManager`类中。在您需要集成群组列表的窗口类中，为其对应的XML布局中增加一个`TreeView`控件，在窗口类初始化时获取对应`TreeView`控件的指针，调用`ContactsListManager`类的`AttachGroupListBox`函数，让UI组件依附到您的`TreeView`控件中。群组组件会自动加载群列表项，示例代码如下：
@@ -315,6 +328,13 @@ void MainForm::InitWindow()
 ```
 
 UI组件会自动好友列表的顶端位置显示`创建普通群按钮`、`创建高级群按钮`、`搜索高级群按钮`。单击`创建普通群按钮`会打开`创建普通群组窗口`，单击`创建高级群按钮`会打开`创建高级群组窗口`，单击`搜索高级群按钮`会打开`搜索高级群窗口`。
+
+
+当集成群组列表的窗体销毁时，应该解除对`TreeView`控件的依附，解除代码如下：
+
+```
+nim_ui::ContactsListManager::GetInstance()->AttachGroupListBox(nullptr);
+```
 
 ### 集成联系人搜索列表
 

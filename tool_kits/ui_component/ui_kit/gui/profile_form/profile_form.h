@@ -41,20 +41,20 @@ private:
 	bool OnModifyOrCancelBtnClicked(ui::EventArgs* args, bool to_modify); //编辑信息或取消编辑按钮被点击
 	bool OnSaveInfoBtnClicked(ui::EventArgs* args); //保存编辑信息按钮被点击
 
-	void InitUserInfo(const UserInfo & info); //只能使用一次，否则会多次注册回调。
+	void InitUserInfo(const nim::UserNameCard & info); //只能使用一次，否则会多次注册回调。
 	void InitLabels(); //打开名片后，初始化各项信息
 	void InitEdits(); //点击编辑按钮之后，初始化各个下拉框和文本输入框
 	void InitBirthdayCombo(); //初始化生日下拉框
 	void CheckInMuteBlack(); //检查该用户是否在自己的静音列表和黑名单中
 
-	void OnFriendListChange(UserChangeType change_type, const UserInfo& info);
-	void OnUserInfoChange(const std::list<UserInfo> &uinfos);
+	void OnFriendListChange(UserChangeType change_type, const nim::UserNameCard& info);
+	void OnUserInfoChange(const std::list<nim::UserNameCard> &uinfos);
 
 public:
 	static const LPCTSTR kClassName;
 
 private:
-	UserInfo		m_uinfo;
+	nim::UserNameCard		m_uinfo;
 	AutoUnregister	unregister_cb;
 
 private:

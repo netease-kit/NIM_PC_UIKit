@@ -34,28 +34,20 @@ void MsgBubbleAudio::InitControl(bool bubble_right)
 	msg_audio_->AttachMenu(nbase::Bind(&MsgBubbleAudio::OnMenu, this, std::placeholders::_1));
 }
 
-void MsgBubbleAudio::InitInfo(const MsgData &msg)
+void MsgBubbleAudio::InitInfo(const nim::IMMessage &msg)
 {
 	__super::InitInfo(msg);
 
 	SetCanPlay(false);
 	InitTime();
 
-	path_ = msg.local_file_path;
+	path_ = msg.local_res_path_;
 	if( path_.empty() )
 	{
-		Json::Value value;
-		if( StringToJson(msg.msg_attach, value) )
-		{
-			std::string md5 = value[nim::kNIMAudioMsgKeyMd5].asString();
-			std::string dir = nbase::UTF16ToUTF8(GetUserAudioPath());
-			path_  = dir + md5;
-		}
-		else
-		{
-			QLOG_ERR(L"parse audio msg attach fail: {0}") <<msg.msg_attach;
-			return;
-		}
+		nim::IMAudio audio_data;
+		nim::Talk::ParseAudioMessageAttach(msg, audio_data);
+		std::string dir = nbase::UTF16ToUTF8(GetUserAudioPath());
+		path_ = dir + audio_data.md5_;
 	}
 
 	if( shared::FilePathIsExist(path_, false) )
@@ -64,23 +56,23 @@ void MsgBubbleAudio::InitInfo(const MsgData &msg)
 	}
 	else
 	{
-		if(msg_.msg_code == 0) //读取消息历史
+		if(msg_.rescode_ == 0) //读取消息历史
 		{
 			SetLoadStatus(RS_LOADING);
 		}
 		else //接收
 		{
-			if (msg_.msg_code == nim::kNIMResSuccess)
+			if (msg_.rescode_ == nim::kNIMResSuccess)
 				SetLoadStatus(RS_LOADING);
-			else if (msg_.msg_code == nim::kNIMLocalResMsgUrlInvalid)
+			else if (msg_.rescode_ == nim::kNIMLocalResMsgUrlInvalid)
 				SetLoadStatus(RS_LOAD_NO);
-			else if (msg_.msg_code == nim::kNIMLocalResMsgFileExist)
+			else if (msg_.rescode_ == nim::kNIMLocalResMsgFileExist)
 				SetCanPlay(true);
 			else
-				QLOG_WAR(L"unknown receive msg code {0}") <<msg_.msg_code;
+				QLOG_WAR(L"unknown receive msg code {0}") <<msg_.rescode_;
 		}
 	}
-	SetPlayed(msg_.msg_sub_status == nim::kNIMMsgLogSubStatusPlayed);
+	SetPlayed(msg_.sub_status_ == nim::kNIMMsgLogSubStatusPlayed);
 }
 
 bool MsgBubbleAudio::OnClicked( ui::EventArgs* arg )
@@ -90,7 +82,7 @@ bool MsgBubbleAudio::OnClicked( ui::EventArgs* arg )
 	{
 		if(is_playing_)
 		{
-			nim::Audio::StopPlayAudio();
+			nim_audio::Audio::StopPlayAudio();
 		}
 		else
 		{
@@ -101,11 +93,11 @@ bool MsgBubbleAudio::OnClicked( ui::EventArgs* arg )
 			}
 
 			AudioCallback::SetPlaySid(sid_);
-			AudioCallback::SetPlayCid(msg_.client_msg_id);
+			AudioCallback::SetPlayCid(msg_.client_msg_id_);
 
-			nim::Audio::PlayAudio(path_.c_str(), sid_.c_str(), msg_.client_msg_id.c_str());
-			nim::MsgLog::SetSubStatusAsync(msg_.client_msg_id, nim::kNIMMsgLogSubStatusPlayed, nim::MsgLog::SetSubStatusCallback());
-			msg_.msg_sub_status = nim::kNIMMsgLogSubStatusPlayed;
+			nim_audio::Audio::PlayAudio(path_.c_str(), sid_.c_str(), msg_.client_msg_id_.c_str());
+			nim::MsgLog::SetSubStatusAsync(msg_.client_msg_id_, nim::kNIMMsgLogSubStatusPlayed, nim::MsgLog::SetSubStatusCallback());
+			msg_.sub_status_ = nim::kNIMMsgLogSubStatusPlayed;
 			SetPlayed(true);
 		}
 	}
@@ -121,7 +113,7 @@ void MsgBubbleAudio::OnTick()
 void MsgBubbleAudio::InitTime()
 {
 	Json::Value value;
-	if( StringToJson(msg_.msg_attach, value) )
+	if( StringToJson(msg_.attach_, value) )
 	{
 		int t = value[nim::kNIMAudioMsgKeyDuration].asInt();
 		time_ = t / 1000;
@@ -139,7 +131,7 @@ void MsgBubbleAudio::InitTime()
 	}
 	else
 	{
-		QLOG_ERR(L"parse audio msg attach error: {0}") <<msg_.msg_attach;
+		QLOG_ERR(L"parse audio msg attach error: {0}") <<msg_.attach_;
 	}
 }
 
@@ -194,7 +186,7 @@ void MsgBubbleAudio::OnDownloadCallback( bool success )
 
 void MsgBubbleAudio::OnPlayCallback( int code )
 {
-	if (code == nim::kSuccess)
+	if (code == nim::kNIMResSuccess)
 	{
 		DoPlay();
 	}

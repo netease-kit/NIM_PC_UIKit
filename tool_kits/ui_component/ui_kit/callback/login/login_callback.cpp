@@ -7,6 +7,7 @@
 #include "module/service/user_service.h"
 #include "util/user.h"
 #include "shared/xml_util.h"
+#include "nim_cpp_client.h"
 
 namespace nim_comp
 {
@@ -37,7 +38,7 @@ void _LogRobot()
 	nbase::ThreadManager::PostDelayedTask(kThreadGlobalMisc, task, nbase::TimeDelta::FromMinutes(10));
 }
 
-//登陆之后的处理：比如读取数据
+//登录之后的处理：比如读取数据
 void _DoAfterLogin()
 {
 	TeamService::GetInstance()->QueryAllTeamInfo();
@@ -55,7 +56,7 @@ void _DoBeforeAppExit()
 //执行sdk退出函数
 void NimLogout(nim::NIMLogoutType type = nim::kNIMLogoutAppExit)
 {
-	QLOG_APP(L"-----logout begin {0}-----") <<type;
+	QLOG_APP(L"-----logout begin {0}-----") << type;
 	nim::Client::Logout( type, &LoginCallback::OnLogoutCallback );
 }
 
@@ -114,22 +115,22 @@ void LoginCallback::DoLogout(bool over, nim::NIMLogoutType type)
 	}
 }
 
-void LoginCallback::OnLogoutCallback(const std::string& json_params)
+void LoginCallback::OnLogoutCallback(nim::NIMResCode res_code)
 {
-	QLOG_APP(L"OnLogoutCallback: {0}") <<json_params;
+	QLOG_APP(L"OnLogoutCallback: {0}") << res_code;
 	QLOG_APP(L"-----logout end-----");
 	UILogoutCallback();
 }
 
-void LoginCallback::OnKickoutCallback(const std::string& json_params)
+void LoginCallback::OnKickoutCallback(const nim::KickoutRes& res)
 {
-	QLOG_APP(L"OnKickoutCallback: {0}") <<json_params;
+	QLOG_APP(L"OnKickoutCallback: {0} - {1}") << res.client_type_ << res.kick_reason_;
 	DoLogout(true, nim::kNIMLogoutKickout);
 }
 
-void LoginCallback::OnDisconnectCallback(const std::string& json_params)
+void LoginCallback::OnDisconnectCallback()
 {
-	QLOG_APP(L"OnDisconnectCallback: {0}") <<json_params;
+	QLOG_APP(L"OnDisconnectCallback");
 }
 
 
@@ -161,7 +162,8 @@ void LoginCallback::DoLogin( std::string user, std::string pass )
 	{
 		app_key = new_app_key;
 	}
-	nim::Client::Login(app_key, LoginManager::GetInstance()->GetAccount(), LoginManager::GetInstance()->GetPassword(), &LoginCallback::OnLoginCallback, nullptr);
+	auto cb = std::bind(OnLoginCallback, std::placeholders::_1, nullptr);
+	nim::Client::Login(app_key, LoginManager::GetInstance()->GetAccount(), LoginManager::GetInstance()->GetPassword(), cb);
 }
 
 void LoginCallback::ReLogin()
@@ -180,7 +182,7 @@ void LoginCallback::CacelLogin()
 	QLOG_APP(L"-----login cancel begin-----");
 }
 
-void LoginCallback::UILoginCallback(int code, bool relogin)
+void LoginCallback::UILoginCallback(nim::NIMResCode code, bool relogin)
 {
 	if(relogin)
 	{
@@ -191,12 +193,22 @@ void LoginCallback::UILoginCallback(int code, bool relogin)
 			LoginManager::GetInstance()->SetLoginStatus(LoginStatus_SUCCESS);
 			LoginManager::GetInstance()->SetLinkActive(true);
 		}
-		else
+		else if (code == nim::kNIMResTimeoutError || code == nim::kNIMResConnectionError)
 		{
 			LoginManager::GetInstance()->SetLoginStatus(LoginStatus_NONE);
 			LoginManager::GetInstance()->SetLinkActive(false);
 
 			ShowLinkForm();
+		}
+		else
+		{
+			LoginManager::GetInstance()->SetLoginStatus(LoginStatus_NONE);
+
+			QCommand::Set(kCmdRestart, L"true");
+			std::wstring wacc = nbase::UTF8ToUTF16(LoginManager::GetInstance()->GetAccount());
+			QCommand::Set(kCmdAccount, wacc);
+			QCommand::Set(kCmdExitWhy, nbase::IntToString16(code));
+			DoLogout(false, nim::kNIMLogoutChangeAccout);
 		}
 	}
 	else
@@ -231,11 +243,11 @@ void LoginCallback::UILoginCallback(int code, bool relogin)
 		 		std::wstring app_data_audio_path = QPath::GetUserAppDataDir(acc);
 		 		nbase::CreateDirectory(app_data_audio_path);
 		 		std::string res_audio_path = nbase::UTF16ToUTF8(app_data_audio_path);
-		 		bool ret = nim::Audio::Init(res_audio_path);
+		 		bool ret = nim_audio::Audio::Init(res_audio_path);
 		 		assert(ret);
 		 		//audio
-		 		nim::Audio::RegStartPlayCb(&AudioCallback::OnPlayAudioCallback);
-		 		nim::Audio::RegStopPlayCb(&AudioCallback::OnStopAudioCallback);
+		 		nim_audio::Audio::RegStartPlayCb(&AudioCallback::OnPlayAudioCallback);
+		 		nim_audio::Audio::RegStopPlayCb(&AudioCallback::OnStopAudioCallback);
 		 
 		 		_DoAfterLogin();
 		 		// 登录成功，显示主界面
@@ -283,11 +295,11 @@ void LoginCallback::UILoginCallback(int code, bool relogin)
 // 				std::wstring app_data_audio_path = QPath::GetUserAppDataDir(acc);
 // 				nbase::CreateDirectory(app_data_audio_path);
 // 				std::string res_audio_path = nbase::UTF16ToUTF8(app_data_audio_path);
-// 				bool ret = nim::Audio::Init(res_audio_path);
+// 				bool ret = nim_audio::Audio::Init(res_audio_path);
 // 				assert(ret);
 // 				//audio
-// 				nim::Audio::RegStartPlayCb(&AudioCallback::OnPlayAudioCallback);
-// 				nim::Audio::RegStopPlayCb(&AudioCallback::OnStopAudioCallback);
+// 				nim_audio::Audio::RegStartPlayCb(&AudioCallback::OnPlayAudioCallback);
+// 				nim_audio::Audio::RegStopPlayCb(&AudioCallback::OnStopAudioCallback);
 // 
 // 				_DoAfterLogin();
 // 				// 登录成功，显示主界面
@@ -309,102 +321,66 @@ void LoginCallback::UILoginCallback(int code, bool relogin)
 	}
 }
 
-void LoginCallback::OnLoginCallback( const char *json_params, const void* user_data )
+void LoginCallback::OnLoginCallback( const nim::LoginRes& login_res, const void* user_data )
 {
-	QLOG_APP(L"OnLoginCallback: {0}") <<json_params;
+	QLOG_APP(L"OnLoginCallback: {0} - {1}") << login_res.login_step_ << login_res.res_code_;
 
-	Json::Value json;
-	Json::Reader reader;
-	if( reader.parse(json_params, json) )
+	if (login_res.res_code_ == nim::kNIMResSuccess)
 	{
-		int code = json[nim::kNIMErrorCode].asInt();
-		int login_step = json[nim::kNIMLoginStep].asInt();
-		if (code == nim::kNIMResSuccess)
+		if (login_res.login_step_ == nim::kNIMLoginStepLogin)
 		{
-			if (login_step == nim::kNIMLoginStepLogin)
+			Post2UI(nbase::Bind(&UILoginCallback, login_res.res_code_, false));
+			if (!login_res.other_clients_.empty())
 			{
-				Post2UI(nbase::Bind(&UILoginCallback, code, false));
-				if (json[nim::kNIMOtherClientsPres].isArray())
-				{
-					Post2UI(nbase::Bind(LoginCallback::OnMultispotChange, true, json[nim::kNIMOtherClientsPres]));
-				}
+				Post2UI(nbase::Bind(LoginCallback::OnMultispotChange, true, login_res.other_clients_));
 			}
-		}
-		else
-		{
-			Post2UI( nbase::Bind( &UILoginCallback, code, false) );
 		}
 	}
 	else
 	{
-		QLOG_ERR(L"parse login params fail: {0}") <<json_params;
-		Post2UI(nbase::Bind(&UILoginCallback, nim::kNIMResUnknownError, false));
+		Post2UI(nbase::Bind(&UILoginCallback, login_res.res_code_, false));
 	}
 }
 
-void LoginCallback::OnReLoginCallback( const std::string& json_params )
+void LoginCallback::OnReLoginCallback(const nim::LoginRes& login_res)
 {
-	QLOG_APP(L"OnReLoginCallback: {0}") <<json_params;
+	QLOG_APP(L"OnReLoginCallback: {0} - {1}") << login_res.login_step_ << login_res.res_code_;
 
-	Json::Value json;
-	Json::Reader reader;
-	if( reader.parse(json_params, json) )
+	if (login_res.res_code_ == nim::kNIMResSuccess)
 	{
-		int code = json[nim::kNIMErrorCode].asInt();
-		int login_step = json[nim::kNIMLoginStep].asInt();
-		if (code == nim::kNIMResSuccess)
+		if (login_res.login_step_ == nim::kNIMLoginStepLogin)
 		{
-			if (login_step == nim::kNIMLoginStepLogin)
-				UILoginCallback(code, true);
-		}
-		else
-		{
-			UILoginCallback(code, true);
+			Post2UI(nbase::Bind(&UILoginCallback, login_res.res_code_, true));
 		}
 	}
 	else
 	{
-		QLOG_ERR(L"parse relogin params fail: {0}") <<json_params;
-		UILoginCallback(nim::kNIMResUnknownError, true);
+		Post2UI(nbase::Bind(&UILoginCallback, login_res.res_code_, true));
 	}
 }
 
 //多端
-void LoginCallback::OnMultispotLoginCallback(const std::string& json_params)
+void LoginCallback::OnMultispotLoginCallback(const nim::MultiSpotLoginRes& res)
 {
-	QLOG_APP(L"OnMultispotLoginCallback: {0}") << json_params;
-	Json::Value json;
-	Json::Reader reader;
-	if (reader.parse(json_params, json))
-	{
-		bool online = json[nim::kNIMMultiSpotNotiyType].asInt() == nim::kNIMMultiSpotNotiyTypeImIn;
-		if (json[nim::kNIMOtherClientsPres].isArray())
-		{
-			Post2UI(nbase::Bind(LoginCallback::OnMultispotChange, online, json[nim::kNIMOtherClientsPres]));
-		}
-	}
-}
-void LoginCallback::OnMultispotChange(bool online, Json::Value& json)
-{
-	nim_ui::SessionListManager::GetInstance()->OnMultispotChange(online, json);
+	QLOG_APP(L"OnMultispotLoginCallback: {0} - {1}") << res.notiry_type_ << res.other_clients_.size();
+
+	bool online = res.notiry_type_ == nim::kNIMMultiSpotNotiyTypeImIn;
+	if (!res.other_clients_.empty())
+		Post2UI(nbase::Bind(LoginCallback::OnMultispotChange, online, res.other_clients_));
+
 }
 
-void LoginCallback::OnKickoutOtherClientCallback(const std::string& json_params)
+void LoginCallback::OnMultispotChange(bool online, const std::list<nim::OtherClientPres>& clients)
 {
-	Json::Value json;
-	Json::Reader reader;
-	if (reader.parse(json_params, json))
+	nim_ui::SessionListManager::GetInstance()->OnMultispotChange(online, clients);
+}
+
+void LoginCallback::OnKickoutOtherClientCallback(const nim::KickOtherRes& res)
+{
+	bool success = res.res_code_ == nim::kNIMResSuccess;
+	if (success && !res.device_ids_.empty())
 	{
-	 	bool success = json[nim::kNIMKickoutOtherResErrorCode].asInt() == nim::kNIMResSuccess;
-	 	if (success && json[nim::kNIMKickoutOtherResDeviceIDs].isArray())
-	 	{
-	 		std::list<UTF8String> client_ids;
-	 		for (uint32_t i = 0; i < json[nim::kNIMKickoutOtherResDeviceIDs].size(); i++)
-	 		{
-	 			client_ids.push_back(json[nim::kNIMKickoutOtherResDeviceIDs][i].asString());
-	 		}
-			nim_ui::SessionListManager::GetInstance()->OnMultispotKickout(client_ids);
-	 	}
+		nim_ui::SessionListManager::GetInstance()->OnMultispotKickout(res.device_ids_);
 	}
 }
 }

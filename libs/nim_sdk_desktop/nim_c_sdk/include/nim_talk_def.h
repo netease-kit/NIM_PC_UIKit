@@ -89,6 +89,7 @@ static const char *kNIMMsgAttachKeyMd5		= "md5";			/**< string,资源MD5,发送�
 static const char *kNIMMsgAttachKeySize		= "size";			/**< long,资源大小(KB),发送方选填 */
 static const char *kNIMMsgAttachKeyUrl		= "url";			/**< long,资源URL, 发送方不需要填写 */
 static const char *kNIMMsgAttachKeyExt		= "ext";			/**< string,资源扩展名,不包括符号'.',发送方若选填需要保证资源本地路径包含扩展名 */
+static const char *kNIMMsgAttachKeyDisplayName	= "name";		/**< string,用于显示的文件名,发送方选填,默认文件名 */
 /** @}*/ //多媒体资源参数通用键名定义，可替代不同类型多媒体所使用的相同的参数的键名.
 
 /** @name 图片类型多媒体资源参数键名定义
@@ -100,6 +101,7 @@ static const char *kNIMImgMsgKeyWidth	= "w";				/**< int,图片宽度,发送方�
 static const char *kNIMImgMsgKeyHeight	= "h";				/**< int,图片高度,发送方必填 */
 static const char *kNIMImgMsgKeyUrl		= "url";			/**< string,资源URL, 发送方不需要填写 */
 static const char *kNIMImgMsgKeyExt		= "ext";			/**< string,资源扩展名,不包括符号'.',发送方若选填需要保证资源本地路径包含扩展名 */
+static const char *kNIMImgMsgKeyDisplayName	= "name";		/**< string,用于显示的文件名,发送方选填,默认文件名 */
 /** @}*/ //图片类型多媒体资源参数键名定义
 
 /** @name 语音类型多媒体资源参数键名定义
@@ -110,6 +112,7 @@ static const char *kNIMAudioMsgKeySize		= "size";			/**< long,资源大小(KB),�
 static const char *kNIMAudioMsgKeyDuration	= "dur";			/**< int,语音资源时间长度(毫秒),发送方必填 */
 static const char *kNIMAudioMsgKeyUrl		= "url";			/**< string,资源URL, 发送方不需要填写 */
 static const char *kNIMAudioMsgKeyExt		= "ext";			/**< string,资源扩展名,不包括符号'.',发送方若选填需要保证资源本地路径包含扩展名 */
+static const char *kNIMAudioMsgKeyDisplayName	= "name";		/**< string,用于显示的文件名,发送方选填,默认文件名 */
 /** @}*/ //语音类型多媒体资源参数键名定义
 
 /** @name 短视频类型多媒体资源参数键名定义
@@ -117,7 +120,7 @@ static const char *kNIMAudioMsgKeyExt		= "ext";			/**< string,资源扩展名,�
   */
 static const char *kNIMVideoMsgKeyMd5			= "md5";			/**< string,资源MD5,发送方选填 */
 static const char *kNIMVideoMsgKeySize			= "size";			/**< long,资源大小(KB),发送方选填 */
-static const char *kNIMVideoMsgKeyDisplayName	= "name";			/**< string,资源显示名,发送方选填,默认文件名 */
+static const char *kNIMVideoMsgKeyDisplayName	= "name";			/**< string,用于显示的文件名,发送方选填,默认文件名 */
 static const char *kNIMVideoMsgKeyDuration		= "dur";			/**< int,短视频资源时间长度(毫秒),发送方必填 */
 static const char *kNIMVideoMsgKeyWidth			= "w";				/**< int,短视频画面宽度,发送方必填 */
 static const char *kNIMVideoMsgKeyHeight		= "h";				/**< int,短视频画面高度,发送方必填 */
@@ -130,7 +133,7 @@ static const char *kNIMVideoMsgKeyExt			= "ext";			/**< string,资源扩展名,�
 */
 static const char *kNIMFileMsgKeyMd5			= "md5";			/**< string,资源MD5,发送方选填 */
 static const char *kNIMFileMsgKeySize			= "size";			/**< long,资源大小(KB),发送方选填 */
-static const char *kNIMFileMsgKeyDisplayName	= "name";			/**< string,资源显示名,发送方选填,默认文件名 */
+static const char *kNIMFileMsgKeyDisplayName	= "name";			/**< string,用于显示的文件名,发送方选填,默认文件名 */
 static const char *kNIMFileMsgKeyUrl			= "url";			/**< string,资源URL, 发送方不需要填写 */
 static const char *kNIMFileMsgKeyExt			= "ext";			/**< string,资源扩展名,不包括符号'.',发送方若选填需要保证资源本地路径包含扩展名 */
 /** @}*/ //文件类型多媒体资源参数键名定义

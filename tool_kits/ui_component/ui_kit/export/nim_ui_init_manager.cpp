@@ -41,16 +41,17 @@ void InitManager::InitUiKit()
 	//注册返回发送消息结果的回调，和收到消息的回调。
 	nim::Talk::RegSendMsgCb(nbase::Bind(&nim_comp::TalkCallback::OnSendMsgCallback, std::placeholders::_1));
 	nim::Talk::RegReceiveCb(nbase::Bind(&nim_comp::TalkCallback::OnReceiveMsgCallback, std::placeholders::_1));
-	nim::Talk::RegSendCustomSysmsgCb(nbase::Bind(&nim_comp::TalkCallback::OnSendCustomSysmsgCallback, std::placeholders::_1));
+	nim::SystemMsg::RegSendCustomSysmsgCb(nbase::Bind(&nim_comp::TalkCallback::OnSendCustomSysmsgCallback, std::placeholders::_1));
 
 	//注册群事件的回调
-	nim::Team::RegTeamEventCb(nbase::Bind(&nim_comp::TeamCallback::OnTeamEventCallback, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
+	nim::Team::RegTeamEventCb(nbase::Bind(&nim_comp::TeamCallback::OnTeamEventCallback, std::placeholders::_1));
 
-	//注册收到系统消息的回调
+	//注册返回发送自定义消息的结果的回调，和收到系统消息（包括自定义消息）的回调
+	nim::SystemMsg::RegSendCustomSysmsgCb(nbase::Bind(&nim_comp::TalkCallback::OnSendCustomSysmsgCallback, std::placeholders::_1));
 	nim::SystemMsg::RegSysmsgCb(nbase::Bind(&nim_comp::TeamCallback::OnReceiveSysmsgCallback, std::placeholders::_1));
 
-	//注册http下载回调
-	nim::Http::RegDownloadCb(nbase::Bind(&nim_comp::HttpCallback::OnHttpDownloadCallback, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
+	//注册NOS下载回调
+	nim::NOS::RegDownloadCb(nbase::Bind(&nim_comp::HttpCallback::OnHttpDownloadCallback, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
 
 	//注册音视频回调
 	nim::VChat::SetVideoDataCb(true, nim_comp::VChatCallback::VideoCaptureData);
@@ -72,7 +73,7 @@ void InitManager::InitUiKit()
 
 void InitManager::CleanupUiKit()
 {
-	nim::Audio::Cleanup();
+	nim_audio::Audio::Cleanup();
 	nim::VChat::Cleanup();
 	nim::Client::Cleanup();
 

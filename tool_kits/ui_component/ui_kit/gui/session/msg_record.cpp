@@ -6,9 +6,9 @@ namespace nim_comp
 {
 const int kMsgLogNumberShow = 20;
 
-void MsgRecordForm::ShowMsg(const MsgData &msg, bool first, bool show_time)
+void MsgRecordForm::ShowMsg(const nim::IMMessage &msg, bool first, bool show_time)
 {
-	const std::string &bubble_id = msg.client_msg_id;
+	const std::string &bubble_id = msg.client_msg_id_;
 	if(bubble_id.empty())
 	{
 		QLOG_WAR(L"msg id empty");
@@ -24,18 +24,17 @@ void MsgRecordForm::ShowMsg(const MsgData &msg, bool first, bool show_time)
 
 	MsgBubbleItem* item = NULL;
 
-	int type = msg.msg_type;
-	if (type == nim::kNIMMessageTypeText)
+	if (msg.type_ == nim::kNIMMessageTypeText)
 		item = new MsgBubbleText;
-	else if (type == nim::kNIMMessageTypeImage)
+	else if (msg.type_ == nim::kNIMMessageTypeImage)
 		item = new MsgBubbleImage;
-	else if (type == nim::kNIMMessageTypeAudio)
+	else if (msg.type_ == nim::kNIMMessageTypeAudio)
 		item = new MsgBubbleAudio;
-	else if (type == nim::kNIMMessageTypeFile)
+	else if (msg.type_ == nim::kNIMMessageTypeFile)
 		item = new MsgBubbleFile;
-	else if (type == nim::kNIMMessageTypeLocation)
+	else if (msg.type_ == nim::kNIMMessageTypeLocation)
 		item = new MsgBubbleLocation;
-	else if (type == nim::kNIMMessageTypeNotification)
+	else if (msg.type_ == nim::kNIMMessageTypeNotification)
 	{
 		id_bubble_pair_[bubble_id] = NULL;
 
@@ -49,10 +48,10 @@ void MsgRecordForm::ShowMsg(const MsgData &msg, bool first, bool show_time)
 		cell->InitInfo(msg);
 		return;
 	}
-	else if (type == nim::kNIMMessageTypeCustom)
+	else if (msg.type_ == nim::kNIMMessageTypeCustom)
 	{
 		Json::Value json;
-		if (StringToJson(msg.msg_attach, json))
+		if (StringToJson(msg.attach_, json))
 		{
 			int sub_type = json["type"].asInt();
 			if (sub_type == CustomMsgType_Jsb) //finger
@@ -97,7 +96,7 @@ void MsgRecordForm::ShowMsg(const MsgData &msg, bool first, bool show_time)
 
 	if (item == nullptr)
 	{
-		QLOG_WAR(L"unknown msg: cid={0} msg_type={1}") << bubble_id << type;
+		QLOG_WAR(L"unknown msg: cid={0} msg_type={1}") << bubble_id << msg.type_;
 		item = new MsgBubbleUnknown;
 	}
 
@@ -122,20 +121,18 @@ void MsgRecordForm::ShowMsg(const MsgData &msg, bool first, bool show_time)
 	item->SetSessionType(session_type_);
 	item->SetActionMenu(false);
 	item->SetShowTime(show_time);
-	if (bubble_right || msg.to_type == nim::kNIMSessionTypeP2P)
+	if (bubble_right || msg.session_type_ == nim::kNIMSessionTypeP2P)
 		item->SetShowName(false, "");
 	else
-		item->SetShowName(true, msg.from_nick);
+		item->SetShowName(true, msg.readonly_sender_nickname_);
 
 
-	if (type == nim::kNIMMessageTypeAudio)
+	if (msg.type_ == nim::kNIMMessageTypeAudio)
 		item->SetPlayed(true);
 
 	if( item->NeedDownloadResource() )
 	{
-		Json::Value json;
-		MsgToJson(msg, json);
-		nim::Http::FetchMedia(json.toStyledString(), nbase::Bind(&MsgRecordForm::OnDownloadCallback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4), nim::Http::FetchMediaProgressCallback());
+		nim::NOS::FetchMedia(msg, nbase::Bind(&MsgRecordForm::OnDownloadCallback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4), nim::NOS::ProgressCallback());
 	}
 }
 
@@ -173,7 +170,7 @@ void MsgRecordForm::RefreshRecord(std::string id, nim::NIMSessionType type)
 		AudioCallback::SetPlaySid("");
 		AudioCallback::SetPlayCid("");
 
-		nim::Audio::StopPlayAudio();
+		nim_audio::Audio::StopPlayAudio();
 	}
 
 	ShowMore(false);
@@ -187,7 +184,7 @@ void MsgRecordForm::ShowMore(bool more)
 	nim::MsgLog::QueryMsgOnlineAsync(session_id_, session_type_, kMsgLogNumberShow, 0, farst_msg_time_, last_server_id_, false, true, cb);
 }
 
-void MsgRecordForm::ShowMsgs(const std::vector<MsgData> &msg)
+void MsgRecordForm::ShowMsgs(const std::vector<nim::IMMessage> &msg)
 {
 	int pos = msg_list_->GetScrollRange().cy - msg_list_->GetScrollPos().cy;
 
@@ -202,7 +199,7 @@ void MsgRecordForm::ShowMsgs(const std::vector<MsgData> &msg)
 		}
 		else
 		{
-			show_time = CheckIfShowTime(msg[i+1].msg_time, msg[i].msg_time);
+			show_time = CheckIfShowTime(msg[i+1].timetag_, msg[i].timetag_);
 		}
 		ShowMsg(msg[i], true, show_time);
 	}
@@ -214,7 +211,7 @@ void MsgRecordForm::ShowMsgs(const std::vector<MsgData> &msg)
 		msg_list_->EndDown(true, false);
 
 		if(len > 0 && last_msg_time_ == 0)
-			last_msg_time_ = msg[0].msg_time;
+			last_msg_time_ = msg[0].timetag_;
 	}
 	else
 	{
@@ -227,12 +224,12 @@ void MsgRecordForm::ShowMsgs(const std::vector<MsgData> &msg)
 	//修正最远时间
 	if(len > 0)
 	{
-		farst_msg_time_ = msg[len-1].msg_time;
-		last_server_id_ = msg[len-1].server_msg_id;
+		farst_msg_time_ = msg[len-1].timetag_;
+		last_server_id_ = msg[len-1].readonly_server_id_;
 	}
 }
 
-void MsgRecordForm::QueryMsgOnlineCb(nim::NIMResCode code, const std::string& id, nim::NIMSessionType type, const std::string& result)
+void MsgRecordForm::QueryMsgOnlineCb(nim::NIMResCode code, const std::string& id, nim::NIMSessionType type, const nim::QueryMsglogResult& result)
 {
 	QLOG_APP(L"query online msg end: code={0} id={1} type={2}") <<code <<id <<type;
 
@@ -244,26 +241,17 @@ void MsgRecordForm::QueryMsgOnlineCb(nim::NIMResCode code, const std::string& id
 
 	if (code == nim::kNIMResSuccess)
 	{
-		Json::Value json;
-		if (StringToJson(result, json))
+		std::vector<nim::IMMessage> vec;
+		for (auto& msg : result.msglogs_)
 		{
-			std::vector<MsgData> vec;
+			vec.push_back(msg);
+		}
+		ShowMsgs(vec);
 
-			Json::Value& msg = json[nim::kNIMMsglogQueryKeyContent];
-			for (size_t i = 0; i < msg.size(); i++)
-			{
-				MsgData md;
-				JsonToMsg(msg[i], md);
-				vec.push_back(md);
-			}
-
-			ShowMsgs(vec);
-
-			if (vec.size() < kMsgLogNumberShow)
-			{
-				has_more_ = false;
-				return;
-			}
+		if (vec.size() < kMsgLogNumberShow)
+		{
+			has_more_ = false;
+			return;
 		}
 	}
 }
@@ -292,7 +280,7 @@ void MsgRecordForm::OnPlayAudioCallback( const std::string &cid, int code )
 			item->OnPlayCallback(code);
 		}
 	}
-	if (code != nim::kSuccess)
+	if (code != nim::kNIMResSuccess)
 	{
 		std::wstring tip = nbase::StringPrintf(L"语音播放失败，错误码：%d", code);
 		ShowMsgBox(m_hWnd, tip, MsgboxCallback(), L"提示", L"确定", L"");

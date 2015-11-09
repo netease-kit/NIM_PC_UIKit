@@ -39,14 +39,15 @@ SessionList::~SessionList()
 
 }
 
-int SessionList::AdjustMsg(const SessionMsgData &msg)
+int SessionList::AdjustMsg(const nim::SessionData &msg)
 {
-	for (int i = 0; i < session_list_->GetCount(); i++)
+	int count = session_list_->GetCount();
+	for (int i = 0; i < count; i++)
 	{
 		SessionItem* item = dynamic_cast<SessionItem*>(session_list_->GetItemAt(i));
 		if (item)
 		{
-			if (msg.msg_time > item->GetMsgTime())
+			if (msg.msg_timetag_ > item->GetMsgTime())
 				return i;
 		}
 
@@ -54,27 +55,26 @@ int SessionList::AdjustMsg(const SessionMsgData &msg)
 	return -1;
 }
 
-SessionItem* SessionList::AddSessionItem(const SessionMsgData &item_data)
+SessionItem* SessionList::AddSessionItem(const nim::SessionData &item_data)
 {
-	std::string id = item_data.session_id;
+	std::string id = item_data.id_;
 	auto control = session_list_->FindSubControl(nbase::UTF8ToUTF16(id));
 	if (control)
 	{
 		session_list_->Remove(control);
 	}
-	int index = AdjustMsg(item_data);
 
 	SessionItem* item = new SessionItem;
 	GlobalManager::FillBoxWithCache(item, L"main/session_item.xml");
+	item->Init(item_data);
+	item->AttachAllEvents(nbase::Bind(&SessionList::OnItemNotify, this, std::placeholders::_1));
+
+	int index = AdjustMsg(item_data);
 	if (index >= 0)
 		session_list_->AddAt(item, index);
 	else
 		session_list_->Add(item);
 
-	item->Init(item_data);
-
-	item->AttachAllEvents(nbase::Bind(&SessionList::OnItemNotify, this, std::placeholders::_1));
-	
 	return item;
 }
 
@@ -145,9 +145,9 @@ void SessionList::UICustomSysmsgUnread(bool add)
 	}
 }
 
-void SessionList::UpdateSessionInfo(const UserInfo& user_info)
+void SessionList::UpdateSessionInfo(const nim::UserNameCard& user_info)
 {
-	SessionItem* session_item = (SessionItem*)session_list_->FindSubControl(nbase::UTF8ToUTF16(user_info.account));
+	SessionItem* session_item = (SessionItem*)session_list_->FindSubControl(nbase::UTF8ToUTF16(user_info.GetAccId()));
 	if (session_item != NULL)
 		session_item->UpdateInfo();
 }
@@ -158,32 +158,22 @@ void SessionList::DeleteSessionItem(SessionItem* item)
 	session_list_->Remove(item);
 }
 
-//多端登陆
+//多端登录
 //[{"app_account":"abc","client_os":"***","client_type":1,"device_id":"***","mac":"***"}]
-void SessionList::OnMultispotChange(bool online, Json::Value& json)
+void SessionList::OnMultispotChange(bool online, const std::list<nim::OtherClientPres>& clients)
 {
-	if (json.isArray())
+	for each (auto client in clients)
 	{
-		int len = json.size();
-		for (int i = 0; i < len; i++)
+		if (online)
+		{ 
+			map_multispot_infos_[client.client_type_] = client;
+		}
+		else
 		{
-			MultispotInfo info;
-			info.client_type_ = json[i][nim::kNIMPresClientType].asInt();
-			info.client_os_ = json[i][nim::kNIMPresOS].asString();
-			info.device_id_ = json[i][nim::kNIMPresDeviceID].asString();
-			info.mac_ = json[i][nim::kNIMPresMac].asString();
-			info.login_time_ = json[i][nim::kNIMPresLoginTime].asInt64();
-			if (online)
+			auto it = map_multispot_infos_.find(client.client_type_);
+			if (it != map_multispot_infos_.end())
 			{
-				map_multispot_infos_[info.client_type_] = info;
-			}
-			else
-			{
-				auto it = map_multispot_infos_.find(info.client_type_);
-				if (it != map_multispot_infos_.end())
-				{
-					map_multispot_infos_.erase(it);
-				}
+				map_multispot_infos_.erase(it);
 			}
 		}
 	}
@@ -213,7 +203,7 @@ void SessionList::ShowMultispotUI()
 	{
 		if (map_multispot_infos_.size() > 0)
 		{
-			//std::wstring show_tip = L"登陆帐号设备";
+			//std::wstring show_tip = L"登录帐号设备";
 			//for (auto& it : map_multispot_infos_)
 			//{
 			//	show_tip.append(L"\r\n");
@@ -244,33 +234,18 @@ void SessionList::ShowMultispotUI()
 	}
 }
 
-void SessionList::OnChangeCallback(nim::NIMResCode rescode, const std::string& result, int total_unread_counts)
+void SessionList::OnChangeCallback(nim::NIMResCode rescode, const nim::SessionData& data, int total_unread_counts)
 {
-	Json::Value value;
-	Json::Reader reader;
-	if (reader.parse(result, value))
-	{
-		nim::NIMSessionCommand command = nim::NIMSessionCommand(value[nim::kNIMSessionCommand].asInt());
-		switch (command)
+		switch (data.command_)
 		{
 		case nim::kNIMSessionCommandAdd:
 		case nim::kNIMSessionCommandUpdate:
 		case nim::kNIMSessionCommandMsgDeleted:
 		{
-			SessionMsgData data;
-			data.session_id = value[nim::kNIMSessionId].asString();
-			data.from_account = value[nim::kNIMSessionMsgFromAccount].asString();
-			data.to_type = value[nim::kNIMSessionType].asString() == "0" ? nim::kNIMSessionTypeP2P : nim::kNIMSessionTypeTeam;
-			data.msg_body = value[nim::kNIMSessionMsgBody].asString();
-			data.msg_attach = value[nim::kNIMSessionMsgAttach].asString();
-			data.msg_type = value[nim::kNIMSessionMsgType].asInt();
-			data.msg_time = value[nim::kNIMSessionMsgTime].asInt64();
-			data.unread_count = value[nim::kNIMSessionUnreadCount].asInt();
-			data.msg_status = value[nim::kNIMSessionMsgStatus].asInt();
 			AddSessionItem(data);
-			if (SessionManager::GetInstance()->IsSessionWndActive(data.session_id))
+			if (SessionManager::GetInstance()->IsSessionWndActive(data.id_))
 			{
-				ResetSessionUnread(data.session_id);
+				ResetSessionUnread(data.id_);
 			}
 		}
 		break;
@@ -283,7 +258,7 @@ void SessionList::OnChangeCallback(nim::NIMResCode rescode, const std::string& r
 			for (int i = session_list_->GetCount() - 1; i >= 0; i--)
 			{
 				SessionItem* item = dynamic_cast<SessionItem*>(session_list_->GetItemAt(i));
-				if (item && (item->GetIsTeam() == (command == nim::kNIMSessionCommandRemoveAllTeam)))
+				if (item && (item->GetIsTeam() == (data.command_ == nim::kNIMSessionCommandRemoveAllTeam)))
 				{
 					session_list_->RemoveAt(i);
 				}
@@ -301,7 +276,7 @@ void SessionList::OnChangeCallback(nim::NIMResCode rescode, const std::string& r
 				SessionItem* item = dynamic_cast<SessionItem*>(session_list_->GetItemAt(i));
 				if (item)
 				{
-					if (command == nim::kNIMSessionCommandAllMsgDeleted || (item->GetIsTeam() == (command == nim::kNIMSessionCommandAllTeamMsgDeleted)))
+					if (data.command_ == nim::kNIMSessionCommandAllMsgDeleted || (item->GetIsTeam() == (data.command_ == nim::kNIMSessionCommandAllTeamMsgDeleted)))
 					{
 						item->ClearMsg();
 					}
@@ -309,11 +284,10 @@ void SessionList::OnChangeCallback(nim::NIMResCode rescode, const std::string& r
 			}
 		}
 		break;
-		}
 	}
 }
 
-void SessionList::OnUserInfoChange(const std::list<UserInfo>& uinfos)
+void SessionList::OnUserInfoChange(const std::list<nim::UserNameCard>& uinfos)
 {
 	for (auto iter = uinfos.cbegin(); iter != uinfos.cend(); iter++)
 		UpdateSessionInfo(*iter);

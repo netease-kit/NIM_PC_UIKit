@@ -200,7 +200,7 @@ void HeadModifyForm::InitWindow()
 	// 判断是否加载本次软件运行上次保存的头像图片
 	load_global_last_image_ = false;
 
-	// 预览图显示当前账号头像
+	// 预览图显示当前帐号头像
 	LoadCurrentHeadImageForPreview();
 	ShowPreviewWhileLoading();
 	local_upload_btn_->SetVisible();
@@ -897,7 +897,7 @@ void HeadModifyForm::NotifyHeadModify(std::wstring new_head_image_path, const st
 	// 首先上传头像，返回URL
 	UTF8String file_path = nbase::UTF16ToUTF8(new_head_image_path);
 	auto cb = nbase::Bind(&HeadModifyForm::OnUploadHeadIconCallback, this, std::placeholders::_1, std::placeholders::_2);
-	nim::Http::UploadResource(file_path, cb);
+	nim::NOS::UploadResource(file_path, cb);
 }
 
 void HeadModifyForm::OnUploadHeadIconCallback(nim::NIMResCode res_code, const std::string& url)
@@ -1022,13 +1022,13 @@ void HeadModifyForm::OnButtonCloseTipCallback( MsgBoxRet ret )
 	}
 }
 
-// 加载当前账号头像为预览图
+// 加载当前帐号头像为预览图
 void HeadModifyForm::LoadCurrentHeadImageForPreview()
 {
-	UserInfo info;
+	nim::UserNameCard info;
 	UserService* user_service = UserService::GetInstance();
 	user_service->GetUserInfo(uid_, info);
-	UTF8String img_path = nbase::UTF16ToUTF8(user_service->GetUserPhoto(info.account));
+	UTF8String img_path = nbase::UTF16ToUTF8(user_service->GetUserPhoto(info.GetAccId()));
 	if(!img_path.empty())
 	{
 		if(shared::FilePathIsExist(img_path, false))

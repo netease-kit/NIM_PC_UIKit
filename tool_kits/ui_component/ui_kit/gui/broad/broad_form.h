@@ -23,7 +23,7 @@ public:
 
 	void SetTid(const std::string &tid);
 
-	void OnUpdateBroadCb(int rescode, int notification_id, const std::string& tid, const std::string& result);
+	void OnUpdateBroadCb(const nim::TeamEvent& team_event);
 private:
 	bool Notify(ui::EventArgs* arg);
 	bool OnClicked(ui::EventArgs* arg);

@@ -67,6 +67,27 @@ LRESULT TeamSearchForm::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 			}
 		}
 	}
+	else if (uMsg == WM_KEYDOWN && wParam == VK_RETURN)
+	{
+		if (tsp_[TSP_SEARCH]->IsVisible())
+		{
+			if (btn_search_->IsEnabled())
+				SendNotify(btn_search_, kEventClick);
+			else
+				re_tid_->SetFocus();
+		}
+		else if (tsp_[TSP_APPLY]->IsVisible())
+		{
+			if (btn_apply_->IsEnabled())
+				SendNotify(btn_apply_, kEventClick);
+			else
+				SendNotify(FindControl(L"btn_return_search"), kEventClick);
+		}
+		else if (tsp_[TSP_APPLY_OK]->IsVisible())
+		{
+			SendNotify(FindControl(L"btn_apply_ok"), kEventClick);
+		}
+	}
 	return __super::HandleMessage(uMsg, wParam, lParam);
 }
 
@@ -99,56 +120,48 @@ void TeamSearchForm::InitWindow()
 
 void TeamSearchForm::GotoPage( TeamSearchPage page )
 {
-	if(page == TSP_SEARCH)
-	{
-		tid_.clear();
-		re_tid_->SetText(L"");
-		btn_search_->SetEnabled(true);
-	}
-
 	for(int i = 0; i < TSP_COUNT; i++)
 	{
 		tsp_[i]->SetVisible(false);
 	}
 	tsp_[page]->SetVisible(true);
+
+	if (page == TSP_SEARCH)
+	{
+		tid_.clear();
+		re_tid_->SetText(L"");
+		re_tid_->SetFocus();
+		btn_search_->SetEnabled(true);
+	}
 }
 
-void TeamSearchForm::ShowTeamInfo(const std::string &info)
+void TeamSearchForm::ShowTeamInfo(const nim::TeamEvent& team_event)
 {
 	team_icon_->SetBkImage( TeamService::GetInstance()->GetTeamPhoto(false) );
 
-	Json::Value json;
-	if( StringToJson(info, json) )
+	team_id_->SetUTF8Text(team_event.team_id_);
+
+	std::string name = team_event.team_info_.GetName();
+	if (name.empty())
 	{
-		team_id_->SetUTF8Text(tid_);
-
-		const Json::Value &tinfo = json[nim::kNIMNotificationKeyData][nim::kNIMNotificationGetTeamInfoKey];
-		std::string name = tinfo[nim::kNIMTeamInfoKeyName].asString();
-		if( name.empty() )
-		{
-			tname_ = nbase::UTF8ToUTF16(tid_);
-		}
-		else
-		{
-			tname_ = nbase::UTF8ToUTF16(name);
-			team_name_->SetText(tname_);
-		}
-
-		nim::NIMTeamType type = (nim::NIMTeamType)tinfo[nim::kNIMTeamInfoKeyType].asInt();
-		if (type == nim::kNIMTeamTypeNormal)
-		{
-			label_group_->SetVisible(true);
-			btn_apply_->SetEnabled(false);
-		}
-		else
-		{
-			label_group_->SetVisible(false);
-			btn_apply_->SetEnabled(true);
-		}
+		tname_ = nbase::UTF8ToUTF16(team_event.team_id_);
 	}
 	else
 	{
+		tname_ = nbase::UTF8ToUTF16(name);
+		team_name_->SetText(tname_);
+	}
+
+	nim::NIMTeamType type = team_event.team_info_.GetType();
+	if (type == nim::kNIMTeamTypeNormal)
+	{
+		label_group_->SetVisible(true);
 		btn_apply_->SetEnabled(false);
+	}
+	else
+	{
+		label_group_->SetVisible(false);
+		btn_apply_->SetEnabled(true);
 	}
 }
 
@@ -188,7 +201,7 @@ bool TeamSearchForm::OnClicked( ui::EventArgs* arg )
 		tid_ = tid;
 		btn_search_->SetEnabled(false);
 
-		nim::Team::QueryTeamInfoOnlineAsync(tid_, nbase::Bind(&TeamSearchForm::OnGetTeamInfoCb, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
+		nim::Team::QueryTeamInfoOnlineAsync(tid_, nbase::Bind(&TeamSearchForm::OnGetTeamInfoCb, this, std::placeholders::_1));
 	}
 	else if(name == L"btn_return_search")
 	{
@@ -199,7 +212,7 @@ bool TeamSearchForm::OnClicked( ui::EventArgs* arg )
 	}
 	else if(name == L"btn_apply")
 	{
-		nim::Team::ApplyJoinAsync(tid_, "", nbase::Bind(&TeamSearchForm::OnApplyJoinCb, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
+		nim::Team::ApplyJoinAsync(tid_, "", nbase::Bind(&TeamSearchForm::OnApplyJoinCb, this, std::placeholders::_1));
 
 		GotoPage(TSP_APPLY_OK);
 	}
@@ -210,13 +223,13 @@ bool TeamSearchForm::OnClicked( ui::EventArgs* arg )
 	return false;
 }
 
-void TeamSearchForm::OnGetTeamInfoCb(nim::NIMResCode res_code, nim::NIMNotificationId notification_id, const std::string& tid, const std::string& result)
+void TeamSearchForm::OnGetTeamInfoCb(const nim::TeamEvent& team_event)
 {
-	QLOG_APP(L"search team: {0}") <<result;
+	QLOG_APP(L"search team: {0}") << team_event.res_code_;
 	
-	if (res_code == 200)
+	if (team_event.res_code_ == 200)
 	{
-		ShowTeamInfo(result);
+		ShowTeamInfo(team_event);
 		GotoPage(TSP_APPLY);
 	}
 	else
@@ -226,11 +239,11 @@ void TeamSearchForm::OnGetTeamInfoCb(nim::NIMResCode res_code, nim::NIMNotificat
 	}
 }
 
-void TeamSearchForm::OnApplyJoinCb(nim::NIMResCode res_code, nim::NIMNotificationId notification_id, const std::string& tid, const std::string& result)
+void TeamSearchForm::OnApplyJoinCb(const nim::TeamEvent& team_event)
 {
-	QLOG_APP(L"apply join: {0}") <<result;
+	QLOG_APP(L"apply join: {0}") << team_event.res_code_;
 	
-	switch (res_code)
+	switch (team_event.res_code_)
 	{
 	case nim::kNIMResTeamAlreadyIn:
 	{
@@ -239,7 +252,7 @@ void TeamSearchForm::OnApplyJoinCb(nim::NIMResCode res_code, nim::NIMNotificatio
 	break;
 	case nim::kNIMResSuccess:
 	{
-		nbase::ThreadManager::PostTask(kThreadUI, nbase::Bind(TeamCallback::OnTeamEventCallback, nim::kNIMResSuccess, nim::kNIMNotificationIdLocalApplyTeam, tid, result));
+		nbase::ThreadManager::PostTask(kThreadUI, nbase::Bind(TeamCallback::OnTeamEventCallback, team_event));
 		re_apply_->SetText(nbase::StringPrintf(L"群 %s 管理员同意了你的加群请求", tname_.c_str()));
 	}
 	break;

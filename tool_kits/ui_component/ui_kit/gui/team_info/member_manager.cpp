@@ -4,6 +4,7 @@
 #include "callback/team/team_callback.h"
 #include "shared/tool.h"
 #include "gui/invoke_chat_form/invoke_chat_form.h"
+#include "shared/ui/msgbox.h"
 #include "module/login/login_manager.h"
 #include "module/service/user_service.h"
 #include "module/service/team_service.h"
@@ -56,12 +57,12 @@ UINT MemberManagerForm::GetClassStyle() const
 void MemberManagerForm::InitWindow()
 {
 	FindControl(L"privilege_panel")->SetVisible(show_privilege_panel_);
-	UserInfo user_info;
+	nim::UserNameCard user_info;
 	UserService::GetInstance()->GetUserInfo(user_id_, user_info);
 	Button* head_image_button = (Button*)FindControl(L"head_image");
-	head_image_button->SetBkImage(UserService::GetInstance()->GetUserPhoto(user_info.account));
+	head_image_button->SetBkImage(UserService::GetInstance()->GetUserPhoto(user_info.GetAccId()));
 	Label* show_name_label = (Label*)FindControl(L"show_name");
-	show_name_label->SetUTF8Text(user_info.name);
+	show_name_label->SetUTF8Text(user_info.GetName());
 	re_team_card_ = (ui::RichEdit*)FindControl(L"team_card");
 	ui::Button* btn_confirm = (ui::Button*)FindControl(L"confirm");
 	btn_confirm->AttachClick(nbase::Bind(&MemberManagerForm::OnBtnConfirmClick, this, std::placeholders::_1));
@@ -75,13 +76,13 @@ void MemberManagerForm::InitWindow()
 	unregister_cb.Add(UserService::GetInstance()->RegUserPhotoReady(cb));
 }
 
-void MemberManagerForm::OnQueryTeamMembers(const std::string& tid, int member_count, const std::list<nim::TeamMemberInfo>& team_member_info_list)
+void MemberManagerForm::OnQueryTeamMembers(const std::string& tid, int member_count, const std::list<nim::TeamMemberProperty>& team_member_info_list)
 {
 	for (auto& team_member_info : team_member_info_list)
 	{
-		if (user_id_ == team_member_info.account)
+		if (user_id_ == team_member_info.GetAccountID())
 		{
-			user_type_ = team_member_info.type;
+			user_type_ = team_member_info.GetUserType();
 			if (user_type_ == nim::kNIMTeamUserTypeCreator)
 			{
 				((Option*)FindControl(L"owner"))->Selected(true);
@@ -95,7 +96,7 @@ void MemberManagerForm::OnQueryTeamMembers(const std::string& tid, int member_co
 				((Option*)FindControl(L"member"))->Selected(true);
 			}
 
-			std::string team_card = team_member_info.nick;
+			std::string team_card = team_member_info.GetNick();
 			re_team_card_->SetUTF8Text(team_card);
 			team_card_ = team_card;
 
@@ -104,13 +105,13 @@ void MemberManagerForm::OnQueryTeamMembers(const std::string& tid, int member_co
 	}
 }
 
-static void OnTeamEventCallback(const std::string& uid, const std::string& team_card, nim::NIMResCode code, nim::NIMNotificationId notify_id, const std::string &tid, const std::string &info)
+static void OnTeamEventCallback(const std::string& uid, const std::string& team_card, const nim::TeamEvent& team_event)
 {
-	if (code == nim::kNIMResSuccess)
+	if (team_event.res_code_ == nim::kNIMResSuccess)
 	{
-		if (notify_id == nim::kNIMNotificationIdLocalUpdateOtherNick || notify_id == nim::kNIMNotificationIdLocalUpdateTlist)
+		if (team_event.notification_id_ == nim::kNIMNotificationIdLocalUpdateOtherNick || team_event.notification_id_ == nim::kNIMNotificationIdLocalUpdateTlist)
 		{
-			TeamService::GetInstance()->InvokeChangeTeamMember(tid, uid, team_card);
+			TeamService::GetInstance()->InvokeChangeTeamMember(team_event.team_id_, uid, team_card);
 		}
 	}
 }
@@ -119,37 +120,39 @@ bool MemberManagerForm::OnBtnConfirmClick(ui::EventArgs* param)
 {
 	if (((Option*)FindControl(L"owner"))->IsSelected())
 	{
-		nim::Team::TransferTeamAsync(tid_, user_id_, false, nbase::Bind(&TeamCallback::OnTeamEventCallback, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
+		nim::Team::TransferTeamAsync(tid_, user_id_, false, nbase::Bind(&TeamCallback::OnTeamEventCallback, std::placeholders::_1));
 	}
 	else if (((Option*)FindControl(L"manager"))->IsSelected() && user_type_ != nim::kNIMTeamUserTypeManager)
 	{
 		std::list<std::string> uids_list;
 		uids_list.push_back(user_id_);
-		nim::Team::AddManagersAsync(tid_, uids_list, nbase::Bind(&TeamCallback::OnTeamEventCallback, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
+		nim::Team::AddManagersAsync(tid_, uids_list, nbase::Bind(&TeamCallback::OnTeamEventCallback, std::placeholders::_1));
 	}
 	else if (((Option*)FindControl(L"member"))->IsSelected() && user_type_ != nim::kNIMTeamUserTypeNomal)
 	{
 		std::list<std::string> uids_list;
 		uids_list.push_back(user_id_);
-		nim::Team::RemoveManagersAsync(tid_, uids_list, nbase::Bind(&TeamCallback::OnTeamEventCallback, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
+		nim::Team::RemoveManagersAsync(tid_, uids_list, nbase::Bind(&TeamCallback::OnTeamEventCallback, std::placeholders::_1));
 	}
 	
-	std::string new_team_card = re_team_card_->GetUTF8Text();
+	std::string new_team_card = nbase::StringTrim(re_team_card_->GetUTF8Text());
+	if (!team_card_.empty() && new_team_card.empty())
+	{
+		MsgboxCallback cb = ToWeakCallback([this](MsgBoxRet ret) {
+			this->ActiveWindow();
+		});
+		ShowMsgBox(m_hWnd, L"群昵称不能为空", ToWeakCallback(cb), L"提示", L"确定", L"");
+		return true;
+	}
+
 	if (new_team_card != team_card_)
 	{
-		if (user_id_ != LoginManager::GetInstance()->GetAccount()) {
-			Json::Value values;
-			values[nim::kNIMTeamUserKeyID] = tid_;
-			values[nim::kNIMTeamUserKeyNick] = new_team_card;
-			values[nim::kNIMTeamUserKeyAccID] = user_id_;
-			nim::Team::UpdateOtherNickAsync(values.toStyledString(), nbase::Bind(&OnTeamEventCallback, user_id_, new_team_card, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
-		}
-		else {
-			Json::Value values;
-			values[nim::kNIMTeamUserKeyID] = tid_;
-			values[nim::kNIMTeamUserKeyNick] = new_team_card;
-			nim::Team::UpdateMyPropertyAsync(values.toStyledString(), nbase::Bind(&OnTeamEventCallback, user_id_, new_team_card, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
-		}
+		nim::TeamMemberProperty values(tid_, user_id_);
+		values.SetNick(new_team_card);
+		if (user_id_ != LoginManager::GetInstance()->GetAccount()) 
+			nim::Team::UpdateOtherNickAsync(values, nbase::Bind(&OnTeamEventCallback, user_id_, new_team_card, std::placeholders::_1));
+		else 
+			nim::Team::UpdateMyPropertyAsync(values, nbase::Bind(&OnTeamEventCallback, user_id_, new_team_card, std::placeholders::_1));
 	}
 
 	Close();

@@ -24,8 +24,8 @@ public:
 private:
 	bool OnRemoveBtnClicked(ui::EventArgs *args); // µã»÷¡°½â³ý¡±°´Å¥
 	void OnSetBlackCallback(const std::string& id, bool black);
-	void RestoreUserInfo(const UserInfo &info);
-	void AddBlackListMember(const UserInfo &info);
+	void RestoreUserInfo(const nim::UserNameCard &info);
+	void AddBlackListMember(const nim::UserNameCard &info);
 
 public:
 	static const LPCTSTR kClassName;

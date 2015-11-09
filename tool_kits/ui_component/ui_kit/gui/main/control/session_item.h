@@ -22,7 +22,7 @@ class SessionItem : public ui::ListContainerElement
 public:
 	SessionItem();
 	virtual ~SessionItem();
-	virtual void Init(const SessionMsgData &msg);
+	virtual void Init(const nim::SessionData &msg);
 
 	bool Match(const UTF8String& search_key)
 	{
@@ -52,7 +52,7 @@ public:
 	* @param[in] msg 消息内容和信息
 	* @return void	无返回值
 	*/
-	void UpdateMsg(const SessionMsgData &msg);
+	void UpdateMsg(const nim::SessionData &msg);
 	void ClearMsg();
 	long long GetMsgTime();
 	
@@ -62,8 +62,8 @@ public:
 	void AddUnread();
 	void ResetUnread();
 
-	static void DeleteRecentSessionCb(nim::NIMResCode code, const std::string &result, int total_unread_counts);
-	static void BatchStatusDeleteCb(nim::NIMResCode code, const std::string& id, nim::NIMSessionType type);
+	static void DeleteRecentSessionCb(nim::NIMResCode code, const nim::SessionData &result, int total_unread_counts);
+	static void BatchStatusDeleteCb(nim::NIMResCode res_code, const std::string& uid, nim::NIMSessionType to_type);
 private:
 	void UpdateUnread();
 	void PopupSessionItemMenu(POINT point);

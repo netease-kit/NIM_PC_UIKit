@@ -110,29 +110,26 @@ bool CustomMsgForm::OnClicked(ui::EventArgs* param)
 		Json::Value json;
 		json["id"] = "2";
 		json["content"] = attach_text;
-		MsgData msg;
-		msg.to_type = session_type_;
-		msg.to_account = session_id_;
-		msg.from_account = LoginManager::GetInstance()->GetAccount();
-		msg.resend_flag = 0;
-		msg.custom_save_flag = msg_mode_->IsSelected()?0:1;
-		msg.msg_status = nim::kNIMMsgLogStatusSending;
-		msg.msg_attach = json.toStyledString();
+		nim::SysMessage msg;
+		msg.receiver_accid_ = session_id_;
+		msg.sender_accid_ = LoginManager::GetInstance()->GetAccount();
+		msg.support_offline_ = msg_mode_->IsSelected()?0:1;
+		msg.attach_ = json.toStyledString();
 		if (richedit_msg_)
 		{
-			msg.msg_body = GetRichText(richedit_msg_);
+			msg.content_ = GetRichText(richedit_msg_);
 			richedit_msg_->SetText(L"");
 		}
 		if (richedit_apns_)
 		{
-			msg.custom_apns_text = GetRichText(richedit_apns_);
+			msg.apns_text_ = GetRichText(richedit_apns_);
 			richedit_apns_->SetText(L"");
 		}
-		msg.msg_type = session_type_ == nim::kNIMSessionTypeTeam ? nim::kNIMSysMsgTypeCustomTeamMsg : nim::kNIMSysMsgTypeCustomP2PMsg;
-		Json::Value value;
-		CustomSysMsgToJson(msg, value);
+		msg.type_ = session_type_ == nim::kNIMSessionTypeTeam ? nim::kNIMSysMsgTypeCustomTeamMsg : nim::kNIMSysMsgTypeCustomP2PMsg;
+		msg.client_msg_id_ = QString::GetGUID();
+		msg.timetag_ = 1000 * nbase::Time::Now().ToTimeT();
 
-		nim::Talk::SendCustomSysmsg(value.toStyledString());
+		nim::SystemMsg::SendCustomNotificationMsg(msg.ToJsonString());
 	}
 	return true;
 }

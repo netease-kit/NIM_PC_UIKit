@@ -16,8 +16,8 @@ public:
 	SessionList(ui::ListBox* session_list);
 	~SessionList();
 
-	int AdjustMsg(const SessionMsgData &msg); //按每个会话最后一条消息的时间排序
-	SessionItem* AddSessionItem(const SessionMsgData &msg);
+	int AdjustMsg(const nim::SessionData &msg); //按每个会话最后一条消息的时间排序
+	SessionItem* AddSessionItem(const nim::SessionData &msg);
 	void RemoveAllSessionItem();
 
 	void AddUnreadCount(const std::string &id);
@@ -26,11 +26,11 @@ public:
 	void UISysmsgUnread(int count);
 	void UICustomSysmsgUnread(bool add);
 
-	void UpdateSessionInfo(const UserInfo& user_info);
+	void UpdateSessionInfo(const nim::UserNameCard& user_info);
 	void DeleteSessionItem(SessionItem* item);
 
-	//多端登陆
-	void OnMultispotChange(bool online, Json::Value& json);
+	//多端登录
+	void OnMultispotChange(bool online, const std::list<nim::OtherClientPres>& clients);
 	void OnMultispotKickout(const std::list<std::string> &client_ids);
 	void ShowMultispotUI();
 
@@ -41,9 +41,9 @@ public:
 	* @param[in] total_unread_counts	未读消息条数
 	* @return void 无返回值
 	*/
-	void OnChangeCallback(nim::NIMResCode rescode, const std::string& result, int total_unread_counts);
+	void OnChangeCallback(nim::NIMResCode rescode, const nim::SessionData& data, int total_unread_counts);
 
-	void OnUserInfoChange(const std::list<UserInfo>& uinfos);
+	void OnUserInfoChange(const std::list<nim::UserNameCard>& uinfos);
 	void OnUserPhotoReady(const std::string& accid, const std::wstring &photo_path);
 
 private:
@@ -61,6 +61,6 @@ private:
 	int custom_msg_unread_;
 
 	AutoUnregister unregister_cb;
-	std::map<int32_t, MultispotInfo> map_multispot_infos_;
+	std::map<nim::NIMClientType, nim::OtherClientPres> map_multispot_infos_;
 };
 }

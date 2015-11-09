@@ -25,7 +25,7 @@ public:
 	static const LPCTSTR kClassName;
 
 private:
-	void OnQueryTeamMembers(const std::string& tid, int member_count, const std::list<nim::TeamMemberInfo>& team_member_info_list);
+	void OnQueryTeamMembers(const std::string& tid, int member_count, const std::list<nim::TeamMemberProperty>& team_member_info_list);
 	bool OnBtnConfirmClick(ui::EventArgs* param);
 	bool OnBtnCancelClick(ui::EventArgs* param);
 

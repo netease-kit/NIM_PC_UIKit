@@ -26,7 +26,7 @@ public:
 	nim_comp::SessionForm* Find(const std::string &id);
 
 public:
-	void AddNewMsg(const MsgData &msg);
+	void AddNewMsg(const nim::IMMessage &msg);
 	void ResetUnread(const std::string &id);
 	
 	void RemoveForm(std::string id);

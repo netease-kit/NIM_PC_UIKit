@@ -89,10 +89,10 @@ void SessionForm::OnFinalMessage(HWND hWnd)
 	{
 		AudioCallback::SetPlaySid("");
 		AudioCallback::SetPlayCid("");
-		nim::Audio::StopPlayAudio();
+		nim_audio::Audio::StopPlayAudio();
 	}
 
-	SessionManager::GetInstance()->RemoveForm(session_id_);
+	SessionManager::GetInstance()->RemoveForm(session_id_, this);
 
 	if (droptarget_)
 	{
@@ -144,6 +144,11 @@ LRESULT SessionForm::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 		{
 			SessionManager::GetInstance()->ResetUnread(session_id_);
 		}
+	}
+	if (uMsg == WM_NOTIFY)  // 超链接消息
+	{
+		if (CheckRichEditLink(wParam, lParam))
+			return 0;
 	}
 	//else if( uMsg == WM_DROPFILES )
 	//{
@@ -207,6 +212,7 @@ void SessionForm::InitWindow()
 	btn_face_ = (CheckBox*)FindControl(L"btn_face");
 	input_edit_ = (RichEdit*)FindControl(L"input_edit");
 	input_edit_->SetLimitText(5000);
+	input_edit_->SetNoCaretReadonly();
 	input_edit_->AttachReturn(nbase::Bind(&SessionForm::OnEditEnter, this, std::placeholders::_1));
 	btn_send_ = (Button*)FindControl(L"btn_send");
 
@@ -256,9 +262,10 @@ void SessionForm::InitWindow()
 		unregister_cb.Add(TeamService::GetInstance()->RegAddTeamMember(nbase::Bind(&SessionForm::OnTeamMemberAdd, this, std::placeholders::_1, std::placeholders::_2)));
 		unregister_cb.Add(TeamService::GetInstance()->RegRemoveTeamMember(nbase::Bind(&SessionForm::OnTeamMemberRemove, this, std::placeholders::_1, std::placeholders::_2)));
 		unregister_cb.Add(TeamService::GetInstance()->RegChangeTeamMember(nbase::Bind(&SessionForm::OnTeamMemberChange, this, std::placeholders::_1, std::placeholders::_2)));
-		unregister_cb.Add(TeamService::GetInstance()->RegChangeTeamAdmin(nbase::Bind(&SessionForm::OnTeamMemberAdmin, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
-		unregister_cb.Add(TeamService::GetInstance()->RegSetTeamOwner(nbase::Bind(&SessionForm::OnSetTeamOwner, this, std::placeholders::_1, std::placeholders::_2)));
+		unregister_cb.Add(TeamService::GetInstance()->RegSetTeamAdmin(nbase::Bind(&SessionForm::OnTeamAdminSet, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
+		unregister_cb.Add(TeamService::GetInstance()->RegChangeTeamOwner(nbase::Bind(&SessionForm::OnTeamOwnerChange, this, std::placeholders::_1, std::placeholders::_2)));
 		unregister_cb.Add(TeamService::GetInstance()->RegChangeTeamName(nbase::Bind(&SessionForm::OnTeamNameChange, this, std::placeholders::_1)));
+		unregister_cb.Add(TeamService::GetInstance()->RegRemoveTeam(nbase::Bind(&SessionForm::OnTeamRemove, this, std::placeholders::_1)));
 	}
 }
 
@@ -269,23 +276,19 @@ bool SessionForm::Notify(ui::EventArgs* param)
 	{
 		MsgBubbleItem* item = dynamic_cast<MsgBubbleItem*>(param->pSender);
 		assert(item);
-		MsgData md = item->GetMsg();
+		nim::IMMessage md = item->GetMsg();
 
 		if (param->wParam == BET_RESEND)
 		{
 			msg_list_->Remove(item);
-			id_bubble_pair_.erase(md.client_msg_id);
+			id_bubble_pair_.erase(md.client_msg_id_);
 
 			ReSendMsg(md);
 		}
 		else if (param->wParam == BET_RELOAD)
 		{
 			item->SetLoadStatus(RS_LOADING);
-
-			Json::Value value;
-			MsgToJson(md, value);
-
-			nim::Http::FetchMedia(value.toStyledString(), nim::Http::FetchMediaCallback(), nim::Http::FetchMediaProgressCallback());
+			nim::NOS::FetchMedia(md, nim::NOS::DownloadMediaCallback(), nim::NOS::ProgressCallback());
 		}
 		else if (param->wParam == BET_DELETE)
 		{
@@ -295,25 +298,21 @@ bool SessionForm::Notify(ui::EventArgs* param)
 				is_last_msg = true;
 			}
 			msg_list_->Remove(item);
-			id_bubble_pair_.erase(md.client_msg_id);
-			nim::MsgLog::DeleteAsync(session_id_, session_type_, md.client_msg_id, nim::MsgLog::DeleteCallback());
+			id_bubble_pair_.erase(md.client_msg_id_);
+			nim::MsgLog::DeleteAsync(session_id_, session_type_, md.client_msg_id_, nim::MsgLog::DeleteCallback());
 		}
 		else if (param->wParam == BET_TRANSFORM)
 		{
-			MsgData msg_data = ((MsgBubbleAudio*)param->pSender)->GetMsg();
-			std::string json_str = msg_data.msg_attach;
-			Json::Value json_value;
-			Json::Reader reader;
+			nim::IMMessage msg_data = ((MsgBubbleAudio*)param->pSender)->GetMsg();
+			nim::IMAudio audio;
+			nim::Talk::ParseAudioMessageAttach(msg_data, audio);
 			nim::AudioInfo audio_info;
-			if (reader.parse(json_str, json_value))
-			{
-				audio_info.samp = "16000";
-				audio_info.url = json_value["url"].asString();
-				audio_info.dur = json_value["dur"].asUInt64();
-				audio_info.mime = json_value["ext"].asString();
-			}
+			audio_info.samplerate_ = "16000";
+			audio_info.url_ = audio.url_;
+			audio_info.duration_ = audio.duration_;
+			audio_info.mime_type_ = audio.file_extension_;
 
-			nim::Tool::GetAudioTextAsync(audio_info, ToWeakCallback([this](nim::NIMResCode rescode, const std::string& text) {
+			nim::Tool::GetAudioTextAsync(audio_info, ToWeakCallback([this](int rescode, const std::string& text) {
 				if (rescode == nim::kNIMResSuccess) {
 					ShowMsgBox(m_hWnd, nbase::UTF8ToUTF16(text), MsgboxCallback(), L"转文字", L"确定", L"");
 				}
@@ -346,14 +345,13 @@ bool SessionForm::Notify(ui::EventArgs* param)
 						Json::Value json;
 						json["id"] = "1";
 
-						MsgData msg;
-						PackageMsg(msg);
-						msg.msg_attach = json.toStyledString();
-						msg.msg_type = nim::kNIMSysMsgTypeCustomP2PMsg;
-						Json::Value value;
-						CustomSysMsgToJson(msg, value);
+						nim::SysMessage msg;
+						msg.client_msg_id_ = QString::GetGUID();
+						msg.timetag_ = 1000 * nbase::Time::Now().ToTimeT();
+						msg.attach_ = json.toStyledString();
+						msg.type_ = nim::kNIMSysMsgTypeCustomP2PMsg;
 
-						nim::Talk::SendCustomSysmsg(value.toStyledString());
+						nim::SystemMsg::SendCustomNotificationMsg(msg.ToJsonString());
 					}
 				}
 			}
@@ -449,19 +447,18 @@ bool SessionForm::OnClicked(ui::EventArgs* param)
 		nbase::StringToInt(param->pSender->GetDataID(), &num);
 		for (int i = 0; i < num; i++)
 		{
-			MsgData msg;
+			nim::IMMessage msg;
 			PackageMsg(msg);
-			//msg.msg_status = nim::kNIMMsgLogStatusSent;
-			msg.msg_status = nim::kNIMMsgLogStatusRead;
-			msg.from_account = session_id_;
-			msg.msg_type = nim::kNIMMessageTypeText;
-			msg.msg_body = nbase::StringPrintf("%d>>%s", i, nbase::UTF16ToUTF8(wstr).c_str());
-			UserInfo user_info;
-			UserService::GetInstance()->GetUserInfo(msg.from_account, user_info);
-			msg.from_nick = user_info.name;
-			Json::Value value;
-			MsgToJson(msg, value);
-			nim::MsgLog::WriteMsglogOnlyAsync(session_id_, msg.to_type, msg.client_msg_id, value.toStyledString(), nim::MsgLog::WriteMsglogCallback());
+			//msg.status_ = nim::kNIMMsgLogStatusSent;
+			msg.status_ = nim::kNIMMsgLogStatusRead;
+			msg.sender_accid_ = session_id_;
+			msg.type_ = nim::kNIMMessageTypeText;
+			msg.content_ = nbase::StringPrintf("%d>>%s", i, nbase::UTF16ToUTF8(wstr).c_str());
+			//发送消息不需要填写昵称
+			//UserInfo user_info;
+			//UserService::GetInstance()->GetUserInfo(msg.from_account, user_info);
+			//msg.from_nick = user_info.name;
+			nim::MsgLog::WriteMsglogOnlyAsync(session_id_, msg.session_type_, msg.client_msg_id_, msg, nim::MsgLog::WriteMsglogCallback());
 		}
 	}
 	return true;
@@ -542,7 +539,7 @@ void SessionForm::FlashTaskbar()
 
 void SessionForm::AdjustSizeForAdvancedTeam()
 {
-	if (session_type_ == nim::kNIMSessionTypeTeam && team_info_.type == nim::kNIMTeamTypeAdvanced)
+	if (session_type_ == nim::kNIMSessionTypeTeam && team_info_.GetType() == nim::kNIMTeamTypeAdvanced)
 	{
 		int width = 740, height = 600;
 		this->SetMinInfo(width, height);
@@ -838,12 +835,25 @@ void SessionForm::EnterTeamHandle()
 {
 	RemoveTip(STT_LEAVE);
 	is_valid_ = true;
+
+	btn_header_->SetEnabled(true);
+	input_edit_->SetEnabled(true);
+	btn_send_->SetEnabled(true);
+	FindControl(L"btn_custom_msg")->SetEnabled(true);
+	FindControl(L"btn_msg_record")->SetEnabled(true);
 }
 
 void SessionForm::LeaveTeamHandle()
 {
 	AddTip(STT_LEAVE);
 	is_valid_ = false;
+
+	btn_header_->SetEnabled(false);
+	btn_invite_->SetEnabled(false);
+	input_edit_->SetReadOnly(true);
+	FindControl(L"bottom_panel")->SetEnabled(false);
+	btn_new_broad_->SetEnabled(false);
+	btn_refresh_member_->SetEnabled(false);
 }
 
 BOOL SessionForm::CheckDropEnable(POINTL pt)
@@ -977,15 +987,15 @@ void SessionForm::CheckHeader()
 	}
 	else
 	{
-		OnGetUserInfoCallback cb = ToWeakCallback([this](bool ret, const std::list<UserInfo> &uinfos) {
-			if (!ret || uinfos.empty()) return;
-			if (uinfos.cbegin()->account == session_id_)
+		OnGetUserInfoCallback cb = ToWeakCallback([this](const std::list<nim::UserNameCard> &uinfos) {
+			if (uinfos.empty()) return;
+			if (uinfos.cbegin()->GetAccId() == session_id_)
 			{
-				std::wstring name = IsFileTransPhone() ? L"我的手机" : nbase::UTF8ToUTF16(uinfos.cbegin()->name);
+				std::wstring name = IsFileTransPhone() ? L"我的手机" : nbase::UTF8ToUTF16(uinfos.cbegin()->GetName());
 				label_title_->SetText(name);
 				label_tid_->SetVisible(false);
 				SetTaskbarTitle(name);
-				std::wstring photo = UserService::GetInstance()->GetUserPhoto(uinfos.cbegin()->account);
+				std::wstring photo = UserService::GetInstance()->GetUserPhoto(uinfos.cbegin()->GetAccId());
 				btn_header_->SetBkImage(photo);
 				UpdateSessionIcon(photo);
 			}
@@ -1027,16 +1037,16 @@ void SessionForm::CreateGroup(const std::list<UTF8String>& _id_list)
 	{
 		if (i < 3)
 		{
-			UserInfo userinfo;
+			nim::UserNameCard userinfo;
 			UserService::GetInstance()->GetUserInfo(*it, userinfo);
-			user_names += userinfo.name + ";";
+			user_names += userinfo.GetName() + ";";
 		}
 		i++;
 	}
-	Json::Value tinfo;
-	tinfo[nim::kNIMTeamInfoKeyName] = user_names.c_str();
-	tinfo[nim::kNIMTeamInfoKeyType] = nim::kNIMTeamTypeNormal;
-	nim::Team::CreateTeamAsync(tinfo.toStyledString(), id_list, "", nbase::Bind(&TeamCallback::OnTeamEventCallback, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
+	nim::TeamInfo tinfo;
+	tinfo.SetName(user_names);
+	tinfo.SetType(nim::kNIMTeamTypeNormal);
+	nim::Team::CreateTeamAsync(tinfo, id_list, "", nbase::Bind(&TeamCallback::OnTeamEventCallback, std::placeholders::_1));
 
 	Close();
 }
@@ -1049,7 +1059,7 @@ bool SessionForm::OnBtnHeaderClick(ui::EventArgs* param)
 			(TeamInfoForm::kClassName, session_id);
 		if (team_info_form == NULL)
 		{
-			team_info_form = new TeamInfoForm(false, team_info_.type, session_id_, team_info_);
+			team_info_form = new TeamInfoForm(false, team_info_.GetType(), session_id_, team_info_);
 			team_info_form->Create(NULL, L"群资料", WS_OVERLAPPEDWINDOW& ~WS_MAXIMIZEBOX, 0L);
 			team_info_form->CenterWindow();
 			team_info_form->ShowWindow(true);
@@ -1076,23 +1086,23 @@ bool SessionForm::IsFileTransPhone()
 	return false;
 }
 
-void SessionForm::OnUserInfoChange(const std::list<UserInfo> &uinfos)
+void SessionForm::OnUserInfoChange(const std::list<nim::UserNameCard> &uinfos)
 {
-	auto refresh_msglist = [this](const UserInfo& info) //更新消息列表中消息气泡的头像和名称
+	auto refresh_msglist = [this](const nim::UserNameCard& info) //更新消息列表中消息气泡的头像和名称
 	{
-		if ((info.field_avail_flag & kUInfoFlagHeadImage) == 0 && (info.field_avail_flag & kUInfoFlagName) == 0)
+		if (!info.ExistValue(nim::kUserNameCardKeyIconUrl) && !info.ExistValue(nim::kUserNameCardKeyName))
 			return;
 
 		int msg_count = msg_list_->GetCount();
 		for (int i = 0; i < msg_count; i++)
 		{
 			MsgBubbleItem* bubble_item = dynamic_cast<MsgBubbleItem*>(msg_list_->GetItemAt(i));
-			if (bubble_item != NULL && bubble_item->msg_.from_account == info.account)
+			if (bubble_item != NULL && bubble_item->msg_.sender_accid_ == info.GetAccId())
 			{
-				if((info.field_avail_flag & kUInfoFlagHeadImage) != 0)
-					bubble_item->msg_header_button_->SetBkImage(UserService::GetInstance()->GetUserPhoto(info.account));
-				if (bubble_item->sender_name_->IsVisible() && (info.field_avail_flag & kUInfoFlagName) != 0)
-					bubble_item->sender_name_->SetUTF8Text(info.name);
+				if (info.ExistValue(nim::kUserNameCardKeyIconUrl))
+					bubble_item->msg_header_button_->SetBkImage(UserService::GetInstance()->GetUserPhoto(info.GetAccId()));
+				if (bubble_item->sender_name_->IsVisible() && info.ExistValue(nim::kUserNameCardKeyName))
+					bubble_item->sender_name_->SetUTF8Text(info.GetName());
 			}
 		}
 	};
@@ -1101,20 +1111,20 @@ void SessionForm::OnUserInfoChange(const std::list<UserInfo> &uinfos)
 	{
 		if (session_type_ == nim::kNIMSessionTypeP2P)
 		{
-			if (info.account == session_id_)
+			if (info.GetAccId() == session_id_)
 				CheckHeader();
 
 			refresh_msglist(info);
 		}
 		else if (session_type_ == nim::kNIMSessionTypeTeam)
 		{
-			if (team_info_.type == nim::kNIMTeamTypeAdvanced)
+			if (team_info_.GetType() == nim::kNIMTeamTypeAdvanced)
 			{
-				auto iter = team_member_info_list_.find(info.account);
+				auto iter = team_member_info_list_.find(info.GetAccId());
 				if (iter != team_member_info_list_.end())
 				{
 					//更新群成员列表信息
-					TeamItem* item = (TeamItem*)member_list_->FindSubControl(nbase::UTF8ToUTF16(info.account));
+					TeamItem* item = (TeamItem*)member_list_->FindSubControl(nbase::UTF8ToUTF16(info.GetAccId()));
 					if (item != NULL)
 						item->InitInfo(iter->second);
 					
@@ -1135,7 +1145,7 @@ void SessionForm::OnUserPhotoReady(const std::string& accid, const std::wstring 
 		for (int i = 0; i < msg_count; i++)
 		{
 			MsgBubbleItem* bubble_item = dynamic_cast<MsgBubbleItem*>(msg_list_->GetItemAt(i));
-			if (bubble_item != NULL && bubble_item->msg_.from_account == accid)
+			if (bubble_item != NULL && bubble_item->msg_.sender_accid_ == accid)
 				bubble_item->msg_header_button_->SetBkImage(photo_path);
 		}
 	};
@@ -1152,7 +1162,7 @@ void SessionForm::OnUserPhotoReady(const std::string& accid, const std::wstring 
 	// 群聊时，更新群成员列表和消息列表中用户头像
 	if (session_type_ == nim::kNIMSessionTypeTeam)
 	{
-		if (team_info_.type == nim::kNIMTeamTypeAdvanced && team_member_info_list_.find(accid) != team_member_info_list_.cend())
+		if (team_info_.GetType() == nim::kNIMTeamTypeAdvanced && team_member_info_list_.find(accid) != team_member_info_list_.cend())
 		{
 			TeamItem* item = (TeamItem*)member_list_->FindSubControl(nbase::UTF8ToUTF16(accid));
 			if (item != NULL)
@@ -1160,9 +1170,33 @@ void SessionForm::OnUserPhotoReady(const std::string& accid, const std::wstring 
 
 			refresh_msglist_photo();
 		}
-		else if (team_info_.type == nim::kNIMTeamTypeNormal)
+		else if (team_info_.GetType() == nim::kNIMTeamTypeNormal)
 			refresh_msglist_photo();
 	}
 }
 
+bool CheckRichEditLink(WPARAM wParam, LPARAM lParam)
+{
+	if (wParam == EN_LINK)
+	{
+		std::wstring url = *(std::wstring*)lParam;
+		if (!url.empty())
+		{
+			std::wstring ws = url;
+			nbase::LowerString(ws);
+			// 以"file:"开头 或者 包含".." 的超链接不允许打开
+			std::size_t k = ws.find(L"file:", 0, 5);
+			if (k == 0)
+				return true;
+
+			k = ws.find(L"..");
+			if (k != std::wstring::npos)
+				return true;
+
+			Post2GlobalMisc(nbase::Bind(&shared::tools::SafeOpenUrl, url, SW_SHOW));
+			return true;
+		}
+	}
+	return false;
+}
 } // namespace nim_comp

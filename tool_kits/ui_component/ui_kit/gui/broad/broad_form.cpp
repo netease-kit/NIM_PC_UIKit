@@ -154,19 +154,20 @@ bool BroadForm::OnClicked( ui::EventArgs* arg )
 		Json::Value broads;
 		broads.append(broad);
 
-		Json::Value param;
-		param[nim::kNIMTeamInfoKeyAnnouncement] = broads.toStyledString();
+		nim::TeamInfo param;
+		param.SetAnnouncement(broads.toStyledString());
+		param.SetTeamID(tid_);
 
-		nim::Team::UpdateTeamInfoAsync(tid_, param.toStyledString(), nbase::Bind(&BroadForm::OnUpdateBroadCb, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
+		nim::Team::UpdateTeamInfoAsync(tid_, param, nbase::Bind(&BroadForm::OnUpdateBroadCb, this, std::placeholders::_1));
 	}
 	return false;
 }
 
-void BroadForm::OnUpdateBroadCb( int rescode, int notification_id, const std::string& tid, const std::string& result )
+void BroadForm::OnUpdateBroadCb(const nim::TeamEvent& team_event)
 {
-	QLOG_APP(L"update broad: code={0} notify_id={1} tid={2} result={3}") <<rescode <<notification_id <<tid <<result;
+	QLOG_APP(L"update broad: code={0} notify_id={1} tid={2}") << team_event.res_code_ << team_event.notification_id_ << team_event.team_id_;
 	
-	if (rescode == 200)
+	if (team_event.res_code_ == 200)
 	{
 		SessionForm* session = SessionManager::GetInstance()->Find(tid_);
 		if (session)

@@ -40,7 +40,7 @@ public:
 	bool Cancel(ui::EventArgs* param);
 	bool SearchTipWrong(ui::EventArgs* param);
 	void StartSearch(const std::wstring& search_key);
-	void InitUserProfile(const UserInfo& user_info);
+	void InitUserProfile(const nim::UserNameCard& user_info);
 	void InitEdit();
 
 	enum INIT_TYPE

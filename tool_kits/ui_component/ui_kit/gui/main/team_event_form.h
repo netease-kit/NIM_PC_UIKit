@@ -35,24 +35,24 @@ public:
 	* @return void	无返回值
 	*/
 	void InvokeLoadEvents();
-	void LoadEventsCb(int count, const std::string &result);
+	void LoadEventsCb(int count, int unread, const std::list<nim::SysMessage> &result);
 	void UpdateFarstTime();
 
 	void OnTeamEventCb(__int64 msg_id, nim::NIMSysMsgStatus status);
-	void OnOneTeamEvent(const Json::Value &json);
+	void OnOneTeamEvent(const nim::SysMessage &json);
 
 	static void DeleteAllCb(nim::NIMResCode res_code, int unread);
 	static void SysMsgReadAllCb(nim::NIMResCode code, int unread);
 
 	//自定义通知
-	void OnOneCustomMsg(const MsgData& msg) { AddCustomMsg(msg, true); }
+	void OnOneCustomMsg(const nim::SysMessage& msg) { AddCustomMsg(msg, true); }
 	bool IsCustomList() { return custom_list_->IsVisible(); }
 private:
-	void AddEvent(const Json::Value &json, bool first);
+	void AddEvent(const nim::SysMessage &json, bool first);
 	void OpEventTip(bool add);
 
 	void GetMoreCustomMsg();
-	void AddCustomMsg(const MsgData& msg, bool first);
+	void AddCustomMsg(const nim::SysMessage& msg, bool first);
 public:
 	static const LPCTSTR kClassName;
 private:

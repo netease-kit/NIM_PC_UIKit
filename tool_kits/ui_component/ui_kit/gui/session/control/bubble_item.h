@@ -37,7 +37,7 @@ public:
 	* @param[in] msg 消息信息结构体
 	* @return void 无返回值
 	*/
-	virtual void InitInfo(const MsgData &msg);
+	virtual void InitInfo(const nim::IMMessage &msg);
 
 	/** 
 	* 设置此消息项所属的会话窗体的会话id
@@ -64,7 +64,7 @@ public:
 	* 获取此消息项所包含的消息内容		
 	* @return MsgData 消息信息结构体
 	*/
-	MsgData GetMsg();
+	nim::IMMessage GetMsg();
 
 	/**
 	* 设置此消息项是否显示接收消息的时间
@@ -189,7 +189,7 @@ private:
 	ui::Control*	status_load_failed_;
 	ui::Control*	play_status_;
 protected:
-	MsgData			msg_;
+	nim::IMMessage			msg_;
 
 	std::string		sid_;  //会话窗口id
 	nim::NIMSessionType		type_; //会话窗口类型

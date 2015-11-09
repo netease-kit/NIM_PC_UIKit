@@ -62,7 +62,7 @@ bool SessionManager::IsSessionWndActive(const std::string& id)
 	return false;
 }
 
-void SessionManager::AddNewMsg(const MsgData &msg)
+void SessionManager::AddNewMsg(const nim::IMMessage &msg)
 {
 	bool create = false;
 
@@ -75,7 +75,7 @@ void SessionManager::AddNewMsg(const MsgData &msg)
 		sess = NULL;
 	}
 	bool msg_notify = true;
-	if (msg.to_type == nim::kNIMSessionTypeTeam)
+	if (msg.session_type_ == nim::kNIMSessionTypeTeam)
 	{
 		if (!IsTeamMsgNotify(id))
 		{
@@ -89,7 +89,7 @@ void SessionManager::AddNewMsg(const MsgData &msg)
 	{
 		if (msg_notify)
 		{
-			sess = new SessionForm(id, msg.to_type);
+			sess = new SessionForm(id, msg.session_type_);
 			HWND hwnd = sess->Create(NULL, L"会话窗口", WS_OVERLAPPEDWINDOW, 0);
 			if (hwnd == NULL)
 				return;
@@ -124,7 +124,7 @@ SessionForm* SessionManager::Find( const std::string &id )
 		return i->second;
 }
 
-void SessionManager::RemoveForm( std::string id )
+void SessionManager::RemoveForm( std::string id, const SessionForm* form /*=NULL*/)
 {
 	std::map<std::string, SessionForm*>::const_iterator i = id_form_.find(id);
 	if(i == id_form_.end())
@@ -133,7 +133,10 @@ void SessionManager::RemoveForm( std::string id )
 	}
 	else
 	{
-		id_form_.erase(i);
+		if (form == NULL || form == i->second)
+		{
+			id_form_.erase(i);
+		}
 	}
 }
 
@@ -160,9 +163,9 @@ void SessionManager::QueryMyTList(const std::string& tid)
 	nim::Team::QueryTeamMemberAsync(tid, LoginManager::GetInstance()->GetAccount(), nbase::Bind(&SessionManager::OnQueryMyTList, this, tid, std::placeholders::_1));
 }
 
-void SessionManager::OnQueryMyTList(const std::string& tid, const nim::TeamMemberInfo& team_member_info)
+void SessionManager::OnQueryMyTList(const std::string& tid, const nim::TeamMemberProperty& team_member_info)
 {
-	tlist_bits_[tid] = team_member_info.bits;
+	tlist_bits_[tid] = team_member_info.GetBits();
 }
 
 bool SessionManager::IsTeamMsgNotify(const std::string& tid)

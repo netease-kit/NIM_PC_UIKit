@@ -30,7 +30,7 @@ public:
 	void QueryUnreadCount();
 
 public:
-	void LoadSessionList(const std::string &str);
+	void LoadSessionList(const std::list<nim::SessionData>& sessions);
 
 	void AddUnreadCount(const std::string &id);
 	void ResetSessionUnread(const std::string &id);
@@ -40,8 +40,8 @@ public:
 	
 	static void QuerySysmsgUnreadCb(nim::NIMResCode res_code, int unread_count);
 
-	//多端登陆
-	void OnMultispotChange(bool online, Json::Value& json);
+	//多端登录
+	void OnMultispotChange(bool online, const std::list<nim::OtherClientPres>& clients);
 	void OnMultispotKickout(const std::list<std::string> &client_ids);
 
 private:

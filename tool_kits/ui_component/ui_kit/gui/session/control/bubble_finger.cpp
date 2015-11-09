@@ -21,12 +21,12 @@ void MsgBubbleFinger::InitControl(bool bubble_right)
 	msg_finger_->AttachMenu(nbase::Bind(&MsgBubbleFinger::OnMenu, this, std::placeholders::_1));
 }
 
-void MsgBubbleFinger::InitInfo(const MsgData &msg)
+void MsgBubbleFinger::InitInfo(const nim::IMMessage &msg)
 {
 	__super::InitInfo(msg);
 
 	Json::Value json;
-	if( StringToJson(msg.msg_attach, json) )
+	if( StringToJson(msg.attach_, json) )
 	{
 		int sub_type = json["type"].asInt();
 		if (sub_type == CustomMsgType_Jsb && json["data"].isObject()) //finger
@@ -41,7 +41,7 @@ void MsgBubbleFinger::InitInfo(const MsgData &msg)
 			return;
 		}
 	}
-	QLOG_WAR(L"user type msg undefine, attach={0}") <<msg.msg_attach;
+	QLOG_WAR(L"user type msg undefine, attach={0}") << msg.attach_;
 	
 	finger_->SetBkImage(L"jsb.png");
 }

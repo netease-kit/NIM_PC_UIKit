@@ -3,102 +3,6 @@
 #include "shared/xml_util.h"
 #include "module/login/login_manager.h"
 
-UserInfo::UserInfo(Json::Value json_info) : 
-	account(json_info[nim::kUInfoKeyAccid].asString())
-{
-	if (json_info.isMember(nim::kUInfoKeyName))
-	{
-		field_avail_flag |= kUInfoFlagName;
-		name = json_info[nim::kUInfoKeyName].asString();
-	}
-	if (json_info.isMember(nim::kUInfoKeyIcon))
-	{
-		field_avail_flag |= kUInfoFlagHeadImage;
-		head_image = json_info[nim::kUInfoKeyIcon].asString();
-	}
-	if (json_info.isMember(nim::kUInfoKeyGender))
-	{
-		field_avail_flag |= kUInfoFlagGender;
-		switch (json_info[nim::kUInfoKeyGender].asInt())
-		{
-		case 1:
-			gender = UG_MALE;
-			break;
-		case 2:
-			gender = UG_FEMALE;
-			break;
-		default:
-			gender = UG_UNKNOWN;
-			break;
-		}
-	}
-	if (json_info.isMember(nim::kUInfoKeyBirth))
-	{
-		field_avail_flag |= kUInfoFlagBirthday;
-		birthday = json_info[nim::kUInfoKeyBirth].asString();
-	}
-	if (json_info.isMember(nim::kUInfoKeyMobile))
-	{
-		field_avail_flag |= kUInfoFlagPhone;
-		phone = json_info[nim::kUInfoKeyMobile].asString();
-	}
-	if (json_info.isMember(nim::kUInfoKeyEmail))
-	{
-		field_avail_flag |= kUInfoFlagEmail;
-		email = json_info[nim::kUInfoKeyEmail].asString();
-	}
-	if (json_info.isMember(nim::kUInfoKeySign))
-	{
-		field_avail_flag |= kUInfoFlagSignature;
-		signature = json_info[nim::kUInfoKeySign].asString();
-	}
-}
-
-Json::Value UserInfo::ToJson() const
-{
-	Json::Value value;
-
-	value[nim::kUInfoKeyAccid] = account;
-	if ((field_avail_flag & kUInfoFlagName) != 0)
-		value[nim::kUInfoKeyName] = name;
-	if ((field_avail_flag & kUInfoFlagHeadImage) != 0)
-		value[nim::kUInfoKeyIcon] = head_image;
-	if ((field_avail_flag & kUInfoFlagGender) != 0)
-		value[nim::kUInfoKeyGender] = (int)gender;
-	if ((field_avail_flag & kUInfoFlagBirthday) != 0)
-		value[nim::kUInfoKeyBirth] = birthday;
-	if ((field_avail_flag & kUInfoFlagPhone) != 0)
-		value[nim::kUInfoKeyMobile] = phone;
-	if ((field_avail_flag & kUInfoFlagEmail) != 0)
-		value[nim::kUInfoKeyEmail] = email;
-	if ((field_avail_flag & kUInfoFlagSignature) != 0)
-		value[nim::kUInfoKeySign] = signature;
-
-	return value;
-}
-
-void UserInfo::Update(const UserInfo & info)
-{
-	if (account != info.account)
-		return;
-
-	if ((info.field_avail_flag & kUInfoFlagName) != 0)
-		name = info.name;
-	if ((info.field_avail_flag & kUInfoFlagHeadImage) != 0)
-		head_image = info.head_image;
-	if ((info.field_avail_flag & kUInfoFlagGender) != 0)
-		gender = info.gender;
-	if ((info.field_avail_flag & kUInfoFlagBirthday) != 0)
-		birthday = info.birthday;
-	if ((info.field_avail_flag & kUInfoFlagPhone) != 0)
-		phone = info.phone;
-	if ((info.field_avail_flag & kUInfoFlagEmail) != 0)
-		email = info.email;
-	if ((info.field_avail_flag & kUInfoFlagSignature) != 0)
-		signature = info.signature;
-
-	field_avail_flag |= info.field_avail_flag;
-}
 
 std::string GetConfigValue(const std::string& key)
 {
@@ -127,30 +31,65 @@ namespace nim_comp
 
 UserService::UserService()
 {
-	nim::Friend::RegChangeCb(nbase::Bind(&UserService::OnFriendListChange, this, std::placeholders::_1, std::placeholders::_2));
-	nim::User::RegUserInfoChangedCb(nbase::Bind(&UserService::OnUserInfoChange, this, std::placeholders::_1));
+	//向SDK注册监听好友列表变化
+	nim::Friend::RegChangeCb(nbase::Bind(&UserService::OnFriendListChange, this, std::placeholders::_1));
+
+	//向SDK注册监听用户名片变化
+	nim::User::RegUserNameCardChangedCb(nbase::Bind(&UserService::OnUserInfoChange, this, std::placeholders::_1));
 }
 
-void UserService::OnFriendListChange(nim::NIMFriendChangeType type, const std::list<nim::UserProfile>& user_profile_list)
+void UserService::OnFriendListChange(const nim::FriendChangeEvent& change_event)
 {
 	std::list<std::string> add_list;
 	std::list<std::string> delete_list;
-	for (auto& it : user_profile_list)
+
+	switch (change_event.type_)
 	{
-		if (it.flag == nim::kNIMFriendFlagNotFriend)
-		{
-			friend_list_.erase(it.accid); // 从friend_list_删除
-			delete_list.push_back(it.accid);
-		}
-		else
-		{
-			friend_list_.insert(it.accid);
-			add_list.push_back(it.accid);
-		}
+	case nim::kNIMFriendChangeTypeDel:
+	{
+		nim::FriendDelEvent del_event;
+		nim::Friend::ParseFriendDelEvent(change_event, del_event);
+		delete_list.push_back(del_event.accid_);
+		friend_list_.erase(del_event.accid_); // 从friend_list_删除
+		break;
 	}
+	case nim::kNIMFriendChangeTypeRequest:
+	{
+		nim::FriendAddEvent add_event;
+		nim::Friend::ParseFriendAddEvent(change_event, add_event);
+		if (add_event.add_type_ == nim::kNIMVerifyTypeAdd || add_event.add_type_ == nim::kNIMVerifyTypeAgree)
+		{
+			add_list.push_back(add_event.accid_);
+			friend_list_.insert(add_event.accid_);
+		}
+		break;
+	}
+	case nim::kNIMFriendChangeTypeSyncList:
+	{
+		nim::FriendProfileSyncEvent sync_event;
+		nim::Friend::ParseFriendProfileSyncEvent(change_event, sync_event);
+		for (auto& info : sync_event.profiles_)
+		{
+			if (info.GetRelationship() == nim::kNIMFriendFlagNormal)
+			{
+				add_list.push_back(info.GetAccId());
+				friend_list_.insert(info.GetAccId());
+			}
+			else
+			{
+				delete_list.push_back(info.GetAccId());
+				friend_list_.erase(info.GetAccId()); // 从friend_list_删除
+			}
+		}
+		break;
+	}
+	default:
+		break;
+	}
+
 	if (!add_list.empty())
 	{
-		OnGetUserInfoCallback cb = ToWeakCallback([this](bool ret, std::list<UserInfo> uinfos) {
+		OnGetUserInfoCallback cb = ToWeakCallback([this](std::list<nim::UserNameCard> uinfos) {
 			for (auto iter = uinfos.cbegin(); iter != uinfos.cend(); iter++)
 				InvokeFriendListChangeCallback(kChangeTypeAdd, *iter);
 		});
@@ -158,7 +97,7 @@ void UserService::OnFriendListChange(nim::NIMFriendChangeType type, const std::l
 	}
 	if (!delete_list.empty())
 	{
-		OnGetUserInfoCallback cb = ToWeakCallback([this](bool ret, std::list<UserInfo> uinfos) {
+		OnGetUserInfoCallback cb = ToWeakCallback([this](std::list<nim::UserNameCard> uinfos) {
 			for (auto iter = uinfos.cbegin(); iter != uinfos.cend(); iter++)
 				InvokeFriendListChangeCallback(kChangeTypeDelete, *iter);
 		});
@@ -166,34 +105,24 @@ void UserService::OnFriendListChange(nim::NIMFriendChangeType type, const std::l
 	}
 }
 
-void UserService::OnUserInfoChange(const std::string &json_result)
+void UserService::OnUserInfoChange(const std::list<nim::UserNameCard> &json_result)
 {
 	assert(nbase::MessageLoop::current()->ToUIMessageLoop());
 
-	Json::Value result;
-	Json::Reader reader;
-	if (reader.parse(json_result, result))
+	for (auto& info : json_result)
 	{
-		std::list<UserInfo> uinfos;
-		size_t count = result.size();
-		for (size_t i = 0; i < count; i++)
-		{
-			UserInfo info(result[i]);
+		auto iter = all_user_.find(info.GetAccId());
+		if (iter != all_user_.end())
+			iter->second.Update(info);
+		else
+			InvokeGetUserInfo(std::list<std::string>(1, info.GetAccId()), nullptr);
 
-			auto iter = all_user_.find(info.account);
-			if (iter != all_user_.end())
-				iter->second.Update(info);
-			else
-				InvokeGetUserInfo(std::list<std::string>(1, info.account), nullptr);
-
-			if((info.field_avail_flag & kUInfoFlagHeadImage) != 0)
-				DownloadUserPhoto(info);
-			uinfos.push_back(info);
-		}
-
-		for (auto& it : uinfo_change_cb_list_) // 执行回调列表中所有回调
-			(*(it.second))(uinfos);
+		if (!info.GetIconUrl().empty())
+			DownloadUserPhoto(info);
 	}
+
+	for (auto& it : uinfo_change_cb_list_) // 执行回调列表中所有回调
+		(*(it.second))(json_result);
 }
 
 UnregisterCallback UserService::RegFriendListChange(const OnFriendListChangeCallback& callback)
@@ -232,25 +161,31 @@ UnregisterCallback UserService::RegUserPhotoReady(const OnUserPhotoReadyCallback
 	return cb;
 }
 
-void UserService::InvokeFriendListChangeCallback(UserChangeType change_type, const UserInfo& user_infos)
+void UserService::UIFriendListChangeCallback(UserChangeType change_type, const nim::UserNameCard& uinfo)
 {
 	assert(nbase::MessageLoop::current()->ToUIMessageLoop());
 	for (auto& it : friend_list_change_cb_list_)
 	{
-		(*(it.second))(change_type, user_infos);
+		(*(it.second))(change_type, uinfo);
 	}
 }
 
-void UserService::DownloadUserPhoto(const UserInfo &info)
+void UserService::InvokeFriendListChangeCallback(UserChangeType change_type, const nim::UserNameCard& user_infos)
 {
-	if (info.head_image.find_first_of("http") != 0) //info.head_image不是正确的url
+	auto task = nbase::Bind(&UserService::UIFriendListChangeCallback, this, change_type, user_infos);
+	nbase::ThreadManager::PostTask(kThreadUI, task);
+}
+
+void UserService::DownloadUserPhoto(const nim::UserNameCard &info)
+{
+	if (info.GetIconUrl().find_first_of("http") != 0) //info.head_image不是正确的url
 		return;
 
-	std::wstring photo_path = GetUserPhotoDir() + nbase::UTF8ToUTF16(QString::GetMd5(info.head_image));
-	if (info.head_image.empty() || CheckPhotoOK(photo_path)) // 如果头像已经存在且完好，就不下载
+	std::wstring photo_path = GetUserPhotoDir() + nbase::UTF8ToUTF16(QString::GetMd5(info.GetIconUrl()));
+	if (info.GetIconUrl().empty() || CheckPhotoOK(photo_path)) // 如果头像已经存在且完好，就不下载
 		return;
 
-	nim::Http::DownloadResourceCallback cb = ToWeakCallback([this, info, photo_path](nim::NIMResCode res_code, const std::string& file_path, const std::string& call_id, const std::string& res_id) {
+	nim::NOS::DownloadMediaCallback cb = ToWeakCallback([this, info, photo_path](nim::NIMResCode res_code, const std::string& file_path, const std::string& call_id, const std::string& res_id) {
 		if (res_code == nim::kNIMResSuccess)
 		{
 			std::wstring ws_file_path = nbase::UTF8ToUTF16(file_path);
@@ -260,11 +195,11 @@ void UserService::DownloadUserPhoto(const UserInfo &info)
 				nbase::DeleteFile(ws_file_path);
 
 				for (auto &it : photo_ready_cb_list_) // 执行监听头像下载的回调
-					(*it.second)(info.account, photo_path);
+					(*it.second)(info.GetAccId(), photo_path);
 			}
 		}
 	});
-	nim::Http::DownloadResource(info.head_image, cb);
+	nim::NOS::DownloadResource(info.GetIconUrl(), cb);
 }
 
 void UserService::InvokeRegisterAccount(const std::string &username, const std::string &password, const std::string &nickname, const OnRegisterAccountCallback& cb)
@@ -312,20 +247,21 @@ void UserService::InvokeRegisterAccount(const std::string &username, const std::
 	request.AddHeader("Content-Type", "application/x-www-form-urlencoded");
 	request.AddHeader("charset", "utf-8");
 	request.AddHeader("appkey", app_key);
+	request.AddHeader("User-Agent", "nim_demo_pc");
 	request.SetMethodAsPost();
 	nim_http::PostRequest(request);
 }
 
 void UserService::InvokeGetAllUserInfo(const OnGetUserInfoCallback& cb)
 {
-	nim::Friend::GetList(ToWeakCallback([this, cb](int res_code, const std::list<nim::UserProfile>& user_profile_list)
+	nim::Friend::GetList(ToWeakCallback([this, cb](nim::NIMResCode res_code, const std::list<nim::FriendProfile>& user_profile_list)
 	{
 		std::list<std::string> account_list;
 		for (auto& it : user_profile_list)
 		{
-			if (it.flag == nim::kNIMFriendFlagNormal)
-				friend_list_.insert(it.accid); //插入friend_list_（类的成员变量）好友列表
-			account_list.push_back(it.accid);
+			if (it.GetRelationship() == nim::kNIMFriendFlagNormal)
+				friend_list_.insert(it.GetAccId()); //插入friend_list_（类的成员变量）好友列表
+			account_list.push_back(it.GetAccId());
 		}
 		if(!account_list.empty())
 			InvokeGetUserInfo(account_list, cb); // 从db和服务器查询用户信息
@@ -335,67 +271,53 @@ void UserService::InvokeGetAllUserInfo(const OnGetUserInfoCallback& cb)
 void UserService::InvokeGetUserInfo(const std::list<std::string>& account_list, const OnGetUserInfoCallback & cb)
 {
 	// 先在本地db中找
-	nim::User::GetUserInfoCallback cb1 = ToWeakCallback([this, account_list, cb](const std::string &json_result)
+	nim::User::GetUserNameCardCallback cb1 = ToWeakCallback([this, account_list, cb](const std::list<nim::UserNameCard> &json_result)
 	{
-		Json::Reader reader;
-		Json::Value result1;
-		if (reader.parse(json_result, result1))
+		std::list<nim::UserNameCard> already_get;
+		std::set<std::string> not_get_set(account_list.cbegin(), account_list.cend());
+		for (auto& card : json_result)
 		{
-			std::list<UserInfo> already_get;
-			std::set<std::string> not_get_set(account_list.cbegin(), account_list.cend());
-			size_t count1 = result1.size();
-			for (size_t i = 0; i < count1; i++)
+			already_get.push_back(card);
+			not_get_set.erase(card.GetAccId());
+			all_user_[card.GetAccId()] = card; // 插入all_user
+			//能在数据库中查到用户信息，则用户头像应该以前下载过，因此此处不下载。
+		}
+		if (cb && !already_get.empty())
+		{
+			assert(nbase::MessageLoop::current()->ToUIMessageLoop());
+			cb(already_get); // 执行参数传入的回调
+		}
+		if (not_get_set.empty()) // 全部从本地db找到，直接返回
+			return;
+
+		// 有些信息本地db没有，再从服务器获取
+		std::list<std::string> not_get_list(not_get_set.cbegin(), not_get_set.cend());
+		nim::User::GetUserNameCardCallback cb2 = ToWeakCallback([this, not_get_list, cb](const std::list<nim::UserNameCard> &json_result)
+		{
+			std::list<nim::UserNameCard> last_get;
+
+			for (auto& card : json_result)
 			{
-				std::string accid = result1[i][nim::kUInfoKeyAccid].asString();
-				UserInfo uinfo(result1[i]);
-				already_get.push_back(uinfo);
-				not_get_set.erase(accid);
-				all_user_[accid] = uinfo; // 插入all_user
-				//能在数据库中查到用户信息，则用户头像应该以前下载过，因此此处不下载。
+				last_get.push_back(card);
+				all_user_[card.GetAccId()] = card; // 插入all_user
+				if (card.ExistValue(nim::kUserNameCardKeyIconUrl))
+					DownloadUserPhoto(card); // 下载头像
 			}
-			if (cb && !already_get.empty())
+
+			if (cb)
 			{
 				assert(nbase::MessageLoop::current()->ToUIMessageLoop());
-				cb(true, already_get); // 执行参数传入的回调
+				cb(last_get); // 执行参数传入的回调
 			}
-			if (not_get_set.empty()) // 全部从本地db找到，直接返回
-				return;
-
-			// 有些信息本地db没有，再从服务器获取
-			std::list<std::string> not_get_list(not_get_set.cbegin(), not_get_set.cend());
-			nim::User::GetUserInfoCallback cb2 = ToWeakCallback([this, not_get_list, cb](const std::string &json_result)
-			{
-				Json::Reader reader;
-				Json::Value result2;
-				if (reader.parse(json_result, result2))
-				{
-					std::list<UserInfo> last_get;
-					size_t count2 = result2.size();
-					for (size_t i = 0; i < count2; i++)
-					{
-						std::string accid = result2[i][nim::kUInfoKeyAccid].asString();
-						UserInfo uinfo(result2[i]);
-						last_get.push_back(uinfo);
-						all_user_[uinfo.account] = uinfo; // 插入all_user
-						if((uinfo.field_avail_flag & kUInfoFlagHeadImage) != 0)
-							DownloadUserPhoto(uinfo); // 下载头像
-					}
-					if (cb)
-					{
-						assert(nbase::MessageLoop::current()->ToUIMessageLoop());
-						cb(true, last_get); // 执行参数传入的回调
-					}
-				}
-			});
-			nim::User::GetUserInfoOnline(not_get_list, cb2);
-		}
+		});
+		nim::User::GetUserNameCardOnline(not_get_list, cb2);
 	});
-	nim::User::GetUserInfo(account_list, cb1);
+	nim::User::GetUserNameCard(account_list, cb1);
 }
 
 void UserService::GetUserInfoWithEffort(const std::list<std::string>& account_list, const OnGetUserInfoCallback& cb)
 {
-	std::list<UserInfo> already_get;
+	std::list<nim::UserNameCard> already_get;
 	std::list<std::string> not_get_list;
 	for (auto accid : account_list)
 	{
@@ -408,7 +330,7 @@ void UserService::GetUserInfoWithEffort(const std::list<std::string>& account_li
 	if (cb && !already_get.empty())
 	{
 		assert(nbase::MessageLoop::current()->ToUIMessageLoop());
-		cb(true, already_get); // 执行参数传入的回调
+		cb(already_get); // 执行参数传入的回调
 	}
 	if (not_get_list.empty()) // 全部从all_user_里面找到，直接返回
 		return;
@@ -417,38 +339,37 @@ void UserService::GetUserInfoWithEffort(const std::list<std::string>& account_li
 	InvokeGetUserInfo(not_get_list, cb);
 }
 
-void UserService::InvokeUpdateUserInfo(const UserInfo &new_info, const OnUpdateUserInfoCallback& cb)
+void UserService::InvokeUpdateUserInfo(const nim::UserNameCard &new_info, const OnUpdateUserInfoCallback& cb)
 {
-	auto update_uinfo_cb = ToWeakCallback([this, new_info, cb](int res) {
+	auto update_uinfo_cb = ToWeakCallback([this, new_info, cb](nim::NIMResCode res) {
 		if (res == nim::kNIMResSuccess)
 		{
 			assert(nbase::MessageLoop::current()->ToUIMessageLoop());
-			Json::Value json_infos;
-			json_infos.append(new_info.ToJson());
-			OnUserInfoChange(json_infos.toStyledString());
+			std::list<nim::UserNameCard> lst;
+			lst.push_back(new_info);
+			OnUserInfoChange(lst);
 		}
 		if (cb != nullptr)
 			cb(res);
 	});
-	nim::User::UpdateUserInfo(new_info.ToJson().toStyledString(), update_uinfo_cb);
+	nim::User::UpdateUserNameCard(new_info, update_uinfo_cb);
 }
 
 void UserService::InvokeChangeUserPhoto(const std::string &url, const OnUpdateUserInfoCallback& cb)
 {
-	UserInfo my_info;
-	my_info.account = LoginManager::GetInstance()->GetAccount();
-	my_info.field_avail_flag = kUInfoFlagHeadImage;
-	my_info.head_image = url;
+	nim::UserNameCard my_info;
+	my_info.SetAccId(LoginManager::GetInstance()->GetAccount());
+	my_info.SetIconUrl(url);
 	InvokeUpdateUserInfo(my_info, cb);
 }
 
-const std::map<std::string, UserInfo>& UserService::GetAllUserInfos()
+const std::map<std::string, nim::UserNameCard>& UserService::GetAllUserInfos()
 {
 	assert(nbase::MessageLoop::current()->ToUIMessageLoop());
 	return all_user_;
 }
 
-bool UserService::GetUserInfo(const std::string &id, UserInfo &info)
+bool UserService::GetUserInfo(const std::string &id, nim::UserNameCard &info)
 {
 	auto iter = all_user_.find(id);
 	if (iter != all_user_.cend())
@@ -458,23 +379,24 @@ bool UserService::GetUserInfo(const std::string &id, UserInfo &info)
 	}
 	else
 	{
-		info.name = info.account = id;
+		info.SetName(id);
+		info.SetAccId(id);
 		InvokeGetUserInfo(std::list<std::string>(1, id), nullptr);
 		return false;
 	}
 }
 
-UserType UserService::GetUserType(const std::string &id)
+nim::NIMFriendFlag UserService::GetUserType(const std::string &id)
 {
 	assert(nbase::MessageLoop::current()->ToUIMessageLoop());
-	return (friend_list_.find(id) != friend_list_.end() ? UT_FRIEND : UT_UNKNOWN);
+	return (friend_list_.find(id) != friend_list_.end() ? nim::kNIMFriendFlagNormal : nim::kNIMFriendFlagNotFriend);
 }
 
 std::wstring UserService::GetUserName(const std::string &id)
 {
-	UserInfo info;
+	nim::UserNameCard info;
 	GetUserInfo(id, info);
-	return nbase::UTF8ToUTF16(info.name);
+	return nbase::UTF8ToUTF16(info.GetName());
 }
 
 std::wstring UserService::GetUserPhoto(const std::string &accid)
@@ -483,20 +405,20 @@ std::wstring UserService::GetUserPhoto(const std::string &accid)
 	if (!nbase::FilePathIsExist(default_photo, false))
 		default_photo = L"";
 
-	UserInfo info;
+	nim::UserNameCard info;
 	GetUserInfo(accid, info);
-	if ((info.field_avail_flag & kUInfoFlagHeadImage) == 0 || info.head_image.empty())
+	if (!info.ExistValue(nim::kUserNameCardKeyIconUrl) || info.GetIconUrl().empty())
 		return default_photo;
 
 	// 检查图片是否存在
-	std::wstring photo_path = GetUserPhotoDir() + nbase::UTF8ToUTF16(QString::GetMd5(info.head_image));
+	std::wstring photo_path = GetUserPhotoDir() + nbase::UTF8ToUTF16(QString::GetMd5(info.GetIconUrl()));
 	if (!nbase::FilePathIsExist(photo_path, false))
 		return default_photo;
 
 	if (!CheckPhotoOK(photo_path))
 		return default_photo;
 
-	return GetUserPhotoDir() + nbase::UTF8ToUTF16(QString::GetMd5(info.head_image));
+	return GetUserPhotoDir() + nbase::UTF8ToUTF16(QString::GetMd5(info.GetIconUrl()));
 }
 
 bool UserService::CheckPhotoOK(std::wstring photo_path)

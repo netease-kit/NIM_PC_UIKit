@@ -53,7 +53,11 @@
 #include "shared/util.h"
 
 //sdk
-#include "nim_all_cpp_wrapper.h"
+#include "nim_cpp_api.h"
+
+//tool
+#include "nim_tools_http_cpp_wrapper.h"
+#include "nim_tools_audio_cpp_wrapper.h"
 
 //msg
 #include "module/msglog/msglog.h"

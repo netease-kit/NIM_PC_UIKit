@@ -12,9 +12,9 @@ namespace nim_comp
 class CustomMsgBubble : public ui::ListContainerElement
 {
 public:
-	void InitControl(const MsgData &msg);
+	void InitControl(const nim::IMMessage &msg);
 protected:
-	void InitInfo(const MsgData &msg);
+	void InitInfo(const nim::IMMessage &msg);
 	void SetMsgText(const std::wstring &str);
 
 private:

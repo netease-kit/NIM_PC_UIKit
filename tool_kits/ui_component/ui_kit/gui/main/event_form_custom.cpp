@@ -7,7 +7,7 @@ namespace nim_comp
 void TeamEventForm::GetMoreCustomMsg()
 {
 	uint32_t limit = 10;
-	std::vector<MsgData> msgs = MsgExDB::GetInstance()->QueryMsgData(last_custom_msg_time_, limit);
+	std::vector<nim::SysMessage> msgs = MsgExDB::GetInstance()->QueryMsgData(last_custom_msg_time_, limit);
 	if (msgs.size() < limit)
 	{
 		has_more_custom_ = false;
@@ -15,25 +15,27 @@ void TeamEventForm::GetMoreCustomMsg()
 	for (auto it = msgs.begin(); it != msgs.end(); it++)
 	{
 		AddCustomMsg(*it, false);
-		if (last_custom_msg_time_ == 0 || last_custom_msg_time_ > it->msg_time)
+		if (last_custom_msg_time_ == 0 || last_custom_msg_time_ > it->timetag_)
 		{
-			last_custom_msg_time_ = it->msg_time;
+			last_custom_msg_time_ = it->timetag_;
 		}
 	}
 }
 
-void TeamEventForm::AddCustomMsg(const MsgData& msg, bool first)
+void TeamEventForm::AddCustomMsg(const nim::SysMessage& msg, bool first)
 {
 	CustomMsgBubble* msg_bubble = new CustomMsgBubble;
 	if (first)
 		custom_list_->AddAt(msg_bubble, 0);
 	else
 		custom_list_->Add(msg_bubble);
-	msg_bubble->InitControl(msg);
+	nim::IMMessage message;
+	CustomSysMessageToIMMessage(msg, message);
+	msg_bubble->InitControl(message);
 
 	if (last_custom_msg_time_ == 0)
 	{
-		last_custom_msg_time_ = msg.msg_time;
+		last_custom_msg_time_ = msg.timetag_;
 	}
 }
 }

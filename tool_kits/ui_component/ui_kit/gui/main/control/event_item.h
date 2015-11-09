@@ -20,13 +20,13 @@ public:
 	TeamEventItem();
 	virtual ~TeamEventItem();
 	void InitCtrl();
-	bool InitInfo(const Json::Value &json);
+	bool InitInfo(const nim::SysMessage &json);
 
 	__int64 GetMsgId();
 	__int64 GetTime();
 	void OnTeamEventCb(nim::NIMSysMsgStatus status);
 
-	static void TeamEventCb(__int64 msg_id, nim::NIMResCode code, nim::NIMNotificationId nid, const std::string& tid, const std::string& result);
+	static void TeamEventCb(__int64 msg_id, const nim::TeamEvent& team_event);
 	static void SetStatusCb(nim::NIMResCode code, __int64 msg_id, int unread);
 	static void DeleteCb(nim::NIMResCode code, __int64 msg_id, int unread);
 private:

@@ -62,7 +62,7 @@ void MultispotForm::InitWindow()
 		SetIcon(nim_ui::UserConfig::GetInstance()->GetIcon());
 	}
 
-	SetTaskbarTitle(L"多端登陆管理");
+	SetTaskbarTitle(L"多端登录管理");
 	m_pRoot->AttachBubbledEvent(ui::kEventAll, nbase::Bind(&MultispotForm::Notify, this, std::placeholders::_1));
 	m_pRoot->AttachBubbledEvent(ui::kEventClick, nbase::Bind(&MultispotForm::OnClicked, this, std::placeholders::_1));
 	//dev_list_ = (ui::ListBox*)FindControl(L"dev_list");
@@ -85,7 +85,7 @@ bool MultispotForm::OnClicked( ui::EventArgs* msg )
 	}
 	return true;
 }
-void MultispotForm::OnMultispotChange(const std::map<int32_t, MultispotInfo>& map_multispot_infos)
+void MultispotForm::OnMultispotChange(const std::map<nim::NIMClientType, nim::OtherClientPres>& map_multispot_infos)
 {
 	if (map_multispot_infos.size() > 0)
 	{

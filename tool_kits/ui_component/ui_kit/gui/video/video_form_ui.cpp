@@ -937,17 +937,17 @@ void VideoForm::CheckTitle()
 
 void VideoForm::CheckHeadIcon()
 {
-	UserInfo info;
+	nim::UserNameCard info;
 	UserService::GetInstance()->GetUserInfo(session_id_, info);
-	std::wstring photo = UserService::GetInstance()->GetUserPhoto(info.account);
+	std::wstring photo = UserService::GetInstance()->GetUserPhoto(info.GetAccId());
 	headicon_btn_->SetBkImage(photo);
 }
 
 void VideoForm::CheckFriendName()
 {
-	UserInfo info;
+	nim::UserNameCard info;
 	UserService::GetInstance()->GetUserInfo(session_id_, info);
-	friend_label_->SetUTF8Text(info.name);
+	friend_label_->SetUTF8Text(info.GetName());
 }
 
 bool VideoForm::CheckAudioInputDevice()

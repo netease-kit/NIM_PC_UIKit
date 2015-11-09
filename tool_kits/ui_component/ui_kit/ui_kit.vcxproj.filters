@@ -91,15 +91,6 @@
     <Filter Include="module\login">
       <UniqueIdentifier>{d2d2b0f1-1f43-4937-a49e-6a245c651327}</UniqueIdentifier>
     </Filter>
-    <Filter Include="module\sdk">
-      <UniqueIdentifier>{84566353-1846-430e-9dce-bbbc9aefe541}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="module\sdk\nim_cpp_wrapper">
-      <UniqueIdentifier>{60a5f4c3-95a5-4120-975b-ba09541a738e}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="module\sdk\nim_tools_cpp_wrapper">
-      <UniqueIdentifier>{81232fcd-3932-4038-89c6-26f8f479bb33}</UniqueIdentifier>
-    </Filter>
     <Filter Include="callback\audio">
       <UniqueIdentifier>{4f3b7f08-0a69-4010-b4cd-16c4a5b971e8}</UniqueIdentifier>
     </Filter>
@@ -293,63 +284,6 @@
     </ClInclude>
     <ClInclude Include="resource.h">
       <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\libs\nim_sdk_desktop\nim_cpp_wrapper\nim_all_cpp_wrapper.h">
-      <Filter>module\sdk</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\libs\nim_sdk_desktop\nim_cpp_wrapper\nim_tools_cpp_wrapper\nim_tools_http_cpp_wrapper.h">
-      <Filter>module\sdk\nim_tools_cpp_wrapper</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\libs\nim_sdk_desktop\nim_cpp_wrapper\nim_cpp_wrapper\nim_audio_cpp_wrapper.h">
-      <Filter>module\sdk\nim_cpp_wrapper</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\libs\nim_sdk_desktop\nim_cpp_wrapper\nim_cpp_wrapper\nim_client_cpp_wrapper.h">
-      <Filter>module\sdk\nim_cpp_wrapper</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\libs\nim_sdk_desktop\nim_cpp_wrapper\nim_cpp_wrapper\nim_data_sync_cpp_wrapper.h">
-      <Filter>module\sdk\nim_cpp_wrapper</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\libs\nim_sdk_desktop\nim_cpp_wrapper\nim_cpp_wrapper\nim_friend_cpp_wrapper.h">
-      <Filter>module\sdk\nim_cpp_wrapper</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\libs\nim_sdk_desktop\nim_cpp_wrapper\nim_cpp_wrapper\nim_global_cpp_wrapper.h">
-      <Filter>module\sdk\nim_cpp_wrapper</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\libs\nim_sdk_desktop\nim_cpp_wrapper\nim_cpp_wrapper\nim_global_define.h">
-      <Filter>module\sdk\nim_cpp_wrapper</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\libs\nim_sdk_desktop\nim_cpp_wrapper\nim_cpp_wrapper\nim_http_cpp_wrapper.h">
-      <Filter>module\sdk\nim_cpp_wrapper</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\libs\nim_sdk_desktop\nim_cpp_wrapper\nim_cpp_wrapper\nim_msglog_cpp_wrapper.h">
-      <Filter>module\sdk\nim_cpp_wrapper</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\libs\nim_sdk_desktop\nim_cpp_wrapper\nim_cpp_wrapper\nim_rts_cpp_wrapper.h">
-      <Filter>module\sdk\nim_cpp_wrapper</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\libs\nim_sdk_desktop\nim_cpp_wrapper\nim_cpp_wrapper\nim_sdk_function.h">
-      <Filter>module\sdk\nim_cpp_wrapper</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\libs\nim_sdk_desktop\nim_cpp_wrapper\nim_cpp_wrapper\nim_session_cpp_wrapper.h">
-      <Filter>module\sdk\nim_cpp_wrapper</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\libs\nim_sdk_desktop\nim_cpp_wrapper\nim_cpp_wrapper\nim_sysmsg_cpp_wrapper.h">
-      <Filter>module\sdk\nim_cpp_wrapper</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\libs\nim_sdk_desktop\nim_cpp_wrapper\nim_cpp_wrapper\nim_talk_cpp_wrapper.h">
-      <Filter>module\sdk\nim_cpp_wrapper</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\libs\nim_sdk_desktop\nim_cpp_wrapper\nim_cpp_wrapper\nim_team_cpp_wrapper.h">
-      <Filter>module\sdk\nim_cpp_wrapper</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\libs\nim_sdk_desktop\nim_cpp_wrapper\nim_cpp_wrapper\nim_tool_cpp_wrapper.h">
-      <Filter>module\sdk\nim_cpp_wrapper</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\libs\nim_sdk_desktop\nim_cpp_wrapper\nim_cpp_wrapper\nim_user_cpp_wrapper.h">
-      <Filter>module\sdk\nim_cpp_wrapper</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\libs\nim_sdk_desktop\nim_cpp_wrapper\nim_cpp_wrapper\nim_vchat_cpp_wrapper.h">
-      <Filter>module\sdk\nim_cpp_wrapper</Filter>
     </ClInclude>
     <ClInclude Include="callback\audio\audio_callback.h">
       <Filter>callback\audio</Filter>
@@ -625,57 +559,6 @@
     </ClCompile>
     <ClCompile Include="module\login\login_db.cpp">
       <Filter>module\login</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\libs\nim_sdk_desktop\nim_cpp_wrapper\nim_tools_cpp_wrapper\nim_tools_http_cpp_wrapper.cpp">
-      <Filter>module\sdk\nim_tools_cpp_wrapper</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\libs\nim_sdk_desktop\nim_cpp_wrapper\nim_cpp_wrapper\nim_audio_cpp_wrapper.cpp">
-      <Filter>module\sdk\nim_cpp_wrapper</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\libs\nim_sdk_desktop\nim_cpp_wrapper\nim_cpp_wrapper\nim_client_cpp_wrapper.cpp">
-      <Filter>module\sdk\nim_cpp_wrapper</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\libs\nim_sdk_desktop\nim_cpp_wrapper\nim_cpp_wrapper\nim_data_sync_cpp_wrapper.cpp">
-      <Filter>module\sdk\nim_cpp_wrapper</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\libs\nim_sdk_desktop\nim_cpp_wrapper\nim_cpp_wrapper\nim_friend_cpp_wrapper.cpp">
-      <Filter>module\sdk\nim_cpp_wrapper</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\libs\nim_sdk_desktop\nim_cpp_wrapper\nim_cpp_wrapper\nim_global_cpp_wrapper.cpp">
-      <Filter>module\sdk\nim_cpp_wrapper</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\libs\nim_sdk_desktop\nim_cpp_wrapper\nim_cpp_wrapper\nim_http_cpp_wrapper.cpp">
-      <Filter>module\sdk\nim_cpp_wrapper</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\libs\nim_sdk_desktop\nim_cpp_wrapper\nim_cpp_wrapper\nim_msglog_cpp_wrapper.cpp">
-      <Filter>module\sdk\nim_cpp_wrapper</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\libs\nim_sdk_desktop\nim_cpp_wrapper\nim_cpp_wrapper\nim_rts_cpp_wrapper.cpp">
-      <Filter>module\sdk\nim_cpp_wrapper</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\libs\nim_sdk_desktop\nim_cpp_wrapper\nim_cpp_wrapper\nim_sdk_function.cpp">
-      <Filter>module\sdk\nim_cpp_wrapper</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\libs\nim_sdk_desktop\nim_cpp_wrapper\nim_cpp_wrapper\nim_session_cpp_wrapper.cpp">
-      <Filter>module\sdk\nim_cpp_wrapper</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\libs\nim_sdk_desktop\nim_cpp_wrapper\nim_cpp_wrapper\nim_sysmsg_cpp_wrapper.cpp">
-      <Filter>module\sdk\nim_cpp_wrapper</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\libs\nim_sdk_desktop\nim_cpp_wrapper\nim_cpp_wrapper\nim_talk_cpp_wrapper.cpp">
-      <Filter>module\sdk\nim_cpp_wrapper</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\libs\nim_sdk_desktop\nim_cpp_wrapper\nim_cpp_wrapper\nim_team_cpp_wrapper.cpp">
-      <Filter>module\sdk\nim_cpp_wrapper</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\libs\nim_sdk_desktop\nim_cpp_wrapper\nim_cpp_wrapper\nim_tool_cpp_wrapper.cpp">
-      <Filter>module\sdk\nim_cpp_wrapper</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\libs\nim_sdk_desktop\nim_cpp_wrapper\nim_cpp_wrapper\nim_user_cpp_wrapper.cpp">
-      <Filter>module\sdk\nim_cpp_wrapper</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\libs\nim_sdk_desktop\nim_cpp_wrapper\nim_cpp_wrapper\nim_vchat_cpp_wrapper.cpp">
-      <Filter>module\sdk\nim_cpp_wrapper</Filter>
     </ClCompile>
     <ClCompile Include="callback\audio\audio_callback.cpp">
       <Filter>callback\audio</Filter>

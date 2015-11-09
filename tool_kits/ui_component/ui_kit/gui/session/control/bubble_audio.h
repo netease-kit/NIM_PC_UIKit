@@ -25,7 +25,7 @@ public:
 	* @param[in] msg 消息信息结构体
 	* @return void 无返回值
 	*/
-	virtual void InitInfo(const MsgData &msg);
+	virtual void InitInfo(const nim::IMMessage &msg);
 
 	/**
 	* 是否需要下载语音消息文件

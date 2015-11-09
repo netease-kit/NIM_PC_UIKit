@@ -6,26 +6,26 @@
 
 namespace nim_comp
 {
-void UITeamEventCallback(nim::NIMResCode code, nim::NIMNotificationId notify_id, const std::string &info, const std::string& tid, const nim::TeamInfo& team_info)
-{
-	QLOG_APP(L"TeamEvent: notify_id={0} tid={1} code={2}") << notify_id << tid << code;
-	nim::NIMNotificationId event_id = nim::NIMNotificationId(notify_id);
 
-	if (event_id == nim::kNIMNotificationIdLocalCreateTeam || event_id == nim::kNIMNotificationIdLocalApplyTeam)
+void TeamCallback::UITeamEventCallback(const nim::TeamEvent& info, const std::string& tid, const nim::TeamInfo& team_info)
+{
+	QLOG_APP(L"TeamEvent: notify_id={0} tid={1} code={2}") << info.notification_id_ << tid << info.res_code_;
+
+	if (info.notification_id_ == nim::kNIMNotificationIdLocalCreateTeam || info.notification_id_ == nim::kNIMNotificationIdLocalApplyTeam)
 	{
-		if (code == nim::kNIMResSuccess || code == nim::kNIMResTeamInviteSuccess) {
-			TeamService::GetInstance()->InvokeAddTeam(tid, "", team_info.type);
+		if (info.res_code_ == nim::kNIMResSuccess || info.res_code_ == nim::kNIMResTeamInviteSuccess) {
+			TeamService::GetInstance()->InvokeAddTeam(tid, "", team_info.GetType());
 			SessionManager::GetInstance()->OpenSessionForm(tid, nim::kNIMSessionTypeTeam);
 		}
 	}
-	else if (event_id == nim::kNIMNotificationIdLocalUpdateTlist || event_id == nim::kNIMNotificationIdTeamApplyPass || event_id == nim::kNIMNotificationIdTeamSyncUpdateTlist)
+	else if (info.notification_id_ == nim::kNIMNotificationIdLocalUpdateTlist || info.notification_id_ == nim::kNIMNotificationIdTeamApplyPass || info.notification_id_ == nim::kNIMNotificationIdTeamSyncUpdateTlist)
 	{
-		if (code == nim::kNIMResSuccess)
+		if (info.res_code_ == nim::kNIMResSuccess)
 		{
-			if (event_id == nim::kNIMNotificationIdTeamApplyPass) {
-				TeamService::GetInstance()->InvokeAddTeam(tid, "", team_info.type);
+			if (info.notification_id_ == nim::kNIMNotificationIdTeamApplyPass) {
+				TeamService::GetInstance()->InvokeAddTeam(tid, "", team_info.GetType());
 			}
-			if (event_id == nim::kNIMNotificationIdLocalUpdateTlist || event_id == nim::kNIMNotificationIdTeamSyncUpdateTlist)
+			if (info.notification_id_ == nim::kNIMNotificationIdLocalUpdateTlist || info.notification_id_ == nim::kNIMNotificationIdTeamSyncUpdateTlist)
 			{
 				SessionManager::GetInstance()->QueryMyTList(tid);
 				std::wstring session_id = nbase::UTF8ToUTF16(tid);
@@ -37,41 +37,41 @@ void UITeamEventCallback(nim::NIMResCode code, nim::NIMNotificationId notify_id,
 				}
 			}
 			SessionForm* session = SessionManager::GetInstance()->Find(tid);
-			if(session)
+			if (session)
 				session->InvokeGetTeamMember();
 		}
 	}
-	else if (event_id == nim::kNIMNotificationIdTeamUpdate)
+	else if (info.notification_id_ == nim::kNIMNotificationIdTeamUpdate)
 	{
-		if (code == nim::kNIMResSuccess)
+		if (info.res_code_ == nim::kNIMResSuccess)
 		{
 			SessionForm* session = SessionManager::GetInstance()->Find(tid);
-			if(session)
+			if (session)
 				session->InvokeGetTeamInfo();
 
 			TeamService::GetInstance()->GetTeamInfo(tid);
 		}
 	}
-	else if (event_id == nim::kNIMNotificationIdTeamDismiss)
+	else if (info.notification_id_ == nim::kNIMNotificationIdTeamDismiss)
 	{
-		if (code == nim::kNIMResSuccess)
+		if (info.res_code_ == nim::kNIMResSuccess)
 		{
 			TeamService::GetInstance()->InvokeRemoveTeam(tid);
 		}
 	}
-	else if (event_id == nim::kNIMNotificationIdTeamInviteAccept && info.empty())	//自己接受群主的邀请	
+	else if (info.notification_id_ == nim::kNIMNotificationIdTeamInviteAccept)	//接受入群邀请（包括自己和他人）
 	{
-		if (code == nim::kNIMResSuccess)
-		{
-			TeamService::GetInstance()->InvokeAddTeam(tid, "", team_info.type);
-		}
-		SessionManager::GetInstance()->OpenSessionForm(tid, nim::kNIMSessionTypeTeam, true);
+		if (info.res_code_ == nim::kNIMResSuccess && info.ids_.front() == team_info.GetOwnerID())
+		{	//ids中的用户是群主，说明是自己接受邀请入群，就添加到群列表并打开群聊窗口
+			TeamService::GetInstance()->InvokeAddTeam(tid, "", team_info.GetType());
+			SessionManager::GetInstance()->OpenSessionForm(tid, nim::kNIMSessionTypeTeam, true);
+		}	
 	}
-	else if (event_id == nim::kNIMNotificationIdLocalGetTeamList)
+	else if (info.notification_id_ == nim::kNIMNotificationIdLocalGetTeamList)
 	{
-		if (code == nim::kNIMResSuccess)
+		if (info.res_code_ == nim::kNIMResSuccess)
 		{
-			auto cb = [] (const std::string& tid, int count, const std::list<nim::TeamMemberInfo>& team_member_info_list)
+			auto cb = [](const std::string& tid, int count, const std::list<nim::TeamMemberProperty>& team_member_info_list)
 			{
 				for (auto& it : team_member_info_list)
 				{
@@ -84,100 +84,85 @@ void UITeamEventCallback(nim::NIMResCode code, nim::NIMNotificationId notify_id,
 	}
 	else
 	{
-		Json::Value json;
-		if (code == nim::kNIMResSuccess && StringToJson(info, json))
+		if (info.res_code_ == nim::kNIMResSuccess)
 		{
-			bool add = true;
-			Json::Value array;
-
-			if (event_id == nim::kNIMNotificationIdTeamInviteAccept)
+			if (info.notification_id_ == nim::kNIMNotificationIdTeamInviteAccept)
 			{
-				std::string uid = json[nim::kNIMNotificationKeyData][nim::kNIMNotificationLeaveKeyUid].asString();
+				std::string uid = *info.ids_.begin();
 				assert(LoginManager::GetInstance()->GetAccount() != uid);
 				//群成员收到别人入群消息
-				nim::Team::QueryTeamMemberAsync(tid, uid, [tid](const nim::TeamMemberInfo& team_member_info) {
+				nim::Team::QueryTeamMemberAsync(tid, uid, [tid](const nim::TeamMemberProperty& team_member_info) {
 					TeamService::GetInstance()->InvokeAddTeamMember(tid, team_member_info);
 				});
 			}
-			else if (event_id == nim::kNIMNotificationIdTeamInvite)
+			else if (info.notification_id_ == nim::kNIMNotificationIdTeamInvite)
 			{
-				TeamService::GetInstance()->InvokeAddTeam(tid, "", team_info.type);
-				array = json[nim::kNIMNotificationKeyData][nim::kNIMNotificationInviteKeyUids];
+				TeamService::GetInstance()->InvokeAddTeam(tid, "", team_info.GetType());
+				for (auto& id : info.ids_)
+				{
+					nim::Team::QueryTeamMemberAsync(tid, id, [tid](const nim::TeamMemberProperty& team_member_info) {
+						TeamService::GetInstance()->InvokeAddTeamMember(tid, team_member_info);
+					});
+				}
 			}
-			else if (event_id == nim::kNIMNotificationIdTeamKick)
+			else if (info.notification_id_ == nim::kNIMNotificationIdTeamKick)
 			{
-				add = false;
-				array = json[nim::kNIMNotificationKeyData][nim::kNIMNotificationKickKeyUids];
+				for (auto& id : info.ids_)
+				{
+					TeamService::GetInstance()->InvokeRemoveTeamMember(tid, id);
+					if (LoginManager::GetInstance()->IsEqual(id)) {
+						TeamService::GetInstance()->InvokeRemoveTeam(tid);
+					}
+				}
 			}
-			else if (event_id == nim::kNIMNotificationIdTeamLeave)
+			else if (info.notification_id_ == nim::kNIMNotificationIdTeamLeave)
 			{
-				std::string uid = json[nim::kNIMNotificationKeyData][nim::kNIMNotificationLeaveKeyUid].asString();
+				std::string uid = *info.ids_.begin();
 				TeamService::GetInstance()->InvokeRemoveTeamMember(tid, uid);
 				if (LoginManager::GetInstance()->IsEqual(uid)) {
 					TeamService::GetInstance()->InvokeRemoveTeam(tid);
 				}
 			}
-			else if (event_id == nim::kNIMNotificationIdTeamOwnerTransfer)
+			else if (info.notification_id_ == nim::kNIMNotificationIdTeamOwnerTransfer)
 			{
-				std::string uid = json[nim::kNIMNotificationKeyData][nim::kNIMNotificationOwnerTransferUid].asString();
+				std::string uid = *info.ids_.begin();
 				TeamService::GetInstance()->InvokeSetTeamOwner(tid, uid);
 			}
-			else if (event_id == nim::kNIMNotificationIdTeamAddManager)
+			else if (info.notification_id_ == nim::kNIMNotificationIdTeamAddManager)
 			{
-				Json::Value arr = json[nim::kNIMNotificationKeyData][nim::kNIMNotificationAddManagerUids];
-				for(UINT i = 0; i < arr.size(); i++)
+				for (auto id = info.ids_.begin(); id != info.ids_.end(); ++id)
 				{
-					std::string uid = arr[i].asString();
-					TeamService::GetInstance()->InvokeChangeTeamAdmin(tid, uid, true);
+					TeamService::GetInstance()->InvokeChangeTeamAdmin(tid, *id, true);
 				}
 			}
-			else if (event_id == nim::kNIMNotificationIdTeamRemoveManager)
+			else if (info.notification_id_ == nim::kNIMNotificationIdTeamRemoveManager)
 			{
-				Json::Value arr = json[nim::kNIMNotificationKeyData][nim::kNIMNotificationRemoveManagerUids];
-				for(UINT i = 0; i < arr.size(); i++)
+				for (auto id = info.ids_.begin(); id != info.ids_.end(); ++id)
 				{
-					std::string uid = arr[i].asString();
-					TeamService::GetInstance()->InvokeChangeTeamAdmin(tid, uid, false);
+					TeamService::GetInstance()->InvokeChangeTeamAdmin(tid, *id, false);
 				}
 			}
-			else if (event_id == nim::kNIMNotificationIdTeamMemberChanged)
+			else if (info.notification_id_ == nim::kNIMNotificationIdTeamMemberChanged)
 			{
-				std::string new_tid = json[nim::kNIMNotificationIdTeamMemberChangedKey][nim::kNIMTeamUserKeyID].asString();
-				std::string uid = json[nim::kNIMNotificationIdTeamMemberChangedKey][nim::kNIMTeamUserKeyAccID].asString();
-				std::string nick = json[nim::kNIMNotificationIdTeamMemberChangedKey][nim::kNIMTeamUserKeyNick].asString();
-				TeamService::GetInstance()->InvokeChangeTeamMember(new_tid, uid, nick);
+				std::string uid = *info.ids_.begin();
+				nim::Team::QueryTeamMemberAsync(tid, uid, [](const nim::TeamMemberProperty& team_member_info) {
+					TeamService::GetInstance()->InvokeChangeTeamMember(team_member_info.GetTeamID(), team_member_info.GetAccountID(), team_member_info.GetNick());
+				});
 			}
-			
-			if( !array.empty() && array.isArray() )
-			{
-				int len = array.size();
-				for(int i = 0; i < len; i++)
-				{
-					std::string uid = array[i].asString();
-					if (add) {
-						nim::Team::QueryTeamMemberAsync(tid, uid, [tid](const nim::TeamMemberInfo& team_member_info) {
-							TeamService::GetInstance()->InvokeAddTeamMember(tid, team_member_info);
-						});
 
-					}
-					else {
-						TeamService::GetInstance()->InvokeRemoveTeamMember(tid, uid);
-						if (LoginManager::GetInstance()->IsEqual(uid)) {
-							TeamService::GetInstance()->InvokeRemoveTeam(tid);
-						}
-					}
-				}
+			if (!info.ids_.empty())
+			{
+				int len = info.ids_.size();
 			}
 		}
 	}
 }
 
-void TeamCallback::OnTeamEventCallback(nim::NIMResCode rescode, nim::NIMNotificationId notification_id, const std::string& tid, const std::string& result)
+void TeamCallback::OnTeamEventCallback(const nim::TeamEvent& result)
 {
-	nim::Team::QueryTeamInfoAsync(tid, nbase::Bind(&UITeamEventCallback, rescode, notification_id, result, std::placeholders::_1, std::placeholders::_2));
-	QLOG_APP(L"OnTeamEventCallback: notify_id={0} code={1} tid={2} param={3}") <<notification_id <<rescode <<tid <<result;
+	nim::Team::QueryTeamInfoAsync(result.team_id_, nbase::Bind(&TeamCallback::UITeamEventCallback, result, std::placeholders::_1, std::placeholders::_2));
+	QLOG_APP(L"OnTeamEventCallback: notify_id={0} code={1} tid={2}") <<result.notification_id_ <<result.res_code_ <<result.team_id_;
 }
-
 
 //sysmsg
 
@@ -204,123 +189,109 @@ TeamNotifyForm* GetTeamNotifyForm(const std::string &tid)
 	}
 }
 
-void TeamCallback::OnReceiveSysmsgCallback( const std::string& param)
+void UIReceiveSysmsgCallback(nim::SysMessage& msg)
 {
-	QLOG_PRO(L"OnReceiveSysmsgCallback: {0}") <<param;
-
-	Json::Value value;
-	if (StringToJson(param, value))
+	if (msg.type_ == nim::kNIMSysMsgTypeCustomP2PMsg || msg.type_ == nim::kNIMSysMsgTypeCustomTeamMsg)
 	{
-		const Json::Value &content = value[nim::kNIMSysMsgKeyLocalContent];
-		nim::NIMSysMsgType type = (nim::NIMSysMsgType)content[nim::kNIMSysMsgKeyType].asInt();
-		if (type == nim::kNIMSysMsgTypeCustomP2PMsg || type == nim::kNIMSysMsgTypeCustomTeamMsg)
+		nim::IMMessage immsg;
+		CustomSysMessageToIMMessage(msg, immsg);
+		if (!msg.support_offline_)//只在线
 		{
-			int code = value[nim::kNIMMsgKeyLocalRescode].asInt();
-			int feature = value[nim::kNIMMsgKeyLocalMsgFeature].asInt();
-			Json::Value json = value[nim::kNIMMsgKeyLocalReceiveMsgContent];
-			json[nim::kNIMMsgKeyLocalRescode] = code;
-			json[nim::kNIMMsgKeyLocalMsgFeature] = feature;
-			MsgData msg;
-			CustomSysJsonToMsg(json, msg);
-			if (msg.custom_save_flag == 0)//只在线
+			if (msg.type_ == nim::kNIMSysMsgTypeCustomP2PMsg)
 			{
-				if (type == nim::kNIMSysMsgTypeCustomP2PMsg)
+				Json::Value json;
+				if (StringToJson(msg.attach_, json))
 				{
-					Json::Value json;
-					if (StringToJson(msg.msg_attach, json))
+					std::string id = json["id"].asString();
+					if (id == "1")
 					{
-						std::string id = json["id"].asString();
-						if (id == "1")
-						{
-							std::string id = msg.from_account;
+						std::string id = msg.sender_accid_;
 
-							SessionForm* session = SessionManager::GetInstance()->Find(id);
-							if (session)
-							{
-								session->AddWritingMsg(msg);
-							}
-							return;
+						SessionForm* session = SessionManager::GetInstance()->Find(id);
+						if (session)
+						{
+							session->AddWritingMsg(immsg);
 						}
+						return;
 					}
 				}
 			}
-			if (feature == nim::kNIMMessageFeatureRoamMsg || feature == nim::kNIMMessageFeatureSyncMsg)
-			{
-				msg.msg_status = nim::kNIMMsgLogStatusRead;
-			}
-			else
-			{
-				msg.msg_status = nim::kNIMMsgLogStatusUnread;
-			}
-			bool add = true;
-			MsgExDB::GetInstance()->InsertMsgData(msg);
-			TeamEventForm* f = dynamic_cast<TeamEventForm*>(WindowsManager::GetInstance()->GetWindow(TeamEventForm::kClassName, TeamEventForm::kClassName));
-			if (f)
-			{
-				f->OnOneCustomMsg(msg);
-				add = !f->IsCustomList();
-			}
-			if (add)
-			{
-				UpdateCustomSysmsgUnread(true);
-			}
-
-			return;
 		}
-		else if (type == nim::kNIMSysMsgTypeFriendDel)
+		if (msg.feature_ == nim::kNIMMessageFeatureRoamMsg || msg.feature_ == nim::kNIMMessageFeatureSyncMsg)
 		{
-			// 自己被好友删除，不显示提醒，直接从数据库删除该条消息。
-			__int64 msg_id = content[nim::kNIMSysMsgKeyMsgId].asInt64();
-			nim::SystemMsg::DeleteAsync(msg_id, nim::SystemMsg::DeleteCallback());
-			return;
+			msg.status_ = nim::kNIMSysMsgStatusRead;
 		}
-
-		int unread = value[nim::kNIMSysMsglogQueryKeyUnreadCount].asInt();
-		UpdateSysmsgUnread(unread);
-
-		if (content.isObject())
+		else
 		{
-			std::string from_account = content[nim::kNIMSysMsgKeyFromAccount].asString();
-			std::string to_account = content[nim::kNIMSysMsgKeyToAccount].asString();
-
-			std::string tid = to_account;
-			if (type == nim::kNIMSysMsgTypeTeamApply)
-			{
-				TeamNotifyForm* tf = GetTeamNotifyForm(tid);
-				if (tf)
-					tf->OnAskJoin(content);
-			}
-			else if (type == nim::kNIMSysMsgTypeTeamInvite)
-			{
-				TeamNotifyForm* tf = GetTeamNotifyForm(tid);
-				if (tf)
-					tf->OnInviteYou(content);
-			}
-			else if (type == nim::kNIMSysMsgTypeTeamInviteReject)
-			{
-				TeamNotifyForm* tf = GetTeamNotifyForm(tid);
-				if (tf)
-				{
-					tf->OnRejectInvite(content);
-				}
-				TeamService::GetInstance()->InvokeRemoveTeamMember(tid, from_account);
-			}
-			else if (type == nim::kNIMSysMsgTypeTeamReject)
-			{
-				TeamNotifyForm* tf = GetTeamNotifyForm(tid);
-				if (tf)
-					tf->OnRejectJoin(content);
-			}
-			else
-			{
-				return;
-			}
-
-			TeamEventForm* f = dynamic_cast<TeamEventForm*>(WindowsManager::GetInstance()->GetWindow(TeamEventForm::kClassName, TeamEventForm::kClassName));
-			if (f)
-				f->OnOneTeamEvent(content);
+			msg.status_ = nim::kNIMSysMsgStatusNone;
 		}
+		bool add = true;
+		MsgExDB::GetInstance()->InsertMsgData(msg);
+		TeamEventForm* f = dynamic_cast<TeamEventForm*>(WindowsManager::GetInstance()->GetWindow(TeamEventForm::kClassName, TeamEventForm::kClassName));
+		if (f)
+		{
+			f->OnOneCustomMsg(msg);
+			add = !f->IsCustomList();
+		}
+		if (add)
+		{
+			UpdateCustomSysmsgUnread(true);
+		}
+
+		return;
 	}
+	else if (msg.type_ == nim::kNIMSysMsgTypeFriendDel)
+	{
+		// 自己被好友删除，不显示提醒，直接从数据库删除该条消息。
+		nim::SystemMsg::DeleteAsync(msg.id_, nim::SystemMsg::DeleteCallback());
+		return;
+	}
+
+	UpdateSysmsgUnread(msg.total_unread_count_);
+
+	std::string tid = msg.receiver_accid_;
+	if (msg.type_ == nim::kNIMSysMsgTypeTeamApply)
+	{
+		TeamNotifyForm* tf = GetTeamNotifyForm(tid);
+		if (tf)
+			tf->OnAskJoin(msg);
+	}
+	else if (msg.type_ == nim::kNIMSysMsgTypeTeamInvite)
+	{
+		TeamNotifyForm* tf = GetTeamNotifyForm(tid);
+		if (tf)
+			tf->OnInviteYou(msg);
+	}
+	else if (msg.type_ == nim::kNIMSysMsgTypeTeamInviteReject)
+	{
+		TeamNotifyForm* tf = GetTeamNotifyForm(tid);
+		if (tf)
+		{
+			tf->OnRejectInvite(msg);
+		}
+		TeamService::GetInstance()->InvokeRemoveTeamMember(tid, msg.sender_accid_);
+	}
+	else if (msg.type_ == nim::kNIMSysMsgTypeTeamReject)
+	{
+		TeamNotifyForm* tf = GetTeamNotifyForm(tid);
+		if (tf)
+			tf->OnRejectJoin(msg);
+	}
+	else
+	{
+		return;
+	}
+
+	TeamEventForm* f = dynamic_cast<TeamEventForm*>(WindowsManager::GetInstance()->GetWindow(TeamEventForm::kClassName, TeamEventForm::kClassName));
+	if (f)
+		f->OnOneTeamEvent(msg);
+} 
+
+void TeamCallback::OnReceiveSysmsgCallback( const nim::SysMessage& msg )
+{
+	QLOG_PRO(L"OnReceiveSysmsgCallback: content: {0} - attach : {1}") << msg.content_ << msg.attach_;
+	StdClosure task = nbase::Bind(&UIReceiveSysmsgCallback, msg);
+	Post2UI(task);
 }
 
 }

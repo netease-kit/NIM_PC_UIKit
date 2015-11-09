@@ -13,7 +13,7 @@ class MsgBubbleText : public MsgBubbleItem
 {
 public:
 	virtual void InitControl(bool bubble_right);
-	virtual void InitInfo(const MsgData &msg);
+	virtual void InitInfo(const nim::IMMessage &msg);
 
 	/** 
 	* 设置此消息项显示的文本

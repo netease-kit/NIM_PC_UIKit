@@ -70,7 +70,7 @@ GroupList::~GroupList()
 void GroupList::AddListItem(const nim::TeamInfo& all_info)
 {
 	ui::TreeNode* tree_node;
-	if (all_info.type == nim::kNIMTeamTypeAdvanced)
+	if (all_info.GetType() == nim::kNIMTeamTypeAdvanced)
 	{
 		tree_node = tree_node_ver_[0];
 	}
@@ -90,9 +90,9 @@ void GroupList::AddListItemInGroup(const nim::TeamInfo& all_info, ui::TreeNode* 
 
 	FriendItem* item = new FriendItem;
 	ui::GlobalManager::FillBoxWithCache( item, L"main/friend_item.xml" );
-	UserInfo user_info;
-	user_info.account = all_info.id;
-	user_info.name = all_info.name;
+	nim::UserNameCard user_info;
+	user_info.SetAccId(all_info.GetTeamID());
+	user_info.SetName(all_info.GetName());
 	item->Init(true, user_info);
 	FriendItem* container_element = item;
 	std::size_t index = 0;
@@ -116,16 +116,16 @@ void GroupList::AddListItemInGroup(const nim::TeamInfo& all_info, ui::TreeNode* 
 	{
 		tree_node->AddChildNodeAt(container_element, index);
 	}
-	SessionManager::GetInstance()->QueryMyTList(user_info.account);
+	SessionManager::GetInstance()->QueryMyTList(user_info.GetAccId());
 }
 
 void GroupList::OnAddTeam(const std::string& tid, const std::string& tname, nim::NIMTeamType type)
 {
 	OnRemoveTeam(tid);
 	nim::TeamInfo user_info;
-	user_info.id = tid;
-	user_info.name = tname;
-	user_info.type = type;
+	user_info.SetTeamID(tid);
+	user_info.SetName(tname);
+	user_info.SetType(type);
 	AddListItem(user_info);
 }
 
@@ -136,9 +136,9 @@ void GroupList::OnTeamNameChanged(const nim::TeamInfo& team_info)
 		FriendItem* friend_item = dynamic_cast<FriendItem*>(group_list_->GetItemAt(i));
 		if (friend_item)
 		{
-			if (friend_item->GetId() == team_info.id)
+			if (friend_item->GetId() == team_info.GetTeamID())
 			{
-				OnAddTeam(team_info.id, team_info.name, team_info.type);
+				OnAddTeam(team_info.GetTeamID(), team_info.GetName(), team_info.GetType());
 				break;
 			}
 		}

@@ -13,7 +13,7 @@ class MsgBubbleImage : public MsgBubbleItem
 {
 public:
 	virtual void InitControl(bool bubble_right);
-	virtual void InitInfo(const MsgData &msg);
+	virtual void InitInfo(const nim::IMMessage &msg);
 	
 	/**
 	* 响应此消息项的单击消息，打开图片预览

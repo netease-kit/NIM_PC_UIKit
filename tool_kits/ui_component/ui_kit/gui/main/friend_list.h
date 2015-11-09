@@ -24,7 +24,7 @@ public:
 		return friend_list_;
 	}
 
-	void OnGetFriendList(const std::list<UserInfo>& uinfos)
+	void OnGetFriendList(const std::list<nim::UserNameCard>& uinfos)
 	{
 		nim_list_base_.OnGetFriendList(uinfos);
 	}

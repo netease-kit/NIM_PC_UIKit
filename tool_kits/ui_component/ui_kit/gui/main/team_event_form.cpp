@@ -165,10 +165,10 @@ void TeamEventForm::InvokeLoadEvents()
 	btn_recycle_->SetEnabled(false);
 
 	QLOG_PRO(L"query begin events: time={0}") <<farst_time_;
-	nim::SystemMsg::QueryMsgAsync(kSysmsgCount, farst_time_, nbase::Bind(&TeamEventForm::LoadEventsCb, this, std::placeholders::_1, std::placeholders::_2));
+	nim::SystemMsg::QueryMsgAsync(kSysmsgCount, farst_time_, nbase::Bind(&TeamEventForm::LoadEventsCb, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 }
 
-void TeamEventForm::LoadEventsCb(int count, const std::string &result)
+void TeamEventForm::LoadEventsCb(int count, int unread, const std::list<nim::SysMessage> &result)
 {
 	QLOG_PRO(L"query end events: count={0}") <<count;
 
@@ -176,28 +176,17 @@ void TeamEventForm::LoadEventsCb(int count, const std::string &result)
 	btn_recycle_->SetEnabled(true);
 	OpEventTip(false);
 
-	Json::Value json;
-	if (StringToJson(result, json))
+	UpdateSysmsgUnread(unread);
+	for (auto& content : result)
 	{
-		int unread = json[nim::kNIMSysMsglogQueryKeyUnreadCount].asInt();
-		UpdateSysmsgUnread(unread);
-
-		const Json::Value &content = json[nim::kNIMSysMsgKeyLocalContent];
-		for (size_t i = 0; i < content.size(); i++)
-		{
-			AddEvent(content[i], false);
-		}
-		UpdateFarstTime();
-
-		if (content.size() == kSysmsgCount)
-			has_more_ = true;
-		else
-			has_more_ = false;
+		AddEvent(content, false);
 	}
+	UpdateFarstTime();
+
+	if (result.size() == kSysmsgCount)
+		has_more_ = true;
 	else
-	{
 		has_more_ = false;
-	}
 }
 
 void TeamEventForm::UpdateFarstTime()
@@ -210,15 +199,14 @@ void TeamEventForm::UpdateFarstTime()
 	}
 }
 
-void TeamEventForm::AddEvent( const Json::Value &json, bool first )
+void TeamEventForm::AddEvent(const nim::SysMessage &sys_msg, bool first)
 {
-	__int64 id = json[nim::kNIMSysMsgKeyMsgId].asInt64();
-	if(id_item_pair_.find(id) == id_item_pair_.end())
+	if(id_item_pair_.find(sys_msg.id_) == id_item_pair_.end())
 	{
 		TeamEventItem* item = new TeamEventItem;
 		GlobalManager::FillBoxWithCache(item, L"main/event_item.xml");
 		item->InitCtrl();
-		bool ret = item->InitInfo(json);
+		bool ret = item->InitInfo(sys_msg);
 		if (ret)
 		{
 			if (first)
@@ -226,12 +214,12 @@ void TeamEventForm::AddEvent( const Json::Value &json, bool first )
 			else
 				event_list_->Add(item);
 
-			id_item_pair_[id] = item;
+			id_item_pair_[sys_msg.id_] = item;
 		}
 	}
 	else
 	{
-		QLOG_ERR(L"repeat sysmsg, id={0}") <<id;
+		QLOG_ERR(L"repeat sysmsg, id={0}") << sys_msg.id_;
 	}
 }
 
@@ -261,7 +249,7 @@ void TeamEventForm::OnTeamEventCb(__int64 msg_id, nim::NIMSysMsgStatus status)
 		it->second->OnTeamEventCb(status);
 	}
 }
-void TeamEventForm::OnOneTeamEvent(const Json::Value &json)
+void TeamEventForm::OnOneTeamEvent(const nim::SysMessage &json)
 {
 	AddEvent(json, true);
 }

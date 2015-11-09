@@ -22,23 +22,16 @@ void MsgBubbleLocation::InitControl(bool bubble_right)
 	msg_location_->AttachMenu(nbase::Bind(&MsgBubbleLocation::OnMenu, this, std::placeholders::_1));
 }
 
-void MsgBubbleLocation::InitInfo(const MsgData &msg)
+void MsgBubbleLocation::InitInfo(const nim::IMMessage &msg)
 {
 	__super::InitInfo(msg);
 
-	Json::Value json;
-	if( StringToJson(msg.msg_attach, json) )
-	{
-		lat_ = json[nim::kNIMLocationMsgKeyLatitude].asDouble();
-		lng_ = json[nim::kNIMLocationMsgKeyLongitude].asDouble();
-
-		title_ = json[nim::kNIMLocationMsgKeyTitle].asString();
-		msg_location_->SetUTF8Text(title_);
-	}
-	else
-	{
-		QLOG_ERR(L"parse location msg attach fail: {0}") <<msg.msg_attach;
-	}
+	nim::IMLocation location;
+	nim::Talk::ParseLocationMessageAttach(msg, location);
+	lat_ = location.latitude_;
+	lng_ = location.longitude_;
+	title_ = location.description_;
+	msg_location_->SetUTF8Text(title_);
 }
 
 bool MsgBubbleLocation::OnClicked( ui::EventArgs* arg )

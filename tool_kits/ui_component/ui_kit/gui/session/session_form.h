@@ -33,7 +33,7 @@ class SessionForm :
 public:
 
 	/** 
-	* @param[in] id		对于个人会话，设置为对方的用户账号；对于群会话，设置为群ID
+	* @param[in] id		对于个人会话，设置为对方的用户帐号；对于群会话，设置为群ID
 	* @param[in] type	设置会话类型(个人或者群)
 	*/
 	SessionForm(std::string id, nim::NIMSessionType type);
@@ -75,14 +75,14 @@ public:
 	* @param[in] create	如果收到新消息时对应的会话窗体还没有创建，则设置为true	
 	* @return void 无返回值
 	*/
-	void AddNewMsg(const MsgData &msg, bool create);
+	void AddNewMsg(const nim::IMMessage &msg, bool create);
 
 	/** 
 	* 在聊天框内添加一个“对方正在输入”的状态消息（当在输入框编辑时调用）
 	* @param[in] msg	“对方正在输入”消息的数据
 	* @return void 无返回值
 	*/
-	void AddWritingMsg(const MsgData &msg);
+	void AddWritingMsg(const nim::IMMessage &msg);
 
 	/**
 	* 添加一条新消息到聊天框里
@@ -91,7 +91,7 @@ public:
 	* @param[in] show_time	是否显示这条消息的接收时间
 	* @return MsgBubbleItem* 新添加的消息控件的指针
 	*/
-	MsgBubbleItem* ShowMsg(const MsgData &msg, bool first, bool show_time);
+	MsgBubbleItem* ShowMsg(const nim::IMMessage &msg, bool first, bool show_time);
 
 	/** 
 	* 执行加载历史消息的操作
@@ -105,7 +105,7 @@ public:
 	* @param[in] msg	历史消息数据	
 	* @return void 无返回值
 	*/
-	void ShowMsgs(const std::vector<MsgData> &msg);
+	void ShowMsgs(const std::vector<nim::IMMessage> &msg);
 
 	/** 
 	* 新消息发送给对方后，获取消息发送状态的回调函数（是否发送成功等）
@@ -178,11 +178,11 @@ public:
 	* @param[in] team_member_info_list 群成员信息表
 	* @return void 无返回值
 	*/
-	void OnGetTeamMemberCb(const std::string& tid, int count, const std::list<nim::TeamMemberInfo>& team_member_info_list);
+	void OnGetTeamMemberCb(const std::string& tid, int count, const std::list<nim::TeamMemberProperty>& team_member_info_list);
 
 	bool IsValid() { return is_valid_;  };
 
-	nim::TeamMemberInfo GetTeamMemberInfo(const std::string& uid)
+	nim::TeamMemberProperty GetTeamMemberInfo(const std::string& uid)
 	{
 		return team_member_info_list_[uid];
 	}
@@ -204,7 +204,7 @@ private:
 
 	void OnBtnSend();
 private:
-	void ShowMsgWriting(const MsgData &msg);
+	void ShowMsgWriting(const nim::IMMessage &msg);
 	void CancelWriting();
 	void SendText(const std::string &text);
 	void SendImage(const std::wstring &src);
@@ -213,9 +213,9 @@ private:
 	bool CheckFileSize(const std::wstring &src);
 	void SendJsb(const std::string &attach);
 	void SendSticker(const std::string &catalog, const std::string &name);
-	void SendMsg(const MsgData &msg);
-	void ReSendMsg(MsgData &msg);
-	void PackageMsg(MsgData &msg);
+	void AddSendingMsg(const nim::IMMessage &msg);
+	void ReSendMsg(nim::IMMessage &msg);
+	void PackageMsg(nim::IMMessage &msg);
 private:
 	void FlashTaskbar();
 
@@ -346,7 +346,7 @@ private:
 	* @param[in] uinfos 新的个人资料列表
 	* @return void 无返回值
 	*/
-	void OnUserInfoChange(const std::list<UserInfo> &uinfos);
+	void OnUserInfoChange(const std::list<nim::UserNameCard> &uinfos);
 
 	/**
 	* 会话框中某人的头像下载完成的回调函数
@@ -404,7 +404,7 @@ private:
 	* @param[in] team_member_info 新增群成员的信息			
 	* @return void 无返回值
 	*/
-	void OnTeamMemberAdd(const std::string& tid, const nim::TeamMemberInfo& team_member_info);
+	void OnTeamMemberAdd(const std::string& tid, const nim::TeamMemberProperty& team_member_info);
 
 	/**
 	* 有群成员退出的回调函数
@@ -429,7 +429,7 @@ private:
 	* @param[in] admin 设置/取消管理员身份
 	* @return void 无返回值
 	*/
-	void OnTeamMemberAdmin(const std::string& tid, const std::string& uid, bool admin);
+	void OnTeamAdminSet(const std::string& tid, const std::string& uid, bool admin);
 
 	/**
 	* 有群成员成为群主的回调函数
@@ -437,7 +437,7 @@ private:
 	* @param[in] uid 群成员的帐号
 	* @return void 无返回值
 	*/
-	void OnSetTeamOwner(const std::string& tid, const std::string& uid);
+	void OnTeamOwnerChange(const std::string& tid, const std::string& uid);
 
 	/**
 	* 群名更新的回调函数
@@ -446,6 +446,19 @@ private:
 	*/
 	void OnTeamNameChange(const nim::TeamInfo& team_info);
 
+	/**
+	* 退群或解散群的回调函数
+	* @param[in] tid 退出的群id
+	* @return void 无返回值
+	*/
+	void OnTeamRemove(const std::string& tid);
+
+	/**
+	* 判断用户类型是否可以显示在群成员中
+	* @param[in] user_type 用户信息
+	* @return void 无返回值
+	*/
+	bool IsTeamMemberType(const nim::NIMTeamUserType user_type);
 public:
 	//////////////////////////////////////////////////////////////////////////
 	// 实现系统的文件拖拽接口
@@ -480,7 +493,7 @@ private:
 	ui::Label*		label_member_;
 	ui::Button*		btn_refresh_member_;
 	ui::ListBox*	member_list_;
-	std::map<std::string, nim::TeamMemberInfo> team_member_info_list_;
+	std::map<std::string, nim::TeamMemberProperty> team_member_info_list_;
 
 	std::string		session_id_;
 	nim::NIMSessionType session_type_;
@@ -505,4 +518,7 @@ private:
 	IDropTarget		*droptarget_;
 	IRichEditOleCallbackEx *richeditolecallback_;
 };
+
+//return true表示处理了link事件
+bool CheckRichEditLink(WPARAM wParam, LPARAM lParam);
 }

@@ -165,39 +165,39 @@ NIM_SDK_DLL_API void nim_msglog_delete_by_session_type_async(bool delete_session
   */
 NIM_SDK_DLL_API void nim_msglog_delete_async(const char *account_id, NIMSessionType to_type, const char *msg_id, const char *json_extension, nim_msglog_res_cb_func cb, const void *user_data);
 
-/** @fn void nim_msglog_delete_all_async(bool delete_sessions, const char *json_extension, nim_msglog_res_cb_func cb, const void *user_data)
+/** @fn void nim_msglog_delete_all_async(bool delete_sessions, const char *json_extension, nim_msglog_modify_res_cb_func cb, const void *user_data)
   * 删除全部消息历史
   * @param[in] delete_sessions 是否删除所有会话列表项（即全部最近联系人）。
   *							   ture则删除，并通过nim_session_reg_change_cb注册的回调通知上层kNIMSessionCommandRemoveAll事件（不会触发每个会话项的kNIMSessionCommandRemove事件）；
   *							   false则不删除，并将所有会话项的最后一条消息的状态kNIMSessionMsgStatus设置为已删除状态，并通过nim_session_reg_change_cb注册的回调通知上层kNIMSessionCommandAllMsgDeleted事件（不会触发每个会话项的kNIMSessionCommandUpdate事件，避免频繁通知上层）。
   * @param[in] json_extension json扩展参数（备用，目前不需要）
-  * @param[in] cb			操作结果的回调函数， nim_msglog_res_cb_func回调函数定义见nim_msglog_def.h
+  * @param[in] cb			操作结果的回调函数， nim_msglog_modify_res_cb_func回调函数定义见nim_msglog_def.h
   * @param[in] user_data	APP的自定义用户数据，SDK只负责传回给回调函数cb，不做任何处理！
   * @return void 无返回值
   */
-NIM_SDK_DLL_API void nim_msglog_delete_all_async(bool delete_sessions, const char *json_extension, nim_msglog_res_cb_func cb, const void *user_data);
+NIM_SDK_DLL_API void nim_msglog_delete_all_async(bool delete_sessions, const char *json_extension, nim_msglog_modify_res_cb_func cb, const void *user_data);
 
-/** @fn void nim_msglog_export_db_async(const char *dst_path, const char *json_extension, nim_msglog_res_cb_func cb, const void *user_data)
+/** @fn void nim_msglog_export_db_async(const char *dst_path, const char *json_extension, nim_msglog_modify_res_cb_func cb, const void *user_data)
   * 导出整个消息历史DB文件（不包括系统消息历史）。直接拷贝DB文件即可，SDK层不返回进度给APP层。
   * @param[in] dst_path		导出时保存的目标全路径（UTF-8编码）。
   * @param[in] json_extension json扩展参数（备用，目前不需要）
-  * @param[in] cb			操作结果的回调函数， nim_msglog_res_cb_func回调函数定义见nim_msglog_def.h
+  * @param[in] cb			操作结果的回调函数， nim_msglog_modify_res_cb_func回调函数定义见nim_msglog_def.h
   * @param[in] user_data	APP的自定义用户数据，SDK只负责传回给回调函数cb，不做任何处理！
   * @return void 无返回值
   */
-NIM_SDK_DLL_API void nim_msglog_export_db_async(const char *dst_path, const char *json_extension, nim_msglog_res_cb_func cb, const void *user_data);
+NIM_SDK_DLL_API void nim_msglog_export_db_async(const char *dst_path, const char *json_extension, nim_msglog_modify_res_cb_func cb, const void *user_data);
 
-/** @fn void nim_msglog_import_db_async(const char *src_path, const char *json_extension, nim_msglog_res_cb_func res_cb, const void *res_user_data, nim_msglog_import_prg_cb_func prg_cb, const void *prg_user_data)
+/** @fn void nim_msglog_import_db_async(const char *src_path, const char *json_extension, nim_msglog_modify_res_cb_func res_cb, const void *res_user_data, nim_msglog_import_prg_cb_func prg_cb, const void *prg_user_data)
   * 导入消息历史DB文件（不包括系统消息历史）。先验证是否自己的消息历史文件和DB加密密钥(见nim_client_def.h里的kNIMDataBaseEncryptKey），如果验证不通过，则不导入。
   * @param[in] src_path			导入源文件的全路径（UTF-8编码）。
   * @param[in] json_extension	json扩展参数（备用，目前不需要）
-  * @param[in] res_cb			操作结果的回调函数， nim_msglog_res_cb_func回调函数定义见nim_msglog_def.h
+  * @param[in] res_cb			操作结果的回调函数， nim_msglog_modify_res_cb_func回调函数定义见nim_msglog_def.h
   * @param[in] res_user_data	APP的自定义用户数据，SDK只负责传回给回调函数res_cb，不做任何处理！
   * @param[in] prg_cb			导入进度的回调函数， nim_msglog_import_prg_cb_func回调函数定义见nim_msglog_def.h
   * @param[in] prg_user_data	APP的自定义用户数据，SDK只负责传回给回调函数prg_cb，不做任何处理！
   * @return void 无返回值
   */
-NIM_SDK_DLL_API void nim_msglog_import_db_async(const char *src_path, const char *json_extension, nim_msglog_res_cb_func res_cb, const void *res_user_data, nim_msglog_import_prg_cb_func prg_cb, const void *prg_user_data);
+NIM_SDK_DLL_API void nim_msglog_import_db_async(const char *src_path, const char *json_extension, nim_msglog_modify_res_cb_func res_cb, const void *res_user_data, nim_msglog_import_prg_cb_func prg_cb, const void *prg_user_data);
 
 #ifdef __cplusplus
 };

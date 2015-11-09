@@ -10,20 +10,20 @@ const LPCTSTR ProfileForm::kClassName = L"ProfileForm";
 ProfileForm * ProfileForm::ShowProfileForm(UTF8String uid)
 {
 	ProfileForm* form = (ProfileForm*)WindowsManager::GetInstance()->GetWindow(kClassName, kClassName);
-	if (form != NULL && form->m_uinfo.account.compare(uid) == 0) //当前已经打开的名片正是希望打开的名片
+	if (form != NULL && form->m_uinfo.GetAccId().compare(uid) == 0) //当前已经打开的名片正是希望打开的名片
 		; // 直接显示
 	else
 	{
-		if (form != NULL && form->m_uinfo.account.compare(uid) != 0)//当前已经打开的名片不是希望打开的名片
+		if (form != NULL && form->m_uinfo.GetAccId().compare(uid) != 0)//当前已经打开的名片不是希望打开的名片
 			::DestroyWindow(form->m_hWnd); //关闭重新创建
 		form = new ProfileForm();
 		form->Create(NULL, L"", WS_OVERLAPPEDWINDOW & ~WS_MAXIMIZEBOX, 0L);
-		form->m_uinfo.account = uid;
+		form->m_uinfo.SetAccId(uid);
 		
 		// 获取用户信息
-		OnGetUserInfoCallback cb = form->ToWeakCallback([form](bool ret, const std::list<UserInfo> &uinfos) {
-			if (!ret || uinfos.empty()) return;
-			if (uinfos.cbegin()->account == form->m_uinfo.account)
+		OnGetUserInfoCallback cb = form->ToWeakCallback([form](const std::list<nim::UserNameCard> &uinfos) {
+			if (uinfos.empty()) return;
+			if (uinfos.cbegin()->GetAccId() == form->m_uinfo.GetAccId())
 				form->InitUserInfo(*uinfos.cbegin());
 		});
 		UserService::GetInstance()->GetUserInfoWithEffort(std::list<std::string>(1, uid), cb);
@@ -46,7 +46,7 @@ ProfileForm::ProfileForm()
 	unregister_cb.Add(UserService::GetInstance()->RegFriendListChange(friend_list_change_cb));
 
 	OnUserPhotoReadyCallback cb = ToWeakCallback([this](const std::string& accid, const std::wstring& photo_path) {
-		if (m_uinfo.account == accid) head_image_btn->SetBkImage(photo_path); });
+		if (m_uinfo.GetAccId() == accid) head_image_btn->SetBkImage(photo_path); });
 	unregister_cb.Add(UserService::GetInstance()->RegUserPhotoReady(cb));
 }
 
@@ -111,12 +111,12 @@ void ProfileForm::InitWindow()
 	signature_edit = static_cast<ui::RichEdit*>(FindControl(L"signature_edit"));
 }
 
-void ProfileForm::InitUserInfo(const UserInfo &info)
+void ProfileForm::InitUserInfo(const nim::UserNameCard &info)
 {
 	m_uinfo = info;
 	InitLabels();
 
-	if (m_uinfo.account == LoginManager::GetInstance()->GetAccount())
+	if (m_uinfo.GetAccId() == LoginManager::GetInstance()->GetAccount())
 	{
 		btn_modify_info->SetVisible(true); // 显示“编辑”按钮
 		head_image_btn->SetMouseEnabled(true); // 可点击头像进行更换
@@ -140,7 +140,7 @@ void ProfileForm::InitUserInfo(const UserInfo &info)
 		black_switch->AttachSelect(nbase::Bind(&ProfileForm::OnBlackSwitchSelected, this, std::placeholders::_1));
 		black_switch->AttachUnSelect(nbase::Bind(&ProfileForm::OnBlackSwitchUnSelected, this, std::placeholders::_1));
 		start_chat->AttachClick(nbase::Bind(&ProfileForm::OnStartChatBtnClicked, this, std::placeholders::_1));
-		add_or_del->SelectItem(UserService::GetInstance()->GetUserType(m_uinfo.account) == UT_FRIEND ? 0 : 1);
+		add_or_del->SelectItem(UserService::GetInstance()->GetUserType(m_uinfo.GetAccId()) == nim::kNIMFriendFlagNormal ? 0 : 1);
 		delete_friend->AttachClick(nbase::Bind(&ProfileForm::OnDeleteFriendBtnClicked, this, std::placeholders::_1));
 		add_friend->AttachClick(nbase::Bind(&ProfileForm::OnAddFriendBtnClicked, this, std::placeholders::_1));
 
@@ -154,8 +154,8 @@ void ProfileForm::CheckInMuteBlack()
 	auto service = MuteBlackService::GetInstance();
 	auto mute_list = service->GetMuteList();
 	auto black_list = service->GetBlackList();
-	notify_switch->Selected(!service->IsInMuteList(m_uinfo.account));
-	if (service->IsInBlackList(m_uinfo.account))
+	notify_switch->Selected(!service->IsInMuteList(m_uinfo.GetAccId()));
+	if (service->IsInBlackList(m_uinfo.GetAccId()))
 	{
 		black_switch->Selected(true);
 		notify_switch->SetEnabled(false);
@@ -195,37 +195,37 @@ bool ProfileForm::Notify(ui::EventArgs * msg)
 
 bool ProfileForm::OnNotifySwitchSelected(ui::EventArgs* args)
 {
-	MuteBlackService::GetInstance()->InvokeSetMute(m_uinfo.account, false);
+	MuteBlackService::GetInstance()->InvokeSetMute(m_uinfo.GetAccId(), false);
 	return true;
 }
 
 bool ProfileForm::OnNotifySwitchUnSelected(ui::EventArgs* args)
 {
-	MuteBlackService::GetInstance()->InvokeSetMute(m_uinfo.account, true);
+	MuteBlackService::GetInstance()->InvokeSetMute(m_uinfo.GetAccId(), true);
 	return true;
 }
 
 bool ProfileForm::OnBlackSwitchSelected(ui::EventArgs* args)
 {
-	MuteBlackService::GetInstance()->InvokeSetBlack(m_uinfo.account, true);
+	MuteBlackService::GetInstance()->InvokeSetBlack(m_uinfo.GetAccId(), true);
 	return true;
 }
 
 bool ProfileForm::OnBlackSwitchUnSelected(ui::EventArgs* args)
 {
-	MuteBlackService::GetInstance()->InvokeSetBlack(m_uinfo.account, false);
+	MuteBlackService::GetInstance()->InvokeSetBlack(m_uinfo.GetAccId(), false);
 	return true;
 }
 
 void ProfileForm::OnNotifyChangeCallback(std::string id, bool mute)
 {
-	if (id == m_uinfo.account)
+	if (id == m_uinfo.GetAccId())
 		notify_switch->Selected(!mute);
 }
 
 void ProfileForm::OnBlackChangeCallback(std::string id, bool black)
 {
-	if (id == m_uinfo.account)
+	if (id == m_uinfo.GetAccId())
 	{
 		if (black)
 		{
@@ -242,7 +242,7 @@ void ProfileForm::OnBlackChangeCallback(std::string id, bool black)
 
 bool ProfileForm::OnStartChatBtnClicked(ui::EventArgs* args)
 {
-	SessionManager::GetInstance()->OpenSessionForm(m_uinfo.account, nim::kNIMSessionTypeP2P);
+	SessionManager::GetInstance()->OpenSessionForm(m_uinfo.GetAccId(), nim::kNIMSessionTypeP2P);
 	return true;
 }
 
@@ -257,7 +257,7 @@ void ProfileForm::OnDeleteFriendMsgBox(MsgBoxRet ret)
 {
 	if (ret == MB_YES)
 	{
-		nim::Friend::Delete(m_uinfo.account, ToWeakCallback([this](int res_code) {
+		nim::Friend::Delete(m_uinfo.GetAccId(), ToWeakCallback([this](int res_code) {
 			if (res_code == 200)
 				Close();
 		}));
@@ -266,7 +266,7 @@ void ProfileForm::OnDeleteFriendMsgBox(MsgBoxRet ret)
 
 bool ProfileForm::OnAddFriendBtnClicked(ui::EventArgs* args)
 {
-	nim::Friend::Request(m_uinfo.account, nim::kNIMVerifyTypeAdd, "", ToWeakCallback([this](int res_code) {
+	nim::Friend::Request(m_uinfo.GetAccId(), nim::kNIMVerifyTypeAdd, "", ToWeakCallback([this](int res_code) {
 		if (res_code == 200)
 			Close();
 	}));
@@ -279,7 +279,7 @@ bool ProfileForm::OnHeadImageClicked(ui::EventArgs * args)
 	HeadModifyForm* form = (HeadModifyForm*)WindowsManager::GetInstance()->GetWindow(HeadModifyForm::kClassName, HeadModifyForm::kClassName);
 	if (form == NULL)
 	{
-		form = new HeadModifyForm(m_uinfo.account);
+		form = new HeadModifyForm(m_uinfo.GetAccId());
 		form->Create(NULL, NULL, WS_OVERLAPPED, 0L);
 		form->ShowWindow(true);
 		form->CenterWindow();
@@ -318,11 +318,8 @@ bool ProfileForm::OnModifyOrCancelBtnClicked(ui::EventArgs* args, bool to_modify
 
 bool ProfileForm::OnSaveInfoBtnClicked(ui::EventArgs * args)
 {
-	std::wstring nick = nickname_edit->GetText();
-	size_t pos = 0;
-	while (pos != nick.length() && (nick[pos] == ' ' || nick[pos] == '\t' || nick[pos] == '\n'))
-		pos++;
-	if (pos == nick.length())
+	std::wstring nick = nbase::StringTrim(nickname_edit->GetText());
+	if (nick.empty())
 	{
 		nickname_error_tip->SetText(L"昵称不能为空");
 		nickname_error_tip->SetVisible(true);
@@ -331,29 +328,26 @@ bool ProfileForm::OnSaveInfoBtnClicked(ui::EventArgs * args)
 	else
 		nickname_error_tip->SetVisible(false);
 
-	UserInfo new_info;
-	new_info.account = m_uinfo.account;
+	nim::UserNameCard new_info;
+	new_info.SetAccId(m_uinfo.GetAccId());
 
-	if ((m_uinfo.field_avail_flag & kUInfoFlagName) == 0 || nbase::UTF16ToUTF8(nick) != m_uinfo.name)
+	if (!m_uinfo.ExistValue(nim::kUserNameCardKeyName) || nbase::UTF16ToUTF8(nick) != m_uinfo.GetName())
 	{
-		new_info.field_avail_flag |= kUInfoFlagName;
-		new_info.name = nbase::UTF16ToUTF8(nick);
+		new_info.SetName(nbase::UTF16ToUTF8(nick));
 	}
 
 	switch (sex_option->GetCurSel())
 	{
 	case 0:
-		if ((m_uinfo.field_avail_flag & kUInfoFlagGender) == 0 || m_uinfo.gender != UG_MALE)
+		if (!m_uinfo.ExistValue(nim::kUserNameCardKeyGender) || m_uinfo.GetGender() != UG_MALE)
 		{
-			new_info.field_avail_flag |= kUInfoFlagGender;
-			new_info.gender = UG_MALE;
+			new_info.SetGender(UG_MALE);
 		}
 		break;
 	case 1:
-		if ((m_uinfo.field_avail_flag & kUInfoFlagGender) == 0 || m_uinfo.gender != UG_FEMALE)
+		if (!m_uinfo.ExistValue(nim::kUserNameCardKeyGender) || m_uinfo.GetGender() != UG_FEMALE)
 		{
-			new_info.field_avail_flag |= kUInfoFlagGender;
-			new_info.gender = UG_FEMALE;
+			new_info.SetGender(UG_FEMALE);
 		}
 		break;
 	default:
@@ -367,33 +361,29 @@ bool ProfileForm::OnSaveInfoBtnClicked(ui::EventArgs * args)
 		int birth_month = birth_month_combo->GetCurSel() + 1;
 		int birth_day = birth_day_combo->GetCurSel() + 1;
 		std::string new_birthday = nbase::StringPrintf("%04d-%02d-%02d", birth_year, birth_month, birth_day);
-		if ((m_uinfo.field_avail_flag & kUInfoFlagBirthday) == 0 || new_birthday != m_uinfo.birthday)
+		if (!m_uinfo.ExistValue(nim::kUserNameCardKeyBirthday) || new_birthday != m_uinfo.GetBirth())
 		{
-			new_info.field_avail_flag |= kUInfoFlagBirthday;
-			new_info.birthday = nbase::StringPrintf("%04d-%02d-%02d", birth_year, birth_month, birth_day);
+			new_info.SetBirth( nbase::StringPrintf("%04d-%02d-%02d", birth_year, birth_month, birth_day));
 		}
 	}
 
-	if ((m_uinfo.field_avail_flag & kUInfoFlagPhone) == 0 && !phone_edit->GetUTF8Text().empty()
-		|| ((m_uinfo.field_avail_flag & kUInfoFlagPhone) != 0 && phone_edit->GetUTF8Text() != m_uinfo.phone))
+	if (!m_uinfo.ExistValue(nim::kUserNameCardKeyMobile) && !phone_edit->GetUTF8Text().empty()
+		|| (m_uinfo.ExistValue(nim::kUserNameCardKeyMobile) && phone_edit->GetUTF8Text() != m_uinfo.GetMobile()))
 	{
-		new_info.field_avail_flag |= kUInfoFlagPhone;
-		new_info.phone = nbase::UTF16ToUTF8(phone_edit->GetText());
+		new_info.SetMobile(nbase::UTF16ToUTF8(phone_edit->GetText()));
 	}
-	if ((m_uinfo.field_avail_flag & kUInfoFlagEmail) == 0 && !email_edit->GetUTF8Text().empty()
-		|| ((m_uinfo.field_avail_flag & kUInfoFlagEmail) != 0 && email_edit->GetUTF8Text() != m_uinfo.email))
+	if (!m_uinfo.ExistValue(nim::kUserNameCardKeyEmail) && !email_edit->GetUTF8Text().empty()
+		|| (m_uinfo.ExistValue(nim::kUserNameCardKeyEmail) && email_edit->GetUTF8Text() != m_uinfo.GetEmail()))
 	{
-		new_info.field_avail_flag |= kUInfoFlagEmail;
-		new_info.email = nbase::UTF16ToUTF8(email_edit->GetText());
+		new_info.SetEmail(nbase::UTF16ToUTF8(email_edit->GetText()));
 	}
-	if ((m_uinfo.field_avail_flag & kUInfoFlagSignature) == 0 && !signature_edit->GetUTF8Text().empty()
-		|| (m_uinfo.field_avail_flag & kUInfoFlagSignature) != 0 && signature_edit->GetUTF8Text() != m_uinfo.signature)
+	if (!m_uinfo.ExistValue(nim::kUserNameCardKeySignature) && !signature_edit->GetUTF8Text().empty()
+		|| (m_uinfo.ExistValue(nim::kUserNameCardKeySignature) && signature_edit->GetUTF8Text() != m_uinfo.GetSignature()))
 	{
-		new_info.field_avail_flag |= kUInfoFlagSignature;
-		new_info.signature = nbase::UTF16ToUTF8(signature_edit->GetText());
+		new_info.SetSignature(nbase::UTF16ToUTF8(signature_edit->GetText()));
 	}
 	
-	if(new_info.field_avail_flag != kUInfoFlagNone)
+	if (new_info.ExistValue(nim::kUserNameCardKeyAll))
 		UserService::GetInstance()->InvokeUpdateUserInfo(new_info, nullptr);
 	else
 		OnModifyOrCancelBtnClicked(nullptr, false);
@@ -484,9 +474,9 @@ bool ProfileForm::OnBirthdayComboSelect(ui::EventArgs * args)
 	return true;
 }
 
-void ProfileForm::OnFriendListChange(UserChangeType change_type, const UserInfo & info)
+void ProfileForm::OnFriendListChange(UserChangeType change_type, const nim::UserNameCard & info)
 {
-	if (info.account == m_uinfo.account)
+	if (info.GetAccId() == m_uinfo.GetAccId())
 	{
 		if (change_type == kChangeTypeAdd)
 			add_or_del->SelectItem(0);
@@ -495,15 +485,23 @@ void ProfileForm::OnFriendListChange(UserChangeType change_type, const UserInfo 
 	}
 }
 
-void ProfileForm::OnUserInfoChange(const std::list<UserInfo>& uinfos)
+void ProfileForm::OnUserInfoChange(const std::list<nim::UserNameCard>& uinfos)
 {
 	for (auto info : uinfos)
 	{
-		if (m_uinfo.account == info.account)
+		if (m_uinfo.GetAccId() == info.GetAccId())
 		{
 			m_uinfo.Update(info);
-			InitLabels();
-			OnModifyOrCancelBtnClicked(nullptr, false);
+			if (info.ExistValue(nim::kUserNameCardKeyIconUrl) && \
+				!info.ExistValue((nim::UserNameCardValueKey)(nim::kUserNameCardKeyAll - nim::kUserNameCardKeyIconUrl)))
+			{
+				head_image_btn->SetBkImage(UserService::GetInstance()->GetUserPhoto(m_uinfo.GetAccId())); //头像
+			}
+			else
+			{
+				InitLabels();
+				OnModifyOrCancelBtnClicked(nullptr, false);
+			}
 			break;
 		}
 	}
@@ -511,14 +509,14 @@ void ProfileForm::OnUserInfoChange(const std::list<UserInfo>& uinfos)
 
 void ProfileForm::InitLabels()
 {
-	SetTaskbarTitle(nbase::UTF8ToUTF16(m_uinfo.name) + L"的名片"); // 任务栏标题
-	head_image_btn->SetBkImage(UserService::GetInstance()->GetUserPhoto(m_uinfo.account)); //头像
-	if ((m_uinfo.field_avail_flag & kUInfoFlagName) != 0)
-		nickname_label->SetText(nbase::UTF8ToUTF16(m_uinfo.name)); // 头像右边的昵称
+	SetTaskbarTitle(nbase::UTF8ToUTF16(m_uinfo.GetName()) + L"的名片"); // 任务栏标题
+	head_image_btn->SetBkImage(UserService::GetInstance()->GetUserPhoto(m_uinfo.GetAccId())); //头像
+	if (m_uinfo.ExistValue(nim::kUserNameCardKeyName))
+		nickname_label->SetText(nbase::UTF8ToUTF16(m_uinfo.GetName())); // 头像右边的昵称
 
-	if ((m_uinfo.field_avail_flag & kUInfoFlagGender) != 0)
+	if (m_uinfo.ExistValue(nim::kUserNameCardKeyGender))
 	{
-		switch (m_uinfo.gender) // 昵称右边的性别图标
+		switch (m_uinfo.GetGender()) // 昵称右边的性别图标
 		{
 		case UG_MALE:
 			sex_icon->Selected(false);
@@ -534,25 +532,25 @@ void ProfileForm::InitLabels()
 		}
 	}
 
-	user_id->SetText(L"账号：" + nbase::UTF8ToUTF16(m_uinfo.account));//账号
-	if ((m_uinfo.field_avail_flag & kUInfoFlagBirthday) != 0)
-		birthday_label->SetText(nbase::UTF8ToUTF16(m_uinfo.birthday)); //生日
-	if ((m_uinfo.field_avail_flag & kUInfoFlagPhone) != 0)
-		phone_label->SetText(nbase::UTF8ToUTF16(m_uinfo.phone)); //手机
-	if ((m_uinfo.field_avail_flag & kUInfoFlagEmail) != 0)
-		email_label->SetText(nbase::UTF8ToUTF16(m_uinfo.email)); //邮箱
-	if ((m_uinfo.field_avail_flag & kUInfoFlagSignature) != 0)
-		signature_label->SetText(nbase::UTF8ToUTF16(m_uinfo.signature)); //签名
+	user_id->SetText(L"帐号：" + nbase::UTF8ToUTF16(m_uinfo.GetAccId()));//帐号
+	if (m_uinfo.ExistValue(nim::kUserNameCardKeyBirthday))
+		birthday_label->SetText(nbase::UTF8ToUTF16(m_uinfo.GetBirth())); //生日
+	if (m_uinfo.ExistValue(nim::kUserNameCardKeyMobile))
+		phone_label->SetText(nbase::UTF8ToUTF16(m_uinfo.GetMobile())); //手机
+	if (m_uinfo.ExistValue(nim::kUserNameCardKeyEmail))
+		email_label->SetText(nbase::UTF8ToUTF16(m_uinfo.GetEmail())); //邮箱
+	if (m_uinfo.ExistValue(nim::kUserNameCardKeySignature))
+		signature_label->SetText(nbase::UTF8ToUTF16(m_uinfo.GetSignature())); //签名
 }
 
 void ProfileForm::InitEdits()
 {
-	if ((m_uinfo.field_avail_flag & kUInfoFlagName) != 0)
-		nickname_edit->SetText(nbase::UTF8ToUTF16(m_uinfo.name)); //昵称
-	if (sex_icon->IsVisible() && (m_uinfo.field_avail_flag & kUInfoFlagGender) != 0)//性别
+	if (m_uinfo.ExistValue(nim::kUserNameCardKeyName))
+		nickname_edit->SetText(nbase::UTF8ToUTF16(m_uinfo.GetName())); //昵称
+	if (sex_icon->IsVisible() && m_uinfo.ExistValue(nim::kUserNameCardKeyGender))//性别
 		sex_option->SelectItem(sex_icon->IsSelected());
 
-	if ((m_uinfo.field_avail_flag & kUInfoFlagBirthday) != 0)
+	if (m_uinfo.ExistValue(nim::kUserNameCardKeyBirthday))
 	{
 		int birth[3] = { 0,0,0 }; //生日
 		size_t pos = std::string::npos;
@@ -560,8 +558,8 @@ void ProfileForm::InitEdits()
 		do
 		{
 			size_t temp = pos + 1;
-			pos = m_uinfo.birthday.find_first_of('-', temp);
-			std::string num_str = m_uinfo.birthday.substr(temp, pos - temp);
+			pos = m_uinfo.GetBirth().find_first_of('-', temp);
+			std::string num_str = m_uinfo.GetBirth().substr(temp, pos - temp);
 			if (!num_str.empty())
 				birth[count] = std::stoi(num_str);
 			count++;
@@ -578,12 +576,12 @@ void ProfileForm::InitEdits()
 		OnBirthdayComboSelect(NULL);
 	}
 
-	if ((m_uinfo.field_avail_flag & kUInfoFlagPhone) != 0)
-		phone_edit->SetText(nbase::UTF8ToUTF16(m_uinfo.phone));//手机
-	if ((m_uinfo.field_avail_flag & kUInfoFlagEmail) != 0)
-		email_edit->SetText(nbase::UTF8ToUTF16(m_uinfo.email));//邮箱
-	if ((m_uinfo.field_avail_flag & kUInfoFlagSignature) != 0)
-		signature_edit->SetText(nbase::UTF8ToUTF16(m_uinfo.signature));//签名
+	if (m_uinfo.ExistValue(nim::kUserNameCardKeyMobile))
+		phone_edit->SetText(nbase::UTF8ToUTF16(m_uinfo.GetMobile()));//手机
+	if (m_uinfo.ExistValue(nim::kUserNameCardKeyEmail))
+		email_edit->SetText(nbase::UTF8ToUTF16(m_uinfo.GetEmail()));//邮箱
+	if (m_uinfo.ExistValue(nim::kUserNameCardKeySignature))
+		signature_edit->SetText(nbase::UTF8ToUTF16(m_uinfo.GetSignature()));//签名
 }
 
 }

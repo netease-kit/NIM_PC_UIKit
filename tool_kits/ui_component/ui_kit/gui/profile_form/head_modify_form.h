@@ -56,7 +56,7 @@ private:
 	void BeginLoadAnimation();  // 开始加载动画
 	void StopLoadAnimation();	// 停止加载动画
 
-	void LoadCurrentHeadImageForPreview(); // 首次加载使用当前账号头像作为预览图
+	void LoadCurrentHeadImageForPreview(); // 首次加载使用当前帐号头像作为预览图
 	void SaveCurrentHeadImageForPreview(); // 更换图片过程中以当前修改的头像作为预览图 
 	void ShowPreviewWhileLoading();		   // 显示预览图
 

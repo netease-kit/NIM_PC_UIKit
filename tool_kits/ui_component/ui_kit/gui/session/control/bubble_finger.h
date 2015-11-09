@@ -13,7 +13,7 @@ class MsgBubbleFinger : public MsgBubbleItem
 {
 public:
 	virtual void InitControl(bool bubble_right);
-	virtual void InitInfo(const MsgData &msg);
+	virtual void InitInfo(const nim::IMMessage &msg);
 
 	/**
 	* 响应此消息项的右击消息，弹出菜单

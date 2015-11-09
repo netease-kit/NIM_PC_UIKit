@@ -7,7 +7,7 @@ using namespace ui;
 namespace nim_comp 
 {
 
-void CustomMsgBubble::InitControl(const MsgData &msg)
+void CustomMsgBubble::InitControl(const nim::IMMessage &msg)
 {
 	GlobalManager::FillBoxWithCache(this, L"main/custom_msg.xml");
 
@@ -24,43 +24,43 @@ void CustomMsgBubble::InitControl(const MsgData &msg)
 	InitInfo(msg);
 }
 
-void CustomMsgBubble::InitInfo(const MsgData &msg)
+void CustomMsgBubble::InitInfo(const nim::IMMessage &msg)
 {
-	OnGetUserInfoCallback cb1 = ToWeakCallback([this, msg](bool ret, const std::list<UserInfo> uinfos) {
+	OnGetUserInfoCallback cb1 = ToWeakCallback([this, msg](const std::list<nim::UserNameCard> uinfos) {
 		assert(nbase::MessageLoop::current()->ToUIMessageLoop());
-		if (!ret || uinfos.empty()) return;
+		if (uinfos.empty()) return;
 
-		std::string nick = uinfos.cbegin()->name;
-		if (msg.msg_type == nim::kNIMSysMsgTypeCustomP2PMsg)
+		std::string nick = uinfos.cbegin()->GetName();
+		if (msg.session_type_ == nim::kNIMSessionTypeP2P)
 		{
-			head_->SetBkImage(UserService::GetInstance()->GetUserPhoto(uinfos.cbegin()->account));
-			name_->SetUTF8Text(nick.empty() ? msg.from_account : nick);
+			head_->SetBkImage(UserService::GetInstance()->GetUserPhoto(uinfos.cbegin()->GetAccId()));
+			name_->SetUTF8Text(nick.empty() ? msg.sender_accid_ : nick);
 		}
 		else
 		{
 			head_->SetBkImage(TeamService::GetInstance()->GetTeamPhoto(true));
-			std::wstring tname = TeamService::GetInstance()->GetTeamName(msg.to_account);
+			std::wstring tname = TeamService::GetInstance()->GetTeamName(msg.receiver_accid_);
 			std::string name_test = nbase::UTF16ToUTF8(tname) + "->";
-			if (uinfos.cbegin()->name.empty())
-				name_test += msg.from_account;
+			if (uinfos.cbegin()->GetName().empty())
+				name_test += msg.sender_accid_;
 			else
 				name_test += nick;
 			name_->SetUTF8Text(name_test);
 		}
 	});
-	UserService::GetInstance()->GetUserInfoWithEffort(std::list<std::string>(1, msg.from_account), cb1);
+	UserService::GetInstance()->GetUserInfoWithEffort(std::list<std::string>(1, msg.sender_accid_), cb1);
 
 	OnUserPhotoReadyCallback cb2 = ToWeakCallback([this, msg](const std::string& accid, const std::wstring& photo_path) {
-		if (msg.msg_type == nim::kNIMSysMsgTypeCustomP2PMsg && msg.from_account == accid)
+		if (msg.session_type_ == nim::kNIMSessionTypeP2P && msg.sender_accid_ == accid)
 			head_->SetBkImage(photo_path);
 	});
 	unregister_cb.Add(UserService::GetInstance()->RegUserPhotoReady(cb2));
 
-	std::wstring tm = GetMessageTime(msg.msg_time, false);
+	std::wstring tm = GetMessageTime(msg.timetag_, false);
 	time_->SetText(tm);
 
 	std::wstring msg_body;
-	if (msg.custom_save_flag == 1)
+	if (msg.support_cloud_history_)
 	{
 		//msg_body = L"【可离线通知】";
 	}
@@ -68,24 +68,24 @@ void CustomMsgBubble::InitInfo(const MsgData &msg)
 	{
 		msg_body = L"【在线通知】";
 	}
-	if (!msg.custom_apns_text.empty())
+// 	if (!msg.custom_apns_text.empty())
+// 	{
+// 		if (!msg_body.empty())
+// 		{
+// 			msg_body += L"\r\n";
+// 		}
+// 		msg_body += L"【推送】" + nbase::UTF8ToUTF16(msg.custom_apns_text);
+// 	}
+	if (!msg.content_.empty())
 	{
 		if (!msg_body.empty())
 		{
 			msg_body += L"\r\n";
 		}
-		msg_body += L"【推送】" + nbase::UTF8ToUTF16(msg.custom_apns_text);
-	}
-	if (!msg.msg_body.empty())
-	{
-		if (!msg_body.empty())
-		{
-			msg_body += L"\r\n";
-		}
-		msg_body += L"【附言】" + nbase::UTF8ToUTF16(msg.msg_body);
+		msg_body += L"【附言】" + nbase::UTF8ToUTF16(msg.content_);
 	}
 	Json::Value json;
-	if (StringToJson(msg.msg_attach, json))
+	if (StringToJson(msg.attach_, json))
 	{
 		std::string id = json["id"].asString();
 		std::string content = json["content"].asString();

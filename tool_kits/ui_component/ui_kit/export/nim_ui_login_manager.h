@@ -34,11 +34,11 @@ public:
 	bool IsLinkActive();
 
 	/**
-	* 注册登录窗体的回调函数，用来让UI组件控制登陆窗体行为
+	* 注册登录窗体的回调函数，用来让UI组件控制登录窗体行为
 	* @param[in] cb_result		通知登录错误并返回错误原因的回调函数
-	* @param[in] cb_cancel		通知取消登陆的回调函数
-	* @param[in] cb_hide		通知隐藏登陆窗体的回调函数
-	* @param[in] cb_destroy		通知销毁登陆窗体的回调函数
+	* @param[in] cb_cancel		通知取消登录的回调函数
+	* @param[in] cb_hide		通知隐藏登录窗体的回调函数
+	* @param[in] cb_destroy		通知销毁登录窗体的回调函数
 	* @param[in] cb_show_main	通知显示主窗体的回调函数
 	* @return void 无返回值
 	*/

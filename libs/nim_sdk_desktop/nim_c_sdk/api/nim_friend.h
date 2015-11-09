@@ -27,7 +27,7 @@ NIM_SDK_DLL_API void nim_friend_reg_changed_cb(const char *json_extension, nim_f
 
 /** @fn void nim_friend_request(const char *accid, NIMVerifyType verify_type, const char *msg, const char *json_extension, nim_friend_opt_cb_func cb, const void *user_data)
   * 添加、验证好友
-  * @param[in] accid		对方账号
+  * @param[in] accid		对方帐号
   * @param[in] verify_type	好友验证类型
   * @param[in] msg			接口扩展字段
   * @param[in] json_extension json扩展参数（备用，目前不需要）
@@ -39,7 +39,7 @@ NIM_SDK_DLL_API void nim_friend_request(const char *accid, NIMVerifyType verify_
 
 /** @fn nim_friend_delete(const char *accid, const char *json_extension, nim_friend_opt_cb_func cb, const void *user_data)
   * 删除好友
-  * @param[in] accid		对方账号
+  * @param[in] accid		对方帐号
   * @param[in] json_extension json扩展参数（备用，目前不需要）
   * @param[in] cb			操作结果回调
   * @param[in] user_data	APP的自定义用户数据，SDK只负责传回给回调函数cb，不做任何处理！

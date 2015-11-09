@@ -4,76 +4,82 @@
 
 namespace nim_comp
 {
-void JsonToMsg( const Json::Value &json, MsgData &msg )
+// void JsonToMsg( const Json::Value &json, nim::IMMessage &msg )
+// {
+// 	msg.session_type_ = json[nim::kNIMMsgKeyToType].asString() == "0" ? nim::kNIMSessionTypeP2P : nim::kNIMSessionTypeTeam;
+// 	msg.receiver_accid_ = json[nim::kNIMMsgKeyToAccount].asString();
+// 	msg.sender_accid_ = json[nim::kNIMMsgKeyFromAccount].asString();
+// 	msg.timetag_ = json[nim::kNIMMsgKeyTime].asInt64();
+// 	msg.type_ = json[nim::kNIMMsgKeyType].asInt();
+// 	msg.content_ = json[nim::kNIMMsgKeyBody].asString();
+// 	msg.attach_ = json[nim::kNIMMsgKeyAttach].asString();
+// 	msg.client_msg_id_ = json[nim::kNIMMsgKeyClientMsgid].asString();
+// 	msg.resend_flag_ = json[nim::kNIMMsgKeyResendFlag].asInt() == 0 ? false : true;
+// 	msg.local_res_path_ = json[nim::kNIMMsgKeyLocalFilePath].asString();
+// 	msg.status_ = (nim::NIMMsgLogStatus)json[nim::kNIMMsgKeyLocalLogStatus].asInt();
+// 	msg.sub_status_ = (nim::NIMMsgLogSubStatus)json[nim::kNIMMsgKeyLocalLogSubStatus].asInt();
+// 
+// 	//客户端发送消息是不需要填写
+// // 	msg.readonly_sender_client_type_ = json[nim::kNIMMsgKeyFromClientType].asInt();
+// // 	msg.readonly_sender_device_id_ = json[nim::kNIMMsgKeyFromDeviceId].asString();
+// // 	msg.readonly_sender_nickname_ = json[nim::kNIMMsgKeyFromNick].asString();
+// // 	msg.readonly_server_id_ = json[nim::kNIMMsgKeyServerMsgid].asUInt64();
+// // 	msg.rescode_ = (NIMResCode)json[nim::kNIMMsgKeyLocalRescode].asInt();
+// // 	msg.feature_ = json[nim::kNIMMsgKeyLocalMsgFeature].asInt();
+// }
+
+// void MsgToJson(const nim::IMMessage &msg, Json::Value &json)
+// {
+// 	json[nim::kNIMMsgKeyToType] = msg.session_type_;
+// 	json[nim::kNIMMsgKeyToAccount] = msg.receiver_accid_;
+// 	json[nim::kNIMMsgKeyFromAccount] = msg.sender_accid_;
+// 	json[nim::kNIMMsgKeyTime] = msg.timetag_;
+// 	json[nim::kNIMMsgKeyType] = msg.type_;
+// 	json[nim::kNIMMsgKeyBody] = msg.content_;
+// 	json[nim::kNIMMsgKeyAttach] = msg.attach_;
+// 	json[nim::kNIMMsgKeyClientMsgid] = msg.client_msg_id_;
+// 	json[nim::kNIMMsgKeyResendFlag] = msg.resend_flag_ ? 1 : 0;
+// 
+// 	json[nim::kNIMMsgKeyLocalFilePath] = msg.local_res_path_;
+// 	json[nim::kNIMMsgKeyLocalLogStatus] = msg.status_;
+// 	json[nim::kNIMMsgKeyLocalLogSubStatus] = msg.sub_status_;
+// 
+// 	//客户端接收消息不需要解析
+// // 	json[nim::kNIMMsgKeyHistorySave] = msg.support_cloud_history_;
+// // 	json[nim::kNIMMsgKeyMsgRoaming] = msg.support_roam_msg_;
+// // 	json[nim::kNIMMsgKeyMsgSync] = msg.support_sync_msg_;
+// }
+
+void CustomSysMessageToIMMessage(const nim::SysMessage &sys_msg, nim::IMMessage &msg)
 {
-	msg.to_type = json[nim::kNIMMsgKeyToType].asString() == "0" ? nim::kNIMSessionTypeP2P : nim::kNIMSessionTypeTeam;
-	msg.to_account = json[nim::kNIMMsgKeyToAccount].asString();
-	msg.from_account = json[nim::kNIMMsgKeyFromAccount].asString();
-	msg.msg_time = json[nim::kNIMMsgKeyTime].asInt64();
-	msg.msg_type = json[nim::kNIMMsgKeyType].asInt();
-	msg.msg_body = json[nim::kNIMMsgKeyBody].asString();
-	msg.msg_attach = json[nim::kNIMMsgKeyAttach].asString();
-	msg.client_msg_id = json[nim::kNIMMsgKeyClientMsgid].asString();
-	msg.resend_flag = json[nim::kNIMMsgKeyResendFlag].asInt();
+	//无法对等
+	//msg.attach_ = sys_msg.apns_text_;
 
-	msg.from_client_type = json[nim::kNIMMsgKeyFromClientType].asInt();
-	msg.from_device_id = json[nim::kNIMMsgKeyFromDeviceId].asString();
-	msg.from_nick = json[nim::kNIMMsgKeyFromNick].asString();
-	msg.server_msg_id = json[nim::kNIMMsgKeyServerMsgid].asUInt64();
-
-	msg.msg_code = json[nim::kNIMMsgKeyLocalRescode].asInt();
-	msg.feature = json[nim::kNIMMsgKeyLocalMsgFeature].asInt();
-	msg.local_file_path = json[nim::kNIMMsgKeyLocalFilePath].asString();
-	msg.msg_status = (nim::NIMMsgLogStatus)json[nim::kNIMMsgKeyLocalLogStatus].asInt();
-	msg.msg_sub_status = (nim::NIMMsgLogSubStatus)json[nim::kNIMMsgKeyLocalLogSubStatus].asInt();
+	//这个方法只能再要显示在ui前调用
+	msg.receiver_accid_ = sys_msg.receiver_accid_;
+	msg.sender_accid_ = sys_msg.sender_accid_;
+	msg.timetag_ = sys_msg.timetag_;
+	msg.content_ = sys_msg.content_;
+	msg.attach_ = sys_msg.attach_;
+	msg.readonly_server_id_ = sys_msg.id_;
+	msg.support_cloud_history_ = sys_msg.support_offline_;
+	msg.rescode_ = sys_msg.rescode_;
+	msg.feature_ = sys_msg.feature_;
+	msg.session_type_ = sys_msg.type_ == nim::kNIMSysMsgTypeCustomP2PMsg ? nim::kNIMSessionTypeP2P : nim::kNIMSessionTypeTeam;
 }
 
-void MsgToJson( const MsgData &msg, Json::Value &json )
-{
-	json[nim::kNIMMsgKeyToType] = msg.to_type;
-	json[nim::kNIMMsgKeyToAccount] = msg.to_account;
-	json[nim::kNIMMsgKeyFromAccount] = msg.from_account;
-	json[nim::kNIMMsgKeyTime] = msg.msg_time;
-	json[nim::kNIMMsgKeyType] = msg.msg_type;
-	json[nim::kNIMMsgKeyBody] = msg.msg_body;
-	json[nim::kNIMMsgKeyAttach] = msg.msg_attach;
-	json[nim::kNIMMsgKeyClientMsgid] = msg.client_msg_id;
-	json[nim::kNIMMsgKeyResendFlag] = msg.resend_flag;
-
-	json[nim::kNIMMsgKeyLocalFilePath] = msg.local_file_path;
-	json[nim::kNIMMsgKeyLocalLogStatus] = msg.msg_status;
-	json[nim::kNIMMsgKeyLocalLogSubStatus] = msg.msg_sub_status;
-
-	json[nim::kNIMMsgKeyHistorySave] = msg.history_save;
-	json[nim::kNIMMsgKeyMsgRoaming] = msg.msg_roaming;
-	json[nim::kNIMMsgKeyMsgSync] = msg.msg_sync;
-}
-
-void CustomSysJsonToMsg(const Json::Value &json, MsgData &msg)
-{
-	msg.msg_type = json[nim::kNIMSysMsgKeyType].asInt();
-	msg.to_account = json[nim::kNIMSysMsgKeyToAccount].asString();
-	msg.from_account = json[nim::kNIMSysMsgKeyFromAccount].asString();
-	msg.msg_time = json[nim::kNIMSysMsgKeyTime].asInt64();
-	msg.msg_body = json[nim::kNIMSysMsgKeyMsg].asString();
-	msg.msg_attach = json[nim::kNIMSysMsgKeyAttach].asString();
-	msg.server_msg_id = json[nim::kNIMSysMsgKeyMsgId].asInt64();
-	msg.custom_save_flag = json[nim::kNIMSysMsgKeyCustomSaveFlag].asInt();
-	msg.custom_apns_text = json[nim::kNIMSysMsgKeyCustomApnsText].asString();
-}
-
-void CustomSysMsgToJson(const MsgData &msg, Json::Value &json)
-{
-	json[nim::kNIMSysMsgKeyType] = msg.msg_type;
-	json[nim::kNIMSysMsgKeyToAccount] = msg.to_account;
-	json[nim::kNIMSysMsgKeyFromAccount] = msg.from_account;
-	json[nim::kNIMSysMsgKeyTime] = msg.msg_time;
-	json[nim::kNIMSysMsgKeyMsg] = msg.msg_body;
-	json[nim::kNIMSysMsgKeyAttach] = msg.msg_attach; 
-	json[nim::kNIMSysMsgKeyMsgId] = msg.server_msg_id;
-	json[nim::kNIMSysMsgKeyCustomSaveFlag] = msg.custom_save_flag;
-	json[nim::kNIMSysMsgKeyCustomApnsText] = msg.custom_apns_text;
-}
+// void CustomSysMsgToJson(const MsgData &msg, Json::Value &json)
+// {
+// 	json[nim::kNIMSysMsgKeyType] = msg.msg_type;
+// 	json[nim::kNIMSysMsgKeyToAccount] = msg.to_account;
+// 	json[nim::kNIMSysMsgKeyFromAccount] = msg.from_account;
+// 	json[nim::kNIMSysMsgKeyTime] = msg.msg_time;
+// 	json[nim::kNIMSysMsgKeyMsg] = msg.msg_body;
+// 	json[nim::kNIMSysMsgKeyAttach] = msg.msg_attach; 
+// 	json[nim::kNIMSysMsgKeyMsgId] = msg.server_msg_id;
+// 	json[nim::kNIMSysMsgKeyCustomSaveFlag] = msg.custom_save_flag;
+// 	json[nim::kNIMSysMsgKeyCustomApnsText] = msg.custom_apns_text;
+// }
 
 bool StringToJson( const std::string &str, Json::Value &json )
 {
@@ -87,102 +93,111 @@ void GetNotifyMsg(const std::string& msg_attach, const std::string& from_account
 	if (StringToJson(msg_attach, json))
 	{
 		nim::NIMNotificationId id = (nim::NIMNotificationId)json[nim::kNIMNotificationKeyId].asInt();
+		std::wstring who = LoginManager::GetInstance()->IsEqual(from_account) ? L"你" : UserService::GetInstance()->GetUserName(from_account);
 
 		std::vector<std::string> ids;
 		Json::Value array;
 
 		if (id == nim::kNIMNotificationIdTeamInvite)
 		{
-			array = json[nim::kNIMNotificationKeyData][nim::kNIMNotificationInviteKeyUids];
+			array = json[nim::kNIMNotificationKeyData][nim::kNIMNotificationKeyDataIds];
 		}
 		else if (id == nim::kNIMNotificationIdTeamApplyPass)
 		{
-			std::string uid = json[nim::kNIMNotificationKeyData][nim::kNIMNotificationTeamApplyResUid].asString();
+			std::string uid = json[nim::kNIMNotificationKeyData][nim::kNIMNotificationKeyDataId].asString();
+			std::wstring name;
 			if (LoginManager::GetInstance()->IsEqual(uid))
 			{
-				show_text = L"欢迎进入";
+				name = L"你";
 			}
 			else
 			{
+				std::string team_nick;
 				SessionForm* session_wnd = dynamic_cast<SessionForm*>(WindowsManager::GetInstance()->GetWindow(SessionForm::kClassName, nbase::UTF8ToUTF16(to_account)));
-				std::string team_nick = session_wnd->GetTeamMemberInfo(uid).nick;
-				std::wstring name = UserService::GetInstance()->GetUserName(uid);
-				if (!team_nick.empty())
-				{
-					name = nbase::UTF8ToUTF16(team_nick);
-				}
-				show_text = nbase::StringPrintf(L"欢迎 %s 进入", name.c_str());
+				if(session_wnd)
+					team_nick = session_wnd->GetTeamMemberInfo(uid).GetNick();
+				name = team_nick.empty() ? UserService::GetInstance()->GetUserName(uid) : name = nbase::UTF8ToUTF16(team_nick);
 			}
+			show_text = nbase::StringPrintf(L"%s 通过了 %s 的入群申请", who.c_str(), name.c_str());
 		}
 		else if (id == nim::kNIMNotificationIdTeamInviteAccept)
 		{
-			std::wstring who = UserService::GetInstance()->GetUserName(from_account);
-
-			std::string uid = json[nim::kNIMNotificationKeyData][nim::kNIMNotificationTeamApplyResUid].asString();
+			std::string uid = json[nim::kNIMNotificationKeyData][nim::kNIMNotificationKeyDataId].asString();
+			std::wstring name;
 			if (LoginManager::GetInstance()->IsEqual(uid))
 			{
-				show_text = nbase::StringPrintf(L"%s 接受了 我的 入群邀请", who.c_str());
+				name = L"你";
 			}
 			else
 			{
+				std::string team_nick;
 				SessionForm* session_wnd = dynamic_cast<SessionForm*>(WindowsManager::GetInstance()->GetWindow(SessionForm::kClassName, nbase::UTF8ToUTF16(to_account)));
-				std::string team_nick = session_wnd->GetTeamMemberInfo(uid).nick;
-				std::wstring name = UserService::GetInstance()->GetUserName(uid);
-				if (!team_nick.empty())
-				{
-					name = nbase::UTF8ToUTF16(team_nick);
-				}
-				show_text = nbase::StringPrintf(L"%s 接受了 %s的 入群邀请", who.c_str(), name.c_str());
+				if(session_wnd)
+					team_nick = session_wnd->GetTeamMemberInfo(uid).GetNick();
+				name = team_nick.empty() ? UserService::GetInstance()->GetUserName(uid) : name = nbase::UTF8ToUTF16(team_nick);				
 			}
+			show_text = nbase::StringPrintf(L"%s 接受了 %s 的入群邀请", who.c_str(), name.c_str());
 		}
 		else if (id == nim::kNIMNotificationIdTeamKick)
 		{
-			array = json[nim::kNIMNotificationKeyData][nim::kNIMNotificationKickKeyUids];
+			array = json[nim::kNIMNotificationKeyData][nim::kNIMNotificationKeyDataIds];
 		}
 		else if (id == nim::kNIMNotificationIdTeamLeave)
 		{
+			std::wstring name;
 			if (LoginManager::GetInstance()->IsEqual(from_account))
 			{
-				show_text = L"你已离开";
+				name = L"你";
 			}
 			else
 			{
+				std::string team_nick;
 				SessionForm* session_wnd = dynamic_cast<SessionForm*>(WindowsManager::GetInstance()->GetWindow(SessionForm::kClassName, nbase::UTF8ToUTF16(to_account)));
-				std::string team_nick = session_wnd->GetTeamMemberInfo(from_account).nick;
-				std::wstring name = UserService::GetInstance()->GetUserName(from_account);
-				if (!team_nick.empty())
-				{
-					name = nbase::UTF8ToUTF16(team_nick);
-				}
-				show_text = nbase::StringPrintf(L"%s 离开了", name.c_str());
+				if(session_wnd)
+					team_nick = session_wnd->GetTeamMemberInfo(from_account).GetNick();
+				name = team_nick.empty() ? UserService::GetInstance()->GetUserName(from_account) : name = nbase::UTF8ToUTF16(team_nick);
 			}
+			show_text = nbase::StringPrintf(L"%s 离开了群", name.c_str());
 		}
 		else if (id == nim::kNIMNotificationIdTeamUpdate)
 		{
-			std::string str = json[nim::kNIMNotificationKeyData]["tinfo"][nim::kNIMTeamInfoKeyName].asString();
-			if( !str.empty() )
+			std::string team_nick;
+			SessionForm* session_wnd = dynamic_cast<SessionForm*>(WindowsManager::GetInstance()->GetWindow(SessionForm::kClassName, nbase::UTF8ToUTF16(to_account)));
+			if (session_wnd)
+				team_nick = session_wnd->GetTeamMemberInfo(from_account).GetNick();
+			std::wstring name = team_nick.empty() ? UserService::GetInstance()->GetUserName(from_account) : nbase::UTF8ToUTF16(team_nick);
+
+			Json::Value tinfo_json = json[nim::kNIMNotificationKeyData]["tinfo"];
+			if(tinfo_json.isMember(nim::kNIMTeamInfoKeyName))
 			{
-				std::wstring team_name = nbase::UTF8ToUTF16(str);
-				show_text = nbase::StringPrintf(L"名称更新为 %s", team_name.c_str());
+				std::wstring team_name = nbase::UTF8ToUTF16(tinfo_json[nim::kNIMTeamInfoKeyName].asString());
+				show_text = nbase::StringPrintf(L"群名称被更新为 %s", team_name.c_str());
+			}	
+			else if (tinfo_json.isMember(nim::kNIMTeamInfoKeyAnnouncement))
+			{
+				show_text = nbase::StringPrintf(L"%s 更新了群公告", name.c_str());
+			}
+			else if (tinfo_json.isMember(nim::kNIMTeamInfoKeyJoinMode))
+			{
+				std::string mode = tinfo_json[nim::kNIMTeamInfoKeyJoinMode].asString();
+				show_text = L"群身份验证模式更新为";
+
+				if(mode == "0")
+					show_text += L"允许任何人加入";
+				else if (mode == "1")
+					show_text += L"需要验证消息";
+				else if (mode == "2")
+					show_text += L"不允许任何人申请加入";
+				else
+					show_text = L"群身份验证模式已更新";
+			}
+			else if (tinfo_json.isMember(nim::kNIMTeamInfoKeyIntro))
+			{
+				show_text = nbase::StringPrintf(L"%s 更新了群介绍", name.c_str());
 			}
 			else
 			{
-				str = json[nim::kNIMNotificationKeyData]["tinfo"][nim::kNIMTeamInfoKeyAnnouncement].asString();
-				if( !str.empty() )
-				{
-					SessionForm* session_wnd = dynamic_cast<SessionForm*>(WindowsManager::GetInstance()->GetWindow(SessionForm::kClassName, nbase::UTF8ToUTF16(to_account)));
-					std::string team_nick = session_wnd->GetTeamMemberInfo(from_account).nick;
-					std::wstring name = UserService::GetInstance()->GetUserName(from_account);
-					if (!team_nick.empty())
-					{
-						name = nbase::UTF8ToUTF16(team_nick);
-					}
-					show_text = nbase::StringPrintf(L"%s 更新了群公告", name.c_str());
-				}
-				else
-				{
-					show_text = L"信息更新";
-				}
+				show_text = nbase::StringPrintf(L"%s 更新了群信息", name.c_str());
 			}
 		}
 		else if (id == nim::kNIMNotificationIdTeamDismiss)
@@ -191,29 +206,27 @@ void GetNotifyMsg(const std::string& msg_attach, const std::string& from_account
 		}
 		else if (id == nim::kNIMNotificationIdTeamOwnerTransfer)
 		{
-			std::string to = json[nim::kNIMNotificationKeyData][nim::kNIMNotificationOwnerTransferUid].asString();
+			std::string to = json[nim::kNIMNotificationKeyData][nim::kNIMNotificationKeyDataId].asString();
 			std::wstring name;
 			if (LoginManager::GetInstance()->IsEqual(to)) {
 				name = L"你";
 			}
 			else {
+				std::string team_nick;
 				SessionForm* session_wnd = dynamic_cast<SessionForm*>(WindowsManager::GetInstance()->GetWindow(SessionForm::kClassName, nbase::UTF8ToUTF16(to_account)));
-				std::string team_nick = session_wnd->GetTeamMemberInfo(to).nick;
-				name = UserService::GetInstance()->GetUserName(to);
-				if (!team_nick.empty())
-				{
-					name = nbase::UTF8ToUTF16(team_nick);
-				}
+				if(session_wnd)
+					team_nick = session_wnd->GetTeamMemberInfo(to).GetNick();
+				name = team_nick.empty() ? UserService::GetInstance()->GetUserName(to) : nbase::UTF8ToUTF16(team_nick);
 			}
-			show_text = nbase::StringPrintf(L"群主转让给 %s", name.c_str());
+			show_text = nbase::StringPrintf(L"%s 将群转让给 %s", who.c_str(), name.c_str());
 		}
 		else if (id == nim::kNIMNotificationIdTeamAddManager)
 		{
-			array = json[nim::kNIMNotificationKeyData][nim::kNIMNotificationAddManagerUids];
+			array = json[nim::kNIMNotificationKeyData][nim::kNIMNotificationKeyDataIds];
 		}
 		else if (id == nim::kNIMNotificationIdTeamRemoveManager)
 		{
-			array = json[nim::kNIMNotificationKeyData][nim::kNIMNotificationRemoveManagerUids];
+			array = json[nim::kNIMNotificationKeyData][nim::kNIMNotificationKeyDataIds];
 		}
 		else if (id == nim::kNIMNotificationIdNetcallBill || \
 			id == nim::kNIMNotificationIdNetcallMiss || \
@@ -288,13 +301,11 @@ void GetNotifyMsg(const std::string& msg_attach, const std::string& from_account
 			if( !ids.empty() )
 			{
 				std::wstring obj;
-				bool only_you = false;
 
 				int n = ids.size();
 				if (n == 1 && LoginManager::GetInstance()->IsEqual(ids[0]))
 				{
 					obj = L"你";
-					only_you = true;
 				}
 				else
 				{
@@ -304,13 +315,11 @@ void GetNotifyMsg(const std::string& msg_attach, const std::string& from_account
 						if( !obj.empty() )
 							obj.append(L"，");
 
+						std::string team_nick;
 						SessionForm* session_wnd = dynamic_cast<SessionForm*>(WindowsManager::GetInstance()->GetWindow(SessionForm::kClassName, nbase::UTF8ToUTF16(to_account)));
-						std::string team_nick = session_wnd->GetTeamMemberInfo(ids[i]).nick;
-						std::wstring name = UserService::GetInstance()->GetUserName(ids[i]);
-						if (!team_nick.empty())
-						{
-							name = nbase::UTF8ToUTF16(team_nick);
-						}
+						if(session_wnd)
+							team_nick = session_wnd->GetTeamMemberInfo(ids[i]).GetNick();
+						std::wstring name = team_nick.empty() ? UserService::GetInstance()->GetUserName(ids[i]) : nbase::UTF8ToUTF16(team_nick);;
 						obj.append(name);
 
 						if(i >= 2)
@@ -324,10 +333,7 @@ void GetNotifyMsg(const std::string& msg_attach, const std::string& from_account
 
 				if (id == nim::kNIMNotificationIdTeamInvite)
 				{
-					if(only_you)
-						show_text = nbase::StringPrintf(L"欢迎进入");
-					else
-						show_text = nbase::StringPrintf(L"欢迎 %s 进入", obj.c_str());
+					show_text = nbase::StringPrintf(L"%s 邀请 %s 加入了群聊", who.c_str(), obj.c_str());
 				}
 				else if (id == nim::kNIMNotificationIdTeamKick)
 					show_text = nbase::StringPrintf(L"%s 已被移出", obj.c_str());

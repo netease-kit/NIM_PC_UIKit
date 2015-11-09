@@ -40,7 +40,7 @@
 			<HBox class="item_box_attrib" name="nickname_box" visible="false">
 				<Label class="label_attrib" text="昵称"/>
 				<Control class="space"/>
-				<RichEdit class="prompt edit_attrib" name="nickname_edit" wantreturnmsg="true" wanttab="false"/>
+				<RichEdit class="simple prompt edit_attrib" name="nickname_edit" multiline="true"/>
 				<Label name="nickname_error_tip" margin="10,0,0,0" valign="center" font="1" normaltextcolor="obvious_tip" visible="false"/>
 			</HBox>
 			<HBox class="item_box_attrib" name="sex_box" visible="false">

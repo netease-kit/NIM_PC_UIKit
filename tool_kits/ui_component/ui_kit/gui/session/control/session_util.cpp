@@ -5,11 +5,11 @@
 
 namespace nim_comp
 {
-SessionType GetSessionType(const MsgData &msg)
+SessionType GetSessionType(const nim::IMMessage &msg)
 {
-	if (msg.to_type == nim::kNIMSessionTypeP2P)
+	if (msg.session_type_ == nim::kNIMSessionTypeP2P)
 		return kSessionDouble;
-	else if (msg.to_type == nim::kNIMSessionTypeTeam)
+	else if (msg.session_type_ == nim::kNIMSessionTypeTeam)
 		return kSessionTeam;
 	else
 	{
@@ -18,27 +18,27 @@ SessionType GetSessionType(const MsgData &msg)
 	}
 }
 
-std::string GetSessionId(const MsgData &msg)
+std::string GetSessionId(const nim::IMMessage &msg)
 {
-	if (msg.to_type == nim::kNIMSessionTypeP2P)
+	if (msg.session_type_ == nim::kNIMSessionTypeP2P)
 	{
-		if (LoginManager::GetInstance()->IsEqual(msg.from_account))
-			return msg.to_account;
+		if (LoginManager::GetInstance()->IsEqual(msg.sender_accid_))
+			return msg.receiver_accid_;
 		else
-			return msg.from_account;
+			return msg.sender_accid_;
 	}
 	else
-		return msg.to_account;
+		return msg.receiver_accid_;
 }
 
-bool IsBubbleRight( const MsgData &msg )
+bool IsBubbleRight(const nim::IMMessage &msg)
 {
-	if (LoginManager::GetInstance()->IsEqual(msg.from_account))
+	if (LoginManager::GetInstance()->IsEqual(msg.sender_accid_))
 	{
-		if (msg.to_account == msg.from_account)//给自己的其他端的消息
+		if (msg.receiver_accid_ == msg.sender_accid_)//给自己的其他端的消息
 		{
 			//nim::kNIMClientTypePCWindows
-			if (msg.from_client_type != nim::kNIMClientTypePCWindows && msg.from_client_type != 0)
+			if (msg.readonly_sender_client_type_ != nim::kNIMClientTypePCWindows && msg.readonly_sender_client_type_ != 0)
 			{
 				return false;
 			}
@@ -189,10 +189,7 @@ bool CheckIfShowTime(const long long old_timestamp, const long long new_timestam
 std::string GetFileMD5( const std::wstring &file )
 {
 	std::string utf8 = nbase::UTF16ToUTF8(file);
-	const char* md5 = nim::Tool::GetFileMd5( utf8 );
-	std::string out = std::string(md5);
-	QString::NIMFreeBuf((char*)md5);
-	return out;
+	return nim::Tool::GetFileMd5(utf8);
 }
 
 void GenerateUploadImage( const std::wstring &src, const std::wstring &dest )

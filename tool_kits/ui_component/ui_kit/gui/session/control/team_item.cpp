@@ -13,17 +13,17 @@ void TeamItem::InitControl()
 	icon_admin_ = this->FindSubControl(L"icon_admin");
 }
 
-void TeamItem::InitInfo(const nim::TeamMemberInfo &info)
+void TeamItem::InitInfo(const nim::TeamMemberProperty &info)
 {
-	this->SetUTF8Name(info.account);
-	team_card_ = info.nick;
+	this->SetUTF8Name(info.GetAccountID());
+	team_card_ = info.GetNick();
 
-	UserInfo uinfo;
-	UserService::GetInstance()->GetUserInfo(info.account, uinfo);
+	nim::UserNameCard uinfo;
+	UserService::GetInstance()->GetUserInfo(info.GetAccountID(), uinfo);
 	SetMemberName(uinfo, team_card_);
-	member_icon_->SetBkImage(UserService::GetInstance()->GetUserPhoto(info.account));
+	member_icon_->SetBkImage(UserService::GetInstance()->GetUserPhoto(info.GetAccountID()));
 
-	team_user_type_ = info.type;
+	team_user_type_ = info.GetUserType();
 	if (team_user_type_ == nim::kNIMTeamUserTypeCreator || team_user_type_ == nim::kNIMTeamUserTypeManager)
 	{
 		icon_admin_->SetBkImage(team_user_type_ == nim::kNIMTeamUserTypeCreator ? L"..\\public\\icon\\team_creator.png" : L"..\\public\\icon\\team_manager.png");
@@ -35,17 +35,17 @@ void TeamItem::InitInfo(const nim::TeamMemberInfo &info)
 
 void TeamItem::UpdateInfo(const std::string& team_card)
 {
-	UserInfo uinfo;
+	nim::UserNameCard uinfo;
 	SetMemberName(uinfo, team_card);
 }
 
-void TeamItem::OnUserInfoReady(const UserInfo& uinfo)
+void TeamItem::OnUserInfoReady(const nim::UserNameCard& uinfo)
 {
 	if (GetUTF8Name() == member_name_->GetUTF8Text())
 	{
 		std::string team_card;
 		SetMemberName(uinfo, team_card);
-		member_icon_->SetBkImage(UserService::GetInstance()->GetUserPhoto(uinfo.account));
+		member_icon_->SetBkImage(UserService::GetInstance()->GetUserPhoto(uinfo.GetAccId()));
 	}
 }
 
@@ -73,16 +73,16 @@ void TeamItem::SetOwner(bool is_owner)
 	}
 }
 
-void TeamItem::SetTeamMember(const nim::TeamMemberInfo& team_member_info)
+void TeamItem::SetTeamMember(const nim::TeamMemberProperty& team_member_info)
 {
-	this->SetUTF8Name(team_member_info.account);
+	this->SetUTF8Name(team_member_info.GetAccountID());
 
-	UserInfo uinfo;
-	UserService::GetInstance()->GetUserInfo(team_member_info.account, uinfo);
+	nim::UserNameCard uinfo;
+	UserService::GetInstance()->GetUserInfo(team_member_info.GetAccountID(), uinfo);
 
-	SetMemberName(uinfo, team_member_info.nick);
+	SetMemberName(uinfo, team_member_info.GetNick());
 
-	member_icon_->SetBkImage(UserService::GetInstance()->GetUserPhoto(uinfo.account));
+	member_icon_->SetBkImage(UserService::GetInstance()->GetUserPhoto(uinfo.GetAccId()));
 
 	icon_admin_->SetVisible(false);
 
@@ -93,11 +93,11 @@ nim::NIMTeamUserType TeamItem::GetTeamUserType()
 	return team_user_type_;
 }
 
-void TeamItem::SetMemberName(const UserInfo& uinfo, const std::string& team_card)
+void TeamItem::SetMemberName(const nim::UserNameCard& uinfo, const std::string& team_card)
 {
 	if (NULL == member_name_ )
 		return;
-	if (uinfo.account.empty() && team_card.empty())
+	if (uinfo.GetAccId().empty() && team_card.empty())
 		return;
 	
 	if (!team_card.empty())
@@ -111,7 +111,7 @@ void TeamItem::SetMemberName(const UserInfo& uinfo, const std::string& team_card
 	}
 	if (team_card.empty() && team_card_.empty())
 	{
-		member_name_->SetUTF8Text(uinfo.name);
+		member_name_->SetUTF8Text(uinfo.GetName());
 	}
 
 }

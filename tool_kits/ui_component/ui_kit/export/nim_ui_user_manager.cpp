@@ -23,12 +23,12 @@ void UserManager::InvokeGetAllUserInfo(const OnGetUserInfoCallback& cb)
 	nim_comp::UserService::GetInstance()->InvokeGetAllUserInfo(cb);
 }
 
-UserType UserManager::GetUserType(const std::string &id)
+nim::NIMFriendFlag UserManager::GetUserType(const std::string &id)
 {
 	return nim_comp::UserService::GetInstance()->GetUserType(id);
 }
 
-bool UserManager::GetUserInfo(const std::string &account, UserInfo &info)
+bool UserManager::GetUserInfo(const std::string &account, nim::UserNameCard &info)
 {
 	return nim_comp::UserService::GetInstance()->GetUserInfo(account, info);
 }
@@ -38,12 +38,12 @@ void UserManager::GetUserInfoWithEffort(const std::list<std::string>& account_li
 	nim_comp::UserService::GetInstance()->GetUserInfoWithEffort(account_list, cb);
 }
 
-const std::map<std::string, UserInfo>& UserManager::GetAllUserInfos()
+const std::map<std::string, nim::UserNameCard>& UserManager::GetAllUserInfos()
 {
 	return nim_comp::UserService::GetInstance()->GetAllUserInfos();
 }
 
-void UserManager::InvokeUpdateUserInfo(const UserInfo & new_info, const OnUpdateUserInfoCallback & cb)
+void UserManager::InvokeUpdateUserInfo(const nim::UserNameCard & new_info, const OnUpdateUserInfoCallback & cb)
 {
 	nim_comp::UserService::GetInstance()->InvokeUpdateUserInfo(new_info, cb);
 }

@@ -17,12 +17,12 @@ void MsgBubbleSticker::InitControl(bool bubble_right)
 	msg_sticker_->AttachMenu(nbase::Bind(&MsgBubbleSticker::OnMenu, this, std::placeholders::_1));
 }
 
-void MsgBubbleSticker::InitInfo(const MsgData &msg)
+void MsgBubbleSticker::InitInfo(const nim::IMMessage &msg)
 {
 	__super::InitInfo(msg);
 
 	Json::Value json;
-	if( StringToJson(msg.msg_attach, json) )
+	if( StringToJson(msg.attach_, json) )
 	{
 		int sub_type = json["type"].asInt();
 		if (sub_type == CustomMsgType_Sticker && json["data"].isObject()) //finger
@@ -38,7 +38,7 @@ void MsgBubbleSticker::InitInfo(const MsgData &msg)
 			}
 		}
 	}
-	QLOG_ERR(L"parse location msg attach fail: {0}") << msg.msg_attach;
+	QLOG_ERR(L"parse location msg attach fail: {0}") << msg.attach_;
 }
 bool MsgBubbleSticker::OnMenu(ui::EventArgs* arg)
 {

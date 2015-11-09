@@ -69,7 +69,7 @@ void MsgRecordForm::OnFinalMessage( HWND hWnd )
 		AudioCallback::SetPlaySid("");
 		AudioCallback::SetPlayCid("");
 
-		nim::Audio::StopPlayAudio();
+		nim_audio::Audio::StopPlayAudio();
 	}
 	__super::OnFinalMessage(hWnd);
 }
@@ -109,16 +109,12 @@ bool MsgRecordForm::Notify(ui::EventArgs* param)
 	{
 		MsgBubbleItem* item = dynamic_cast<MsgBubbleItem*>( param->pSender );
 		assert(item);
-		MsgData md = item->GetMsg();
+		nim::IMMessage md = item->GetMsg();
 
 		if(param->wParam == BET_RELOAD)
 		{
 			item->SetLoadStatus(RS_LOADING);
-
-			Json::Value json;
-			MsgToJson(md, json);
-
-			nim::Http::FetchMedia(json.toStyledString(), nbase::Bind(&MsgRecordForm::OnDownloadCallback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4), nim::Http::FetchMediaProgressCallback());
+			nim::NOS::FetchMedia(md, nbase::Bind(&MsgRecordForm::OnDownloadCallback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4), nim::NOS::ProgressCallback());
 		}
 	}
 	else if(param->Type == ui::kEventScrollChange)

@@ -10,17 +10,13 @@ namespace nim_comp
 {
 MsgBubbleFile:: ~MsgBubbleFile()
 {
-	if (my_msg_ && msg_.msg_status == nim::kNIMMsgLogStatusSending)
+	if (my_msg_ && msg_.status_ == nim::kNIMMsgLogStatusSending)
 	{
-		Json::Value value;
-		MsgToJson(msg_, value);
-		nim::Talk::StopSendMsg(value.toStyledString());
+		nim::Talk::StopSendMsg(msg_.client_msg_id_, msg_.type_);
 	}
 	if (loading_)
 	{
-		Json::Value value;
-		MsgToJson(msg_, value);
-		nim::Http::StopFetchMedia(value.toStyledString());
+		nim::NOS::StopFetchMedia(msg_);
 	}
 	//if (download_request_id_ != -1)
 	//{
@@ -74,17 +70,16 @@ void MsgBubbleFile::InitControl(bool bubble_right)
 	file_reup_->AttachClick(nbase::Bind(&MsgBubbleFile::OnEvent, this, std::placeholders::_1));
 }
 
-void MsgBubbleFile::InitInfo(const MsgData &msg)
+void MsgBubbleFile::InitInfo(const nim::IMMessage &msg)
 {
-	Json::Value value;
-	if (StringToJson(msg.msg_attach, value))
-	{
-		file_name_ = value[nim::kNIMFileMsgKeyDisplayName].asString();
-		file_size_ = value[nim::kNIMFileMsgKeySize].asInt();
-		file_url_ = value[nim::kNIMFileMsgKeyUrl].asString();
-	}
+	nim::IMFile file_data;
+	nim::Talk::ParseFileMessageAttach(msg, file_data);
+	file_name_ = file_data.display_name_;
+	file_size_ = file_data.size_;
+	file_url_ = file_data.url_;
+
 	std::string path, extend;
-	MsgExDB::GetInstance()->QueryDataWithMsgId(msg.client_msg_id, path, extend);
+	MsgExDB::GetInstance()->QueryDataWithMsgId(msg.client_msg_id_, path, extend);
 	if (!path.empty())
 	{
 		local_path_ = path;
@@ -134,16 +129,17 @@ void MsgBubbleFile::InitInfo(const MsgData &msg)
 	std::wstring file_size = GetFileSizeStr(file_size_);
 	file_info_size_->SetText(file_size);
 
-	if (msg.msg_status == nim::kNIMMsgLogStatusSending)
+	if (msg.status_ == nim::kNIMMsgLogStatusSending)
 	{
 		SetProgressValue(0);
 		progress_vertlayout_->SetVisible();
 	}
 }
+
 void MsgBubbleFile::SetMsgStatus(nim::NIMMsgLogStatus status)
 {
 	__super::SetMsgStatus(status);
-	msg_.msg_status = status;
+	msg_.status_ = status;
 
 	file_saveas_->SetVisible(false);
 	//file_save_->SetVisible(false);
@@ -162,7 +158,7 @@ void MsgBubbleFile::SetMsgStatus(nim::NIMMsgLogStatus status)
 			progress_vertlayout_->SetVisible(false);
 			http_status_->SetText(ui::MutiLanSupport::GetInstance()->GetStringViaID(L"STRID_SESSION_FILESTATUS_UPLOADED").c_str());
 		}
-		else if (msg_.local_file_path.empty() || !nbase::FilePathIsExist(nbase::UTF8ToUTF16(msg_.local_file_path), false))
+		else if (msg_.local_res_path_.empty() || !nbase::FilePathIsExist(nbase::UTF8ToUTF16(msg_.local_res_path_), false))
 		{
 			http_status_->SetText(L"路径错误");
 			status_resend_->SetVisible(false);
@@ -332,33 +328,27 @@ bool MsgBubbleFile::OnEvent(ui::EventArgs* arg)
 	{
 		if (my_msg_)
 		{
-			Json::Value value;
-			MsgToJson(msg_, value);
-			nim::Talk::StopSendMsg(value.toStyledString());
+			nim::Talk::StopSendMsg(msg_.client_msg_id_, msg_.type_);
 		}
 		else
 		{
 			download_cancel_ = true;
 			//nim_http::RemoveRequest(download_request_id_);
-			Json::Value value;
-			MsgToJson(msg_, value);
-			nim::Http::StopFetchMedia(value.toStyledString());
+			nim::NOS::StopFetchMedia(msg_);
 		}
 		return false;
 	}
 	else if (name == L"file_reup")
 	{
-		if (msg_.local_file_path.empty() || !nbase::FilePathIsExist(nbase::UTF8ToUTF16(msg_.local_file_path), false))
+		if (msg_.local_res_path_.empty() || !nbase::FilePathIsExist(nbase::UTF8ToUTF16(msg_.local_res_path_), false))
 		{
 			SetMsgStatus(nim::kNIMMsgLogStatusSendFailed);
 		} 
 		else
 		{
-			Json::Value value;
-			MsgToJson(msg_, value);
 			nim::Talk::FileUpPrgCallback* cb_pointer = new nim::Talk::FileUpPrgCallback(GetFileUpPrgCallback());
-			SessionManager::GetInstance()->AddFileUpProgressCb(msg_.client_msg_id, cb_pointer);
-			nim::Talk::SendMsg(value.toStyledString(), msg_.client_msg_id, cb_pointer);
+			SessionManager::GetInstance()->AddFileUpProgressCb(msg_.client_msg_id_, cb_pointer);
+			nim::Talk::SendMsg(msg_.ToJsonString(true), msg_.client_msg_id_, cb_pointer);
 			SetMsgStatus(nim::kNIMMsgLogStatusSending);
 		}
 		return false;
@@ -434,13 +424,11 @@ void MsgBubbleFile::StartDownload()
 		loading_ = true;
 		download_fail_ = false;
 		download_request_id_ = -1;
-		nim::Http::DownloadResourceCallback cb1 = nbase::Bind(&MsgBubbleFile::DownloadResourceCallback1, this, \
+		nim::NOS::DownloadMediaCallback cb1 = nbase::Bind(&MsgBubbleFile::DownloadResourceCallback1, this, \
 			std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4);
-		nim::Http::DownloadResourceProgressCallback cb2 = nbase::Bind(&MsgBubbleFile::DownloadResourceProgressCallback1, this, \
+		nim::NOS::ProgressCallback cb2 = nbase::Bind(&MsgBubbleFile::DownloadResourceProgressCallback1, this, \
 			std::placeholders::_1, std::placeholders::_2);
-		Json::Value value;
-		MsgToJson(msg_, value);
-		nim::Http::FetchMedia(value.toStyledString(), cb1, cb2);
+		nim::NOS::FetchMedia(msg_, cb1, cb2);
 
 		//std::string acc = LoginManager::GetInstance()->GetAccount();
 		//local_path_temp_ = nbase::UTF16ToUTF8(QPath::GetUserAppDataDir(acc)) + "temp\\" + msg_.client_msg_id;
@@ -492,7 +480,7 @@ void MsgBubbleFile::DownloadResourceCallback(bool is_ok, int response_code)
 		}
 		if (!download_fail_)
 		{
-			MsgExDB::GetInstance()->InsertData(msg_.client_msg_id, local_path_, "");
+			MsgExDB::GetInstance()->InsertData(msg_.client_msg_id_, local_path_, "");
 		}
 	}
 	SetMsgStatus(nim::kNIMMsgLogStatusNone);

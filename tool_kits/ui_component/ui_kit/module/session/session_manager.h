@@ -32,18 +32,18 @@ public:
 	* @param[in] msg 消息体
 	* @return void 无返回值
 	*/
-	void AddNewMsg(const MsgData &msg);
+	void AddNewMsg(const nim::IMMessage &msg);
 	void ResetUnread(const std::string &id);
 
 	SessionForm* Find(const std::string &id);
-	void RemoveForm(std::string id);
+	void RemoveForm(std::string id, const SessionForm* form = NULL);
 
 	void AddFileUpProgressCb(std::string msg_id, nim::Talk::FileUpPrgCallback* cb);
 	void RemoveFileUpProgressCb(std::string msg_id);
 	void QueryMyTList(const std::string& tid);
 
 private:
-	void OnQueryMyTList(const std::string& tid, const nim::TeamMemberInfo& team_member_info);
+	void OnQueryMyTList(const std::string& tid, const nim::TeamMemberProperty& team_member_info);
 	bool IsTeamMsgNotify(const std::string& tid);
 
 private:

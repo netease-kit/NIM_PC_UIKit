@@ -16,20 +16,20 @@ public:
 		ui::GlobalManager::FillBoxWithCache(this, L"invokechat/start_chat_friend.xml");
 	}
 
-	void Init(const UserInfo& _user_info)
+	void Init(const nim::UserNameCard& _user_info)
 	{
 		user_info = _user_info;
 
-		SetUTF8Name(user_info.account);
-		SetUTF8DataID(user_info.account);
+		SetUTF8Name(user_info.GetAccId());
+		SetUTF8DataID(user_info.GetAccId());
 		ui::Button* head_image_button = (ui::Button*)FindSubControl(L"head_image");
 		ui::Control* head_image_mask = (ui::Control*)FindSubControl(L"headmask");
 		head_image_mask->SetClass(L"checkbox_headimage_mask_40x40");
-		head_image_button->SetBkImage(UserService::GetInstance()->GetUserPhoto(user_info.account));
+		head_image_button->SetBkImage(UserService::GetInstance()->GetUserPhoto(user_info.GetAccId()));
 		ui::Label* show_name_label = (ui::Label*)FindSubControl(L"show_name");
-		show_name_label->SetUTF8Text(user_info.name);
+		show_name_label->SetUTF8Text(user_info.GetName());
 
-		nick_name = nbase::UTF8ToUTF16(user_info.name);
+		nick_name = nbase::UTF8ToUTF16(user_info.GetName());
 		nick_name = nbase::MakeLowerString(nick_name);
 		nick_name_full_spell = nbase::MakeLowerString(PinYinHelper::GetInstance()->ConvertToFullSpell(nick_name));
 		nick_name_simple_spell = nbase::MakeLowerString(PinYinHelper::GetInstance()->ConvertToSimpleSpell(nick_name));
@@ -48,7 +48,7 @@ public:
 		return false;
 	}
 
-	UserInfo user_info;
+	nim::UserNameCard user_info;
 };
 
 class CInvokeChatTileListUI : public ui::ListBox
@@ -81,12 +81,12 @@ private:
 	virtual LRESULT HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam) override;
 	virtual void InitWindow() override;
 	void AddTreeNode(ui::TreeNode* tree_node);
-	void AddListItem(const UserInfo& all_info, bool is_enable);
-	void RemoveListItem(const UserInfo& all_info);
-	ui::Box* AddListItemInGroup(const UserInfo& all_info, CInvokeChatTileListUI* tile_layout);
-	bool RemoveListItemInGroup(const UserInfo& all_info, CInvokeChatTileListUI* tile_layout);
-	CInvokeChatListItemUI* CreateStartChatListItem(const UserInfo& user_info);
-	ui::HBox* CreateSelectedListItem(const UserInfo& user_info);
+	void AddListItem(const nim::UserNameCard& all_info, bool is_enable);
+	void RemoveListItem(const nim::UserNameCard& all_info);
+	ui::Box* AddListItemInGroup(const nim::UserNameCard& all_info, CInvokeChatTileListUI* tile_layout);
+	bool RemoveListItemInGroup(const nim::UserNameCard& all_info, CInvokeChatTileListUI* tile_layout);
+	CInvokeChatListItemUI* CreateStartChatListItem(const nim::UserNameCard& user_info);
+	ui::HBox* CreateSelectedListItem(const nim::UserNameCard& user_info);
 	bool OnBtnDeleteClick(const UTF8String& user_id, ui::EventArgs* param);
 	bool OnBtnConfirmClick(ui::EventArgs* param);
 	bool OnBtnCancelClick(ui::EventArgs* param);
@@ -98,7 +98,7 @@ private:
 	void OnCheckBox(UTF8String id, bool check);
 
 	//好友名单改变的回调
-	void OnFriendListChange(UserChangeType change_type, const UserInfo& user);
+	void OnFriendListChange(UserChangeType change_type, const nim::UserNameCard& user);
 	//黑名单改变时的回调
 	void OnSetBlackCallback(const std::string& id, bool black);
 	

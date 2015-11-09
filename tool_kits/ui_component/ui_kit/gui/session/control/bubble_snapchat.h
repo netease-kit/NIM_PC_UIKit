@@ -12,7 +12,7 @@ namespace nim_comp
 class MsgBubbleSnapChat : public MsgBubbleImage
 {
 public:
-	void InitInfo(const MsgData &msg);
+	void InitInfo(const nim::IMMessage &msg);
 	virtual bool OnClicked(ui::EventArgs* arg) override;
 
 private:

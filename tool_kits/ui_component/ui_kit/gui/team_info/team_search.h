@@ -28,15 +28,15 @@ public:
 	virtual LRESULT HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam) override;
 	virtual void InitWindow() override;
 
-	void OnGetTeamInfoCb(nim::NIMResCode res_code, nim::NIMNotificationId notification_id, const std::string& tid, const std::string& result);
-	void OnApplyJoinCb(nim::NIMResCode res_code, nim::NIMNotificationId notification_id, const std::string& tid, const std::string& result);
+	void OnGetTeamInfoCb(const nim::TeamEvent& team_event);
+	void OnApplyJoinCb(const nim::TeamEvent& team_event);
 
 	void GotoPage(TeamSearchPage page);
 private:
 	bool Notify(ui::EventArgs* arg);
 	bool OnClicked(ui::EventArgs* arg);
 
-	void ShowTeamInfo(const std::string &info);
+	void ShowTeamInfo(const nim::TeamEvent& team_event);
 public:
 	static const LPCTSTR kClassName;
 private:

@@ -20,8 +20,8 @@ public:
 	bool QueryDataWithMsgId(const std::string& msg_id, std::string& path, std::string& extend);
 
 	//用于保存一些自定义通知消息
-	bool InsertMsgData(const MsgData& msg);
-	std::vector<MsgData> QueryMsgData(int64_t time, int limit = 20);
+	bool InsertMsgData(const nim::SysMessage& msg);
+	std::vector<nim::SysMessage> QueryMsgData(int64_t time, int limit = 20);
 
 private:
     bool CreateDBFile();

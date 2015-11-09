@@ -45,14 +45,14 @@ UnregisterCallback TeamManager::RegChangeTeamMember(OnTeamMemberChange change)
 	return nim_comp::TeamService::GetInstance()->RegChangeTeamMember(change);
 }
 
-UnregisterCallback TeamManager::RegChangeTeamAdmin(OnTeamMemberAdmin admin)
+UnregisterCallback TeamManager::RegSetTeamAdmin(OnTeamAdminSet admin)
 {
-	return nim_comp::TeamService::GetInstance()->RegChangeTeamAdmin(admin);
+	return nim_comp::TeamService::GetInstance()->RegSetTeamAdmin(admin);
 }
 
-UnregisterCallback TeamManager::RegSetTeamOwner(OnSetTeamOwner set_team_owner)
+UnregisterCallback TeamManager::RegChangeTeamOwner(OnTeamOwnerChange set_team_owner)
 {
-	return nim_comp::TeamService::GetInstance()->RegSetTeamOwner(set_team_owner);
+	return nim_comp::TeamService::GetInstance()->RegChangeTeamOwner(set_team_owner);
 }
 
 std::wstring TeamManager::GetTeamName(const std::string& tid)

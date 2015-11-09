@@ -41,14 +41,14 @@ void TeamEventItem::InitCtrl()
 	unregister_cb.Add(TeamService::GetInstance()->RegChangeTeamName(nbase::Bind(&TeamEventItem::OnTeamNameChange, this, std::placeholders::_1)));
 }
 
-bool TeamEventItem::InitInfo(const Json::Value &json)
+bool TeamEventItem::InitInfo(const nim::SysMessage &json)
 {
-	msg_time_ = json[nim::kNIMSysMsgKeyTime].asInt64();
-	msg_type_ = json[nim::kNIMSysMsgKeyType].asInt();
-	acc_id_ = json[nim::kNIMSysMsgKeyFromAccount].asString();
-	tid_ = json[nim::kNIMSysMsgKeyToAccount].asString();
-	msg_id_ = json[nim::kNIMSysMsgKeyMsgId].asInt64();
-	msg_status_ = json[nim::kNIMSysMsgKeyLocalStatus].asInt();
+	msg_time_ = json.timetag_;
+	msg_type_ = (int)json.type_;
+	acc_id_ = json.sender_accid_;
+	tid_ = json.receiver_accid_;
+	msg_id_ = json.id_;
+	msg_status_ = json.status_;
 
 	btn_head_->SetBkImage(TeamService::GetInstance()->GetTeamPhoto(false));
 	evt_team_->SetText(TeamService::GetInstance()->GetTeamName(tid_));
@@ -82,16 +82,16 @@ bool TeamEventItem::InitInfo(const Json::Value &json)
 
 		Json::Reader reader;
 		Json::Value attach;
-		reader.parse(json["attach"].asString(), attach);
+		reader.parse(json.attach_, attach);
 		nim::NIMVerifyType verify_type = (nim::NIMVerifyType)attach["vt"].asInt();
 		if (verify_type == nim::kNIMVerifyTypeAdd)
 			evt_tip_->SetText(nbase::StringPrintf(L"已经加你为好友"));
 		else if (verify_type == nim::kNIMVerifyTypeAsk)
 		{
-			std::wstring msg_content = nbase::UTF8ToUTF16(json[nim::kNIMSysMsgKeyMsg].asString());
+			std::wstring msg_content = nbase::UTF8ToUTF16(json.content_);
 			evt_tip_->SetText(nbase::StringPrintf(L"请求加你为好友，附言：%s", msg_content.c_str()));
 			evt_tip_->SetToolTipText(msg_content);
-			if (UserService::GetInstance()->GetUserType(acc_id_) == UT_UNKNOWN)
+			if (UserService::GetInstance()->GetUserType(acc_id_) == nim::kNIMFriendFlagNotFriend)
 			{
 				btn_ok_->SetVisible(true);
 				btn_no_->SetVisible(true);
@@ -140,10 +140,10 @@ bool TeamEventItem::OnClicked(ui::EventArgs* arg)
 
 		if (msg_type_ == nim::kNIMSysMsgTypeTeamApply)
 			nim::Team::PassJoinApplyAsync(tid_, acc_id_,
-				nbase::Bind(&TeamEventItem::TeamEventCb, msg_id_, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
+				nbase::Bind(&TeamEventItem::TeamEventCb, msg_id_, std::placeholders::_1));
 		else if (msg_type_ == nim::kNIMSysMsgTypeTeamInvite)
 			nim::Team::AcceptInvitationAsync(tid_, acc_id_,
-				nbase::Bind(&TeamEventItem::TeamEventCb, msg_id_, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
+				nbase::Bind(&TeamEventItem::TeamEventCb, msg_id_, std::placeholders::_1));
 		else if (msg_type_ == nim::kNIMSysMsgTypeFriendAdd)
 		{
 			nim::Friend::FriendOptCallback cb = ToWeakCallback([this](int res) {
@@ -160,10 +160,10 @@ bool TeamEventItem::OnClicked(ui::EventArgs* arg)
 
 		if (msg_type_ == nim::kNIMSysMsgTypeTeamApply)
 			nim::Team::RejectJoinApplyAsync(tid_, acc_id_, "",
-				nbase::Bind(&TeamEventItem::TeamEventCb, msg_id_, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
+				nbase::Bind(&TeamEventItem::TeamEventCb, msg_id_, std::placeholders::_1));
 		else if (msg_type_ == nim::kNIMSysMsgTypeTeamInvite)
 			nim::Team::RejectInvitationAsync(tid_, acc_id_, "",
-				nbase::Bind(&TeamEventItem::TeamEventCb, msg_id_, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
+				nbase::Bind(&TeamEventItem::TeamEventCb, msg_id_, std::placeholders::_1));
 		else if (msg_type_ == nim::kNIMSysMsgTypeFriendAdd)
 		{
 			nim::Friend::FriendOptCallback cb = ToWeakCallback([this](int res) {
@@ -199,35 +199,35 @@ void TeamEventItem::OnTeamEventCb(nim::NIMSysMsgStatus status)
 	result_->SetVisible(true);
 }
 
-void TeamEventItem::TeamEventCb(__int64 msg_id, nim::NIMResCode code, nim::NIMNotificationId nid, const std::string& tid, const std::string& result)
+void TeamEventItem::TeamEventCb(__int64 msg_id, const nim::TeamEvent& team_event)
 {
-	QLOG_APP(L"msg_id={0} notify_id={1} code={2}") << msg_id << nid << code;
+	QLOG_APP(L"msg_id={0} notify_id={1} code={2}") << msg_id << team_event.notification_id_ << team_event.res_code_;
 
 	nim::NIMSysMsgStatus status = nim::kNIMSysMsgStatusNone;
-	if (nid == nim::kNIMNotificationIdTeamApplyPass) //5 同意xxx的入群申请
+	if (team_event.notification_id_ == nim::kNIMNotificationIdTeamApplyPass) //5 同意xxx的入群申请
 	{
-		if (code == nim::kNIMResSuccess || code == nim::kNIMResTeamAlreadyIn)
+		if (team_event.res_code_ == nim::kNIMResSuccess || team_event.res_code_ == nim::kNIMResTeamAlreadyIn)
 			status = nim::kNIMSysMsgStatusPass;
 		else
 			status = nim::kNIMSysMsgStatusInvalid;
 	}
-	else if (nid == nim::kNIMNotificationIdLocalRejectApply) //2002 拒绝xxx的入群申请
+	else if (team_event.notification_id_ == nim::kNIMNotificationIdLocalRejectApply) //2002 拒绝xxx的入群申请
 	{
-		if (code == nim::kNIMResSuccess)
+		if (team_event.res_code_ == nim::kNIMResSuccess)
 			status = nim::kNIMSysMsgStatusDecline;
 		else
 			status = nim::kNIMSysMsgStatusInvalid;
 	}
-	else if (nid == nim::kNIMNotificationIdTeamInviteAccept) //9 同意xxx的入群邀请
+	else if (team_event.notification_id_ == nim::kNIMNotificationIdTeamInviteAccept) //9 同意xxx的入群邀请
 	{
-		if (code == nim::kNIMResSuccess)
+		if (team_event.res_code_ == nim::kNIMResSuccess)
 			status = nim::kNIMSysMsgStatusPass;
 		else
 			status = nim::kNIMSysMsgStatusInvalid;
 	}
-	else if (nid == nim::kNIMNotificationIdLocalRejectInvite) //2003 拒绝xxx的入群邀请
+	else if (team_event.notification_id_ == nim::kNIMNotificationIdLocalRejectInvite) //2003 拒绝xxx的入群邀请
 	{
-		if (code == nim::kNIMResSuccess)
+		if (team_event.res_code_ == nim::kNIMResSuccess)
 			status = nim::kNIMSysMsgStatusDecline;
 		else
 			status = nim::kNIMSysMsgStatusInvalid;
@@ -243,15 +243,15 @@ void TeamEventItem::TeamEventCb(__int64 msg_id, nim::NIMResCode code, nim::NIMNo
 		f->OnTeamEventCb(msg_id, status);
 
 	TeamNotifyForm* notify = (TeamNotifyForm*)(WindowsManager::GetInstance()->GetWindow(
-		TeamNotifyForm::kClassName, nbase::UTF8ToUTF16(tid)));
+		TeamNotifyForm::kClassName, nbase::UTF8ToUTF16(team_event.team_id_)));
 	if (notify)
 	{
 		notify->Close();
 	}
 
-	if (nid == nim::kNIMNotificationIdTeamInviteAccept)
+	if (team_event.notification_id_ == nim::kNIMNotificationIdTeamInviteAccept || team_event.notification_id_ == nim::kNIMNotificationIdTeamApplyPass)
 	{
-		TeamCallback::OnTeamEventCallback(code, nim::kNIMNotificationIdTeamInviteAccept, tid, "");
+		TeamCallback::OnTeamEventCallback(team_event);
 	}
 }
 
@@ -298,9 +298,9 @@ bool TeamEventItem::DelEventItemMenuItemClick(ui::EventArgs* param)
 
 void TeamEventItem::OnTeamNameChange(const nim::TeamInfo& team_info)
 {
-	if (team_info.id == tid_)
+	if (team_info.GetTeamID() == tid_)
 	{
-		evt_team_->SetUTF8Text(team_info.name);
+		evt_team_->SetUTF8Text(team_info.GetName());
 	}
 }
 

@@ -14,7 +14,7 @@ class MsgBubbleFile : public MsgBubbleItem
 public:
 	virtual ~MsgBubbleFile();
 	virtual void InitControl(bool bubble_right) override;
-	virtual void InitInfo(const MsgData &msg) override;
+	virtual void InitInfo(const nim::IMMessage &msg) override;
 
 	/**
 	* 设置此消息项的发送状态图标（发送中、发送失败等）

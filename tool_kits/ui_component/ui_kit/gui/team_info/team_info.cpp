@@ -81,10 +81,11 @@ void TeamInfoForm::InitWindow()
 	unregister_cb.Add(TeamService::GetInstance()->RegAddTeamMember(nbase::Bind(&TeamInfoForm::OnTeamMemberAdd, this, std::placeholders::_1, std::placeholders::_2)));
 	unregister_cb.Add(TeamService::GetInstance()->RegRemoveTeamMember(nbase::Bind(&TeamInfoForm::OnTeamMemberRemove, this, std::placeholders::_1, std::placeholders::_2)));
 	unregister_cb.Add(TeamService::GetInstance()->RegChangeTeamMember(nbase::Bind(&TeamInfoForm::OnTeamMemberChange, this, std::placeholders::_1, std::placeholders::_2)));
-	unregister_cb.Add(TeamService::GetInstance()->RegChangeTeamAdmin(nbase::Bind(&TeamInfoForm::OnTeamMemberAdmin, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
-	unregister_cb.Add(TeamService::GetInstance()->RegSetTeamOwner(nbase::Bind(&TeamInfoForm::OnSetTeamOwner, this, std::placeholders::_1, std::placeholders::_2)));
+	unregister_cb.Add(TeamService::GetInstance()->RegSetTeamAdmin(nbase::Bind(&TeamInfoForm::OnTeamAdminSet, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
+	unregister_cb.Add(TeamService::GetInstance()->RegChangeTeamOwner(nbase::Bind(&TeamInfoForm::OnTeamOwnerChange, this, std::placeholders::_1, std::placeholders::_2)));
 	unregister_cb.Add(UserService::GetInstance()->RegUserInfoChange(nbase::Bind(&TeamInfoForm::OnUserInfoChange, this, std::placeholders::_1)));
 	unregister_cb.Add(UserService::GetInstance()->RegUserPhotoReady(nbase::Bind(&TeamInfoForm::OnUserPhotoReady, this, std::placeholders::_1, std::placeholders::_2)));
+	unregister_cb.Add(TeamService::GetInstance()->RegRemoveTeam(nbase::Bind(&TeamInfoForm::OnTeamRemove, this, std::placeholders::_1)));
 
 	ui::Label* title_text = (ui::Label*)FindControl(L"title");
 	if (create_or_display_) {
@@ -106,13 +107,14 @@ void TeamInfoForm::InitWindow()
 
 	if (!create_or_display_)
 	{
-		if (team_info_.readonly) {
-			btn_quit_->SetVisible(false);
-			btn_dismiss_->SetVisible(false);
-		}
-		else {
+		//TODO(litianyi)
+// 		if (team_info_.readonly) {
+// 			btn_quit_->SetVisible(false);
+// 			btn_dismiss_->SetVisible(false);
+// 		}
+// 		else {
 			ChangeUIByIdentity();
-		}
+// 		}
 		nim::Team::QueryTeamMembersAsync(tid_, nbase::Bind(&TeamInfoForm::Init, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 	}
 	else {
@@ -124,18 +126,18 @@ void TeamInfoForm::InitWindow()
 	re_team_intro_ = (RichEdit*)FindControl(L"team_intro");
 
 	if (!create_or_display_) {
-		((RichEdit*)FindControl(L"team_id"))->SetUTF8Text(team_info_.id);
-		re_team_name_->SetUTF8Text(team_info_.name);
-		re_team_intro_->SetUTF8Text(team_info_.intro);
-		if (team_info_.join_mode == nim::kNIMTeamJoinModeNoAuth)
+		((RichEdit*)FindControl(L"team_id"))->SetUTF8Text(team_info_.GetTeamID());
+		re_team_name_->SetUTF8Text(team_info_.GetName());
+		re_team_intro_->SetUTF8Text(team_info_.GetIntro());
+		if (team_info_.GetJoinMode() == nim::kNIMTeamJoinModeNoAuth)
 		{
 			((Option*)FindControl(L"join_mode_any"))->Selected(true);
 		}
-		else if (team_info_.join_mode == nim::kNIMTeamJoinModeNeedAuth)
+		else if (team_info_.GetJoinMode() == nim::kNIMTeamJoinModeNeedAuth)
 		{
 			((Option*)FindControl(L"join_mode_verify"))->Selected(true);
 		}
-		else if (team_info_.join_mode == nim::kNIMTeamJoinModeRejectAll)
+		else if (team_info_.GetJoinMode() == nim::kNIMTeamJoinModeRejectAll)
 		{
 			((Option*)FindControl(L"join_mode_nobody"))->Selected(true);
 		}
@@ -172,21 +174,21 @@ bool TeamInfoForm::OnInviteUesrBtnClick(ui::EventArgs *param)
 void TeamInfoForm::SelectedCompleted(const std::list<UTF8String>& id_list)
 {
 	if (create_or_display_) {
-		std::list<nim::TeamMemberInfo> team_member_vec;
-		nim::TeamMemberInfo team_member;
+		std::list<nim::TeamMemberProperty> team_member_vec;
+		nim::TeamMemberProperty team_member;
 		for (auto it = id_list.begin(); it != id_list.end(); it++)
 		{
-			UserInfo userinfo;
+			nim::UserNameCard userinfo;
 			UserService::GetInstance()->GetUserInfo(*it, userinfo);
-			team_member.account = userinfo.account;
-			team_member.nick = userinfo.name;
-			team_member.type = nim::kNIMTeamUserTypeLocalWaitAccept;
+			team_member.SetAccountID(userinfo.GetAccId());
+			team_member.SetNick(userinfo.GetName());
+			team_member.SetUserType(nim::kNIMTeamUserTypeLocalWaitAccept);
 			team_member_vec.push_back(team_member);
 		}
 		AddTeamMembersInfo(team_member_vec);
 	}
 	else {
-		nim::Team::InviteAsync(tid_, id_list, "", nbase::Bind(&TeamCallback::OnTeamEventCallback, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
+		nim::Team::InviteAsync(tid_, id_list, "", nbase::Bind(&TeamCallback::OnTeamEventCallback, std::placeholders::_1));
 	}
 }
 
@@ -198,51 +200,62 @@ void TeamInfoForm::AddInviteButton()
 	invitebtn_ = (Button*)box->FindSubControl(L"InviteBtn");
 	invitebtn_->AttachClick(nbase::Bind(&TeamInfoForm::OnInviteUesrBtnClick, this, std::placeholders::_1));
 }
-void TeamInfoForm::Init(const std::string& team_id, int count, const std::list<nim::TeamMemberInfo>& team_member_list)
+void TeamInfoForm::Init(const std::string& team_id, int count, const std::list<nim::TeamMemberProperty>& team_member_list)
 {
 	tile_box_->RemoveAll();
+	std::list<nim::TeamMemberProperty> valid_team_member_list;
+
 	AddInviteButton();
 	nim::NIMTeamUserType user_type = nim::kNIMTeamUserTypeCreator;
 	auto login_account = LoginManager::GetInstance()->GetAccount();
-	for (auto it = team_member_list.begin(); it != team_member_list.end(); it++) {
-		if (login_account == it->account) {
-			user_type = it->type;
+	for (auto it = team_member_list.begin(); it != team_member_list.end(); it++) 
+	{
+		if (IsTeamMemberType(it->GetUserType()))
+			valid_team_member_list.push_back(*it);
+
+		if (login_account == it->GetAccountID()) 
+		{
+			user_type = it->GetUserType();
 			my_tInfo_ = *it;
-			bool msg_notify = (my_tInfo_.bits&nim::kNIMTeamBitsConfigMaskMuteNotify) == 0;
+			bool msg_notify = (my_tInfo_.GetBits() & nim::kNIMTeamBitsConfigMaskMuteNotify) == 0;
 			((CheckBox*)FindControl(L"msg_mode_notify"))->Selected(msg_notify);
 			((CheckBox*)FindControl(L"msg_mode_notify"))->SetEnabled(true);
-			break;
 		}
 	}
 	user_type_ = user_type;
-	if (team_info_.type == nim::kNIMTeamTypeAdvanced)
+	if (team_info_.GetType() == nim::kNIMTeamTypeAdvanced)
 	{
-		invitebtn_->SetEnabled((!team_info_.readonly) && (user_type_ == nim::kNIMTeamUserTypeCreator || user_type_ == nim::kNIMTeamUserTypeManager));
+		//invitebtn_->SetEnabled((!team_info_.readonly) && (user_type_ == nim::kNIMTeamUserTypeCreator || user_type_ == nim::kNIMTeamUserTypeManager));
+		invitebtn_->SetEnabled(user_type_ == nim::kNIMTeamUserTypeCreator || user_type_ == nim::kNIMTeamUserTypeManager);
 	}
-	FindControl(L"team_owner_section")->SetEnabled((!team_info_.readonly) && (user_type_ == nim::kNIMTeamUserTypeCreator || user_type_ == nim::kNIMTeamUserTypeManager));
-	if (team_info_.type == nim::kNIMTeamTypeNormal)
+	//FindControl(L"team_owner_section")->SetEnabled((!team_info_.readonly) && (user_type_ == nim::kNIMTeamUserTypeCreator || user_type_ == nim::kNIMTeamUserTypeManager));
+	FindControl(L"team_owner_section")->SetEnabled((user_type_ == nim::kNIMTeamUserTypeCreator || user_type_ == nim::kNIMTeamUserTypeManager));
+	if (team_info_.GetType() == nim::kNIMTeamTypeNormal)
 	{
 		FindControl(L"team_name_panel")->SetEnabled(true);
 	}
 	ChangeUIByIdentity();
-	AddTeamMembersInfo(team_member_list);
+	AddTeamMembersInfo(valid_team_member_list);
 }
 
-void TeamInfoForm::AddTeamMembersInfo(const std::list<nim::TeamMemberInfo>& team_member_list)
+void TeamInfoForm::AddTeamMembersInfo(const std::list<nim::TeamMemberProperty>& team_member_list)
 {
-	for(auto it = team_member_list.begin(); it != team_member_list.end(); it++) {
+	for(auto it = team_member_list.begin(); it != team_member_list.end(); it++) 
+	{
 		// 要查看群名片窗口，需先打开群聊天窗口，再点击群头像。而打开聊天窗口之时已经把所有群成员信息获取到内存了，因此此处用GetUserInfo即可。
-		UserInfo userInfo;
-		UserService::GetInstance()->GetUserInfo(it->account, userInfo); 
-		HBox* listitem = CreateTeamMemberListItem(it->type, it->nick, userInfo);
+		nim::UserNameCard userInfo;
+		UserService::GetInstance()->GetUserInfo(it->GetAccountID(), userInfo); 
+		HBox* listitem = CreateTeamMemberListItem(it->GetUserType(), it->GetNick(), userInfo);
 		if (create_or_display_)
 		{
 			listitem->FindSubControl(L"head_image")->SetEnabled(false);
 		}
-		else {
-			if (it->account != LoginManager::GetInstance()->GetAccount()) {
-				if (team_info_.readonly
-					|| !(user_type_ == nim::kNIMTeamUserTypeCreator || (user_type_ == nim::kNIMTeamUserTypeManager && it->type == nim::kNIMTeamUserTypeNomal)))
+		else 
+		{
+			if (it->GetAccountID() != LoginManager::GetInstance()->GetAccount()) 
+			{
+				//if (team_info_.readonly	|| !(user_type_ == nim::kNIMTeamUserTypeCreator || (user_type_ == nim::kNIMTeamUserTypeManager && it->type == nim::kNIMTeamUserTypeNomal)))
+				if (!(user_type_ == nim::kNIMTeamUserTypeCreator || (user_type_ == nim::kNIMTeamUserTypeManager && it->GetUserType() == nim::kNIMTeamUserTypeNomal)))
 				{
 					listitem->SetMouseEnabled(false);
 					listitem->SetMouseChildEnabled(false);
@@ -253,16 +266,16 @@ void TeamInfoForm::AddTeamMembersInfo(const std::list<nim::TeamMemberInfo>& team
 	}
 }
 
-HBox* TeamInfoForm::CreateTeamMemberListItem(nim::NIMTeamUserType user_type, const std::string& team_card, const UserInfo& user_info)
+HBox* TeamInfoForm::CreateTeamMemberListItem(nim::NIMTeamUserType user_type, const std::string& team_card, const nim::UserNameCard& user_info)
 {
 	ui::HBox* container_element = new HBox();
 	GlobalManager::FillBoxWithCache(container_element, L"team_info/start_chat_friend.xml");
-	container_element->SetUTF8DataID(user_info.account);
-	container_element->SetUTF8Name(user_info.account);
+	container_element->SetUTF8DataID(user_info.GetAccId());
+	container_element->SetUTF8Name(user_info.GetAccId());
 	Button* head_image_button = (Button*)container_element->FindSubControl(L"head_image");
-	head_image_button->SetBkImage(UserService::GetInstance()->GetUserPhoto(user_info.account));
-	head_image_button->AttachClick(nbase::Bind(&TeamInfoForm::OnBtnHeadImageClick, this, user_info.account, std::placeholders::_1));
-	if (team_info_.type == nim::kNIMTeamTypeNormal)
+	head_image_button->SetBkImage(UserService::GetInstance()->GetUserPhoto(user_info.GetAccId()));
+	head_image_button->AttachClick(nbase::Bind(&TeamInfoForm::OnBtnHeadImageClick, this, user_info.GetAccId(), std::placeholders::_1));
+	if (team_info_.GetType() == nim::kNIMTeamTypeNormal)
 	{
 		head_image_button->SetEnabled(false);
 	}
@@ -272,7 +285,7 @@ HBox* TeamInfoForm::CreateTeamMemberListItem(nim::NIMTeamUserType user_type, con
 		show_name_label->SetUTF8DataID(team_card);	//把群昵称保存到DataId里面
 	}
 	else {
-		show_name_label->SetUTF8Text(user_info.name);
+		show_name_label->SetUTF8Text(user_info.GetName());
 	}
 	Control* team_admin = container_element->FindSubControl(L"admin");
 	if (user_type == nim::kNIMTeamUserTypeCreator)
@@ -286,21 +299,21 @@ HBox* TeamInfoForm::CreateTeamMemberListItem(nim::NIMTeamUserType user_type, con
 		team_admin->SetBkImage(L"..\\public\\icon\\team_manager.png");
 	}
 
-	if (user_info.account != LoginManager::GetInstance()->GetAccount())
+	if (user_info.GetAccId() != LoginManager::GetInstance()->GetAccount())
 	{
 		container_element->AttachBubbledEvent(ui::kEventMouseEnter, nbase::Bind(&TeamInfoForm::OnTeamMemberItemMouseEnter, this, container_element, std::placeholders::_1));
 		container_element->AttachBubbledEvent(ui::kEventMouseLeave, nbase::Bind(&TeamInfoForm::OnTeamMemberItemMouseLeave, this, container_element, std::placeholders::_1));
 	}
 	ui::Button* delete_btn = (ui::Button*)container_element->FindSubControl(L"btn_delete");
-	delete_btn->AttachClick(nbase::Bind(&TeamInfoForm::OnBtnDeleteClick, this, container_element, user_info.account, std::placeholders::_1));
+	delete_btn->AttachClick(nbase::Bind(&TeamInfoForm::OnBtnDeleteClick, this, container_element, user_info.GetAccId(), std::placeholders::_1));
 
 	return container_element;
 }
 
-void TeamInfoForm::UpdateTeamMemberListItem(ui::Box* container_element, const std::string& team_card, const UserInfo& user_info)
+void TeamInfoForm::UpdateTeamMemberListItem(ui::Box* container_element, const std::string& team_card, const nim::UserNameCard& user_info)
 {
 	Button* head_image_button = (Button*)container_element->FindSubControl(L"head_image");
-	head_image_button->SetBkImage(UserService::GetInstance()->GetUserPhoto(user_info.account));
+	head_image_button->SetBkImage(UserService::GetInstance()->GetUserPhoto(user_info.GetAccId()));
 
 	Label* show_name_label = (Label*)container_element->FindSubControl(L"show_name");
 	if (!team_card.empty()) 
@@ -314,7 +327,7 @@ void TeamInfoForm::UpdateTeamMemberListItem(ui::Box* container_element, const st
 	}
 	else if (show_name_label->GetUTF8DataID().empty() )
 	{
-		show_name_label->SetUTF8Text(user_info.name);
+		show_name_label->SetUTF8Text(user_info.GetName());
 	}
 
 }
@@ -338,7 +351,7 @@ void TeamInfoForm::OnMsgbox(const UTF8String& user_id, MsgBoxRet ret)
 	{
 		std::list<std::string> uids_list;
 		uids_list.push_back(user_id);
-		nim::Team::KickAsync(tid_, uids_list, nbase::Bind(&TeamCallback::OnTeamEventCallback, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
+		nim::Team::KickAsync(tid_, uids_list, nbase::Bind(&TeamCallback::OnTeamEventCallback, std::placeholders::_1));
 	}
 }
 
@@ -378,20 +391,42 @@ bool TeamInfoForm::OnBtnHeadImageClick(const UTF8String& user_id, ui::EventArgs*
 
 bool TeamInfoForm::OnBtnConfirmClick(ui::EventArgs* param)
 {
-	param->pSender->SetEnabled(false);
 	UTF8String team_name = ((RichEdit*)FindControl(L"team_name"))->GetUTF8Text();
 	UTF8String team_intro = ((RichEdit*)FindControl(L"team_intro"))->GetUTF8Text();
 
-	Json::Value tinfo;
-	if (team_name != team_info_.name)
+	MsgboxCallback cb = [this](MsgBoxRet ret){
+		this->ActiveWindow();
+	};
+
+	team_name = ui::StringHelper::Trim(team_name);
+	if (team_name.empty())
 	{
-		tinfo[nim::kNIMTeamInfoKeyName] = team_name.c_str();
+
+		ShowMsgBox(m_hWnd, L"请设置群名称", ToWeakCallback(cb), L"提示", L"确定", L"");
+		((RichEdit*)FindControl(L"team_name"))->SetText(L"");
+		return true;
+	}
+
+	if (tile_box_->GetCount() <= 1)	//tile_box_中包含一个添加按钮
+	{
+		ShowMsgBox(m_hWnd, L"创建失败，请邀请好友", ToWeakCallback(cb), L"提示", L"确定", L"");
+		return true;
+	}
+
+	param->pSender->SetEnabled(false);
+
+	nim::TeamInfo tinfo;
+	tinfo.SetTeamID(tid_);
+
+	if (team_name != team_info_.GetName())
+	{
+		tinfo.SetName(team_name);
 	}
 	if (type_ == nim::kNIMTeamTypeAdvanced) {
-		tinfo[nim::kNIMTeamInfoKeyType] = nim::kNIMTeamTypeAdvanced;
-		if (team_intro != team_info_.intro)
+		tinfo.SetType(nim::kNIMTeamTypeAdvanced);
+		if (team_intro != team_info_.GetIntro())
 		{
-			tinfo[nim::kNIMTeamInfoKeyIntro] = team_intro.c_str();
+			tinfo.SetIntro(team_intro.c_str());
 		}
 		nim::NIMTeamJoinMode join_mode = nim::kNIMTeamJoinModeNeedAuth;
 		if (((Option*)FindControl(L"join_mode_any"))->IsSelected())
@@ -406,13 +441,13 @@ bool TeamInfoForm::OnBtnConfirmClick(ui::EventArgs* param)
 		{
 			join_mode = nim::kNIMTeamJoinModeRejectAll;
 		}
-		if (join_mode != team_info_.join_mode)
+		if (join_mode != team_info_.GetJoinMode())
 		{
-			tinfo[nim::kNIMTeamInfoKeyJoinMode] = join_mode;
+			tinfo.SetJoinMode(join_mode);
 		}
 	}
 	else {
-		tinfo[nim::kNIMTeamInfoKeyType] = nim::kNIMTeamTypeNormal;
+		tinfo.SetType(nim::kNIMTeamTypeNormal);
 	}
 
 	if (create_or_display_)
@@ -422,19 +457,19 @@ bool TeamInfoForm::OnBtnConfirmClick(ui::EventArgs* param)
 		{
 			id_list.push_back(tile_box_->GetItemAt(i)->GetUTF8DataID());
 		}
-		nim::Team::CreateTeamAsync(tinfo.toStyledString(), id_list, "", nbase::Bind(&TeamCallback::OnTeamEventCallback, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
+
+		nim::Team::CreateTeamAsync(tinfo, id_list, "", nbase::Bind(&TeamCallback::OnTeamEventCallback, std::placeholders::_1));
 	}
 	else {
 
-		nim::Team::UpdateTeamInfoAsync(tid_, tinfo.toStyledString(), nbase::Bind(&TeamCallback::OnTeamEventCallback, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
+		nim::Team::UpdateTeamInfoAsync(tid_, tinfo, nbase::Bind(&TeamCallback::OnTeamEventCallback, std::placeholders::_1));
 		if (((CheckBox*)FindControl(L"msg_mode_notify"))->IsEnabled())
 		{
-			bool msg_notify = (my_tInfo_.bits&nim::kNIMTeamBitsConfigMaskMuteNotify) == 0;
+			bool msg_notify = (my_tInfo_.GetBits() & nim::kNIMTeamBitsConfigMaskMuteNotify) == 0;
 			if (msg_notify != ((Option*)FindControl(L"msg_mode_notify"))->IsSelected())
 			{
-				Json::Value values;
-				values[nim::kNIMTeamUserKeyID] = tid_;
-				uint64_t bits = my_tInfo_.bits;
+				nim::TeamMemberProperty values(tid_, LoginManager::GetInstance()->GetAccount());
+				uint64_t bits = my_tInfo_.GetBits();
 				if (msg_notify)
 				{
 					bits |= nim::kNIMTeamBitsConfigMaskMuteNotify;
@@ -443,8 +478,8 @@ bool TeamInfoForm::OnBtnConfirmClick(ui::EventArgs* param)
 				{
 					bits &= ~nim::kNIMTeamBitsConfigMaskMuteNotify;
 				}
-				values[nim::kNIMTeamUserKeyBits] = bits;
-				nim::Team::UpdateMyPropertyAsync(values.toStyledString(), nbase::Bind(&TeamCallback::OnTeamEventCallback, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
+				values.SetBits(bits);
+				nim::Team::UpdateMyPropertyAsync(values, nbase::Bind(&TeamCallback::OnTeamEventCallback, std::placeholders::_1));
 			}
 		}
 	}
@@ -461,33 +496,36 @@ bool TeamInfoForm::OnBtnCancelClick(ui::EventArgs* param)
 
 bool TeamInfoForm::OnBtnDissmissClick(ui::EventArgs* param)
 {
-	nim::Team::DismissAsync(tid_, nbase::Bind(&TeamCallback::OnTeamEventCallback, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
+	nim::Team::DismissAsync(tid_, nbase::Bind(&TeamCallback::OnTeamEventCallback, std::placeholders::_1));
 	Close();
 	return true;
 }
 
 bool TeamInfoForm::OnBtnQuitClick(ui::EventArgs* param)
 {
-	nim::Team::LeaveAsync(tid_, nbase::Bind(&TeamCallback::OnTeamEventCallback, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
+	nim::Team::LeaveAsync(tid_, nbase::Bind(&TeamCallback::OnTeamEventCallback, std::placeholders::_1));
 	Close();
 	return true;
 }
 
-void TeamInfoForm::OnTeamMemberAdd(const std::string& tid, const nim::TeamMemberInfo& team_member_info)
+void TeamInfoForm::OnTeamMemberAdd(const std::string& tid, const nim::TeamMemberProperty& team_member_info)
 {
+	if (!IsTeamMemberType(team_member_info.GetUserType()))
+		return;
+
 	for (int i = 0; i < tile_box_->GetCount(); i++)
 	{
-		if (team_member_info.account == tile_box_->GetItemAt(i)->GetUTF8DataID())
+		if (team_member_info.GetAccountID() == tile_box_->GetItemAt(i)->GetUTF8DataID())
 		{
 			return;
 		}
 	}
 
-	UserInfo user_info;
-	UserService::GetInstance()->GetUserInfo(team_member_info.account, user_info);
-	if (!team_member_info.nick.empty())
+	nim::UserNameCard user_info;
+	UserService::GetInstance()->GetUserInfo(team_member_info.GetAccountID(), user_info);
+	if (!team_member_info.GetNick().empty())
 	{
-		user_info.name = team_member_info.nick;
+		user_info.SetName(team_member_info.GetNick());
 	}
 	HBox* hbox = CreateTeamMemberListItem(nim::kNIMTeamUserTypeNomal, "", user_info);
 	tile_box_->Add(hbox);
@@ -518,7 +556,7 @@ void TeamInfoForm::OnTeamMemberChange(const std::string& tid_uid, const std::str
 		{
 			if (tile_box_->GetItemAt(i)->GetUTF8DataID() == uid)
 			{
-				UserInfo user_info;
+				nim::UserNameCard user_info;
 				UserService::GetInstance()->GetUserInfo(uid, user_info);
 				std::string new_team_card = team_card;
 
@@ -529,7 +567,7 @@ void TeamInfoForm::OnTeamMemberChange(const std::string& tid_uid, const std::str
 	}
 }
 
-void TeamInfoForm::OnTeamMemberAdmin(const std::string& tid, const std::string& uid, bool admin)
+void TeamInfoForm::OnTeamAdminSet(const std::string& tid, const std::string& uid, bool admin)
 {
 	if (tid == tid_)
 	{
@@ -537,7 +575,7 @@ void TeamInfoForm::OnTeamMemberAdmin(const std::string& tid, const std::string& 
 	}
 }
 
-void TeamInfoForm::OnSetTeamOwner(const std::string& tid, const std::string& uid)
+void TeamInfoForm::OnTeamOwnerChange(const std::string& tid, const std::string& uid)
 {
 	if (tid == tid_)
 	{
@@ -545,17 +583,17 @@ void TeamInfoForm::OnSetTeamOwner(const std::string& tid, const std::string& uid
 	}
 }
 
-void TeamInfoForm::OnUserInfoChange(const std::list<UserInfo>& uinfos)
+void TeamInfoForm::OnUserInfoChange(const std::list<nim::UserNameCard>& uinfos)
 {
 	for (auto iter = uinfos.cbegin(); iter != uinfos.cend(); iter++)
 	{
-		HBox* item = (HBox*)tile_box_->FindSubControl(nbase::UTF8ToUTF16(iter->account));
+		HBox* item = (HBox*)tile_box_->FindSubControl(nbase::UTF8ToUTF16(iter->GetAccId()));
 		if(item == NULL) continue;
-		if((iter->field_avail_flag & kUInfoFlagHeadImage) != 0)
-			item->FindSubControl(L"head_image")->SetBkImage(UserService::GetInstance()->GetUserPhoto(iter->account));
+		if(iter->ExistValue(nim::kUserNameCardKeyIconUrl))
+			item->FindSubControl(L"head_image")->SetBkImage(UserService::GetInstance()->GetUserPhoto(iter->GetAccId()));
 		Label* show_name_label = (Label*)item->FindSubControl(L"show_name");
-		if (show_name_label->GetDataID().empty() && (iter->field_avail_flag & kUInfoFlagName) != 0) // 如果没有设置群昵称，则显示用户自己的昵称。如果设置了群昵称，就不变。
-			show_name_label->SetUTF8Text(iter->name);
+		if (show_name_label->GetDataID().empty() && iter->ExistValue(nim::kUserNameCardKeyName)) // 如果没有设置群昵称，则显示用户自己的昵称。如果设置了群昵称，就不变。
+			show_name_label->SetUTF8Text(iter->GetName());
 	}
 }
 
@@ -566,6 +604,12 @@ void TeamInfoForm::OnUserPhotoReady(const std::string & accid, const std::wstrin
 		item->FindSubControl(L"head_image")->SetBkImage(photo_path);
 }
 
+void TeamInfoForm::OnTeamRemove(const std::string & tid)
+{
+	if (tid == tid_)
+		Close();
+}
+
 void TeamInfoForm::UpdateTeamMember()
 {
 	nim::Team::QueryTeamMembersAsync(tid_, nbase::Bind(&TeamInfoForm::Init, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
@@ -573,7 +617,7 @@ void TeamInfoForm::UpdateTeamMember()
 
 void TeamInfoForm::ChangeUIByIdentity()
 {
-	if (type_ == nim::kNIMTeamUserTypeNomal || user_type_ != nim::kNIMTeamUserTypeCreator) {
+	if (type_ == nim::kNIMTeamTypeNormal || user_type_ != nim::kNIMTeamUserTypeCreator) {
 		btn_dismiss_->SetVisible(false);
 		btn_quit_->SetVisible(true);
 	}
@@ -581,5 +625,15 @@ void TeamInfoForm::ChangeUIByIdentity()
 		btn_dismiss_->SetVisible(true);
 		btn_quit_->SetVisible(false);
 	}
+}
+
+bool TeamInfoForm::IsTeamMemberType(const nim::NIMTeamUserType user_type)
+{
+	if (user_type == nim::kNIMTeamUserTypeNomal ||
+		user_type == nim::kNIMTeamUserTypeManager ||
+		user_type == nim::kNIMTeamUserTypeCreator)
+		return true;
+
+	return false;
 }
 }

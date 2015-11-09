@@ -26,8 +26,8 @@ public:
 	UnregisterCallback RegAddTeamMember(OnTeamMemberAdd add);
 	UnregisterCallback RegRemoveTeamMember(OnTeamMemberRemove remove);
 	UnregisterCallback RegChangeTeamMember(OnTeamMemberChange change);
-	UnregisterCallback RegChangeTeamAdmin(OnTeamMemberAdmin admin);
-	UnregisterCallback RegSetTeamOwner(OnSetTeamOwner set_team_owner);
+	UnregisterCallback RegSetTeamAdmin(OnTeamAdminSet admin);
+	UnregisterCallback RegChangeTeamOwner(OnTeamOwnerChange set_team_owner);
 
 	std::wstring GetTeamName(const std::string& tid);
 	std::wstring GetTeamPhoto(bool full_path);

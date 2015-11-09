@@ -29,7 +29,7 @@ public:
 	void FillSearchResultList(ui::ListBox* search_result_list, const UTF8String& search_key);
 
 private:
-	void OnGetAllFriendInfo(bool ret, const std::list<UserInfo> &uinfos);
+	void OnGetAllFriendInfo(const std::list<nim::UserNameCard> &uinfos);
 	
 private:
 	std::unique_ptr<nim_comp::FriendList> friend_list_;

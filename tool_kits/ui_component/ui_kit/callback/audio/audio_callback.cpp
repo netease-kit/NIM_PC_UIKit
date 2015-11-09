@@ -34,7 +34,7 @@ void UIPlayAudioCallback( int code, std::string sid, std::string cid )
 	if(sid.empty() || cid.empty())
 		return;
 
-	if (code != nim::kSuccess)
+	if (code != nim::kNIMResSuccess)
 	{
 		AudioCallback::SetPlaySid("");
 		AudioCallback::SetPlayCid("");

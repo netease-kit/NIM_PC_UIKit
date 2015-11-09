@@ -16,21 +16,21 @@ public:
 	* @param[in] str 消息内容及其他相关信息， Json数据转化成的字符串
 	* @return void	无返回值
 	*/
-	static void OnReceiveMsgCallback(const std::string& str);
+	static void OnReceiveMsgCallback(const nim::IMMessage& message);
 
 	/**
 	* 发送消息的结果回调，需要在程序开始运行时就注册好。
 	* @param[in] str 返回的结果的内容， Json数据转化成的字符串
 	* @return void	无返回值
 	*/
-	static void OnSendMsgCallback(const std::string& str);
+	static void OnSendMsgCallback(const nim::SendMessageArc& arc);
 
 	/**
 	* 发送自定义消息的结果回调，需要在程序开始运行时就注册好。
 	* @param[in] str 返回的结果的内容， Json数据转化成的字符串
 	* @return void	无返回值
 	*/
-	static void OnSendCustomSysmsgCallback(const std::string& str);
+	static void OnSendCustomSysmsgCallback(const nim::SendMessageArc& arc);
 
 	/**
 	* 向sdk查询某个会话的消息历史的结果回调。
@@ -40,7 +40,7 @@ public:
 	* @param[in] result 返回的结果的内容， Json数据转化成的字符串
 	* @return void	无返回值
 	*/
-	static void OnQueryMsgCallback(nim::NIMResCode code, const std::string& query_id, nim::NIMSessionType query_type, const std::string& result);
+	static void OnQueryMsgCallback(nim::NIMResCode code, const std::string& query_id, nim::NIMSessionType query_type, const nim::QueryMsglogResult& result);
 	
 	/**
 	* 向sdk查询会话列表的结果回调。
@@ -48,7 +48,7 @@ public:
 	* @param[in] json 返回的结果的内容， Json数据转化成的字符串
 	* @return void	无返回值
 	*/
-	static void OnQuerySessionListCallback(int unread_count, const std::string& json);
+	static void OnQuerySessionListCallback(int unread_count, const nim::SessionDataList& session_list);
 };
 
 }

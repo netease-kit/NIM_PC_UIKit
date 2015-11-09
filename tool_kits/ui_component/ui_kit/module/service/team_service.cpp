@@ -76,11 +76,11 @@ UnregisterCallback TeamService::RegAddTeamMember( OnTeamMemberAdd add )
 	return unregister;
 }
 
-void TeamService::InvokeAddTeamMember(const std::string& tid, const nim::TeamMemberInfo& team_member)
+void TeamService::InvokeAddTeamMember(const std::string& tid, const nim::TeamMemberProperty& team_member)
 {
 	assert(nbase::MessageLoop::current()->ToUIMessageLoop());
 
-	QLOG_APP(L"invoke add: tid={0} uid={1}") << tid << team_member.account;
+	QLOG_APP(L"invoke add: tid={0} uid={1}") << tid << team_member.GetAccountID();
 	for(auto& it : add_team_member_cb_)
 	{
 		(*it.second)(tid, team_member);
@@ -139,9 +139,9 @@ void TeamService::InvokeChangeTeamMember(const std::string& tid, const std::stri
 		std::string new_team_card = team_card;
 		if (new_team_card.empty())
 		{
-			UserInfo user_info;
+			nim::UserNameCard user_info;
 			UserService::GetInstance()->GetUserInfo(uid, user_info);
-			new_team_card = user_info.name;
+			new_team_card = user_info.GetName();
 		}
 
 		(*it.second)(tid + "#" + uid, new_team_card);
@@ -158,10 +158,10 @@ void TeamService::InvokeChangeTeamName(const nim::TeamInfo& team_info)
 	}
 }
 
-UnregisterCallback TeamService::RegChangeTeamAdmin( OnTeamMemberAdmin admin )
+UnregisterCallback TeamService::RegSetTeamAdmin( OnTeamAdminSet admin )
 {
 	assert(nbase::MessageLoop::current()->ToUIMessageLoop());
-	OnTeamMemberAdmin* new_cb = new OnTeamMemberAdmin(admin);
+	OnTeamAdminSet* new_cb = new OnTeamAdminSet(admin);
 	int cb_id = (int)new_cb;
 	change_team_admin_cb_[cb_id].reset(new_cb);
 	auto unregister = ToWeakCallback([this, cb_id]() {
@@ -170,10 +170,10 @@ UnregisterCallback TeamService::RegChangeTeamAdmin( OnTeamMemberAdmin admin )
 	return unregister;
 }
 
-UnregisterCallback TeamService::RegSetTeamOwner(OnSetTeamOwner set_team_owner)
+UnregisterCallback TeamService::RegChangeTeamOwner(OnTeamOwnerChange set_team_owner)
 {
 	assert(nbase::MessageLoop::current()->ToUIMessageLoop());
-	OnSetTeamOwner* new_cb = new OnSetTeamOwner(set_team_owner);
+	OnTeamOwnerChange* new_cb = new OnTeamOwnerChange(set_team_owner);
 	int cb_id = (int)new_cb;
 	set_team_owner_cb_[cb_id].reset(new_cb);
 	auto unregister = ToWeakCallback([this, cb_id]() {
@@ -244,55 +244,55 @@ void TeamService::QueryAllTeamInfo()
 	nim::Team::QueryAllMyTeamsInfoAsync(nbase::Bind(&TeamService::QueryAllTeamInfoCb, this, std::placeholders::_1, std::placeholders::_2));
 }
 
-void TeamService::QueryAllTeamInfoCb(int team_count, const std::list<nim::TeamInfo>& team_info_list)
+void TeamService::UIQueryAllTeamInfoCb(int team_count, const std::list<nim::TeamInfo>& team_info_list)
 {
+	assert(nbase::MessageLoop::current()->ToUIMessageLoop());
+
 	for (auto& team_info : team_info_list)
 	{
-		if (!team_info.name.empty())
+		if (!team_info.GetName().empty())
 		{
-			tid_tname_pair_[team_info.id] = team_info.name;
+			tid_tname_pair_[team_info.GetTeamID()] = team_info.GetName();
 
 			InvokeChangeTeamName(team_info);
 		}
 	}
 }
 
-void TeamService::GetTeamInfo(const std::string& tid)
+void TeamService::QueryAllTeamInfoCb(int team_count, const std::list<nim::TeamInfo>& team_info_list)
 {
-	nim::Team::QueryTeamInfoOnlineAsync(tid, nbase::Bind(&TeamService::GetTeamInfoCb, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
+	auto task = nbase::Bind(&TeamService::UIQueryAllTeamInfoCb, this, team_count, team_info_list);
+	Post2UI(task);
 }
 
-void TeamService::GetTeamInfoCb(nim::NIMResCode res_code, int notification_id, const std::string& tid, const std::string& result)
+void TeamService::GetTeamInfo(const std::string& tid)
 {
-	if (res_code == nim::kNIMResSuccess)
+	nim::Team::QueryTeamInfoOnlineAsync(tid, nbase::Bind(&TeamService::GetTeamInfoCb, this, std::placeholders::_1));
+}
+
+void TeamService::UIGetLocalTeamInfoCb(const std::string& tid, const nim::TeamInfo& result)
+{
+	assert(nbase::MessageLoop::current()->ToUIMessageLoop());
+
+	if (!result.GetName().empty())
 	{
-		Json::Value json;
-		if(StringToJson(result, json))
-		{
-			const Json::Value &tinfo = json[nim::kNIMNotificationKeyData][nim::kNIMNotificationGetTeamInfoKey];
-			nim::TeamInfo team_info;
-			team_info.type = (nim::NIMTeamType)(tinfo[nim::kNIMTeamInfoKeyType].asInt());
-			team_info.id = tinfo[nim::kNIMTeamInfoKeyID].asString();
-			team_info.owner_id = tinfo[nim::kNIMTeamInfoKeyCreator].asString();
-			team_info.name = tinfo[nim::kNIMTeamInfoKeyName].asString();
-			team_info.intro = tinfo[nim::kNIMTeamInfoKeyIntro].asString();
-			team_info.announcement = tinfo[nim::kNIMTeamInfoKeyAnnouncement].asString();
-			team_info.join_mode = (nim::NIMTeamJoinMode)(tinfo[nim::kNIMTeamInfoKeyJoinMode].asInt());
-			if (!tinfo[nim::kNIMTeamInfoKeyServerCustom].asString().empty()) {
-				team_info.readonly = true;
-			}
-			else {
-				team_info.readonly = false;
-			}
-			team_info.team_config_bits = tinfo[nim::kNIMTeamInfoKeyBits].asUInt64();
+		tid_tname_pair_[tid] = result.GetName();
 
-			if (!team_info.name.empty())
-			{
-				tid_tname_pair_[tid] = team_info.name;
+		InvokeChangeTeamName(result);
+	}
+}
 
-				InvokeChangeTeamName(team_info);
-			}
-		}
+void TeamService::GetLocalTeamInfoCb(const std::string& tid, const nim::TeamInfo& result)
+{
+	auto task = nbase::Bind(&TeamService::UIGetLocalTeamInfoCb, this, tid, result);
+	Post2UI(task);
+}
+
+void TeamService::GetTeamInfoCb(const nim::TeamEvent& team_event)
+{
+	if (team_event.res_code_ == nim::kNIMResSuccess)
+	{
+		nim::Team::QueryTeamInfoAsync(team_event.team_id_, nbase::Bind(&TeamService::GetLocalTeamInfoCb, this, std::placeholders::_1, std::placeholders::_2));
 	}
 }
 }

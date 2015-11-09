@@ -62,11 +62,11 @@ void SessionListManager::UICustomSysmsgUnread(bool add)
 	session_list_->UICustomSysmsgUnread(add);
 }
 
-void SessionListManager::OnMultispotChange(bool online, Json::Value& json)
+void SessionListManager::OnMultispotChange(bool online, const std::list<nim::OtherClientPres>& clients)
 {
 	if (NULL == session_list_)
 		return;
-	session_list_->OnMultispotChange(online, json);
+	session_list_->OnMultispotChange(online, clients);
 }
 
 void SessionListManager::OnMultispotKickout(const std::list<std::string> &client_ids)
@@ -89,36 +89,14 @@ void SessionListManager::QuerySysmsgUnreadCb(nim::NIMResCode res_code, int unrea
 
 
 
-void SessionListManager::LoadSessionList(const std::string &str)
+void SessionListManager::LoadSessionList(const std::list<nim::SessionData>& sessions)
 {
-	if (NULL == session_list_)
+	if (sessions.empty())
 		return;
 
-	Json::Value value;
-	Json::Reader reader;
-	if (reader.parse(str, value))
+	for each (auto session in sessions)
 	{
-		Json::Value &content = value[nim::kNIMSessionListContent];
-		int n = content.size();
-		for (int i = 0; i < n; i++)
-		{
-			SessionMsgData data;
-			data.session_id = content[i][nim::kNIMSessionId].asString();
-			data.from_account = content[i][nim::kNIMSessionMsgFromAccount].asString();
-			data.to_type = content[i][nim::kNIMSessionType].asString() == "0" ? nim::kNIMSessionTypeP2P : nim::kNIMSessionTypeTeam;
-			data.msg_body = content[i][nim::kNIMSessionMsgBody].asString();
-			data.msg_attach = content[i][nim::kNIMSessionMsgAttach].asString();
-			data.msg_type = content[i][nim::kNIMSessionMsgType].asInt();
-			data.msg_time = content[i][nim::kNIMSessionMsgTime].asInt64();
-			data.unread_count = content[i][nim::kNIMSessionUnreadCount].asInt();
-			data.msg_status = content[i][nim::kNIMSessionMsgStatus].asInt();
-
-			session_list_->AddSessionItem(data);
-		}
-	}
-	else
-	{
-		QLOG_ERR(L"parse session list fail: {0}") << str;
+		session_list_->AddSessionItem(session);
 	}
 }
 

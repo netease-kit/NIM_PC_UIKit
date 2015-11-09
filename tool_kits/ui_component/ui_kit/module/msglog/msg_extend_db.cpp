@@ -104,7 +104,7 @@ bool MsgExDB::QueryDataWithMsgId(const std::string& msg_id, std::string& path, s
 	return find;
 }
 //用于保存一些自定义通知消息
-bool MsgExDB::InsertMsgData(const MsgData& msg)
+bool MsgExDB::InsertMsgData(const nim::SysMessage& msg)
 {
 	nbase::NAutoLock auto_lock(&lock_);
 	ndb::SQLiteStatement stmt;
@@ -113,16 +113,16 @@ bool MsgExDB::InsertMsgData(const MsgData& msg)
 					msg_type, msg_time, msg_id, save_flag, msg_body, msg_attach, apns_text, \
 					msg_status, msg_param) values(NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);");
 
-	stmt.BindText(1, msg.to_account.c_str(), msg.to_account.size());
-	stmt.BindText(2, msg.from_account.c_str(), msg.from_account.size());
-	stmt.BindInt(3, msg.msg_type);
-	stmt.BindInt64(4, msg.msg_time);
-	stmt.BindInt64(5, msg.server_msg_id);
-	stmt.BindInt(6, msg.custom_save_flag);
-	stmt.BindText(7, msg.msg_body.c_str(), msg.msg_body.size());
-	stmt.BindText(8, msg.msg_attach.c_str(), msg.msg_attach.size());
-	stmt.BindText(9, msg.custom_apns_text.c_str(), msg.custom_apns_text.size());
-	stmt.BindInt(10, msg.msg_status);
+	stmt.BindText(1, msg.receiver_accid_.c_str(), msg.receiver_accid_.size());
+	stmt.BindText(2, msg.sender_accid_.c_str(), msg.sender_accid_.size());
+	stmt.BindInt(3, msg.type_);
+	stmt.BindInt64(4, msg.timetag_);
+	stmt.BindInt64(5, msg.id_);
+	stmt.BindInt(6, msg.support_offline_);
+	stmt.BindText(7, msg.content_.c_str(), msg.content_.size());
+	stmt.BindText(8, msg.attach_.c_str(), msg.attach_.size());
+	stmt.BindText(9, msg.apns_text_.c_str(), msg.apns_text_.size());
+	stmt.BindInt(10, msg.status_);
 	stmt.BindText(11, "");
 
 	int32_t result = stmt.NextRow();
@@ -133,10 +133,10 @@ bool MsgExDB::InsertMsgData(const MsgData& msg)
 	}
 	return no_error;
 }
-std::vector<MsgData> MsgExDB::QueryMsgData(int64_t time, int limit)
+std::vector<nim::SysMessage> MsgExDB::QueryMsgData(int64_t time, int limit)
 {
 	nbase::NAutoLock auto_lock(&lock_);
-	std::vector<MsgData> ret_msgs;
+	std::vector<nim::SysMessage> ret_msgs;
 	ndb::SQLiteStatement stmt;
 	if (time <= 0)
 	{
@@ -152,17 +152,17 @@ std::vector<MsgData> MsgExDB::QueryMsgData(int64_t time, int limit)
 	int32_t result = stmt.NextRow();
 	while (result == SQLITE_ROW)
 	{
-		MsgData msg;
-		msg.to_account = stmt.GetTextField(1);
-		msg.from_account = stmt.GetTextField(2);
-		msg.msg_type = stmt.GetIntField(3);
-		msg.msg_time = stmt.GetInt64Field(4);
-		msg.server_msg_id = stmt.GetInt64Field(5);
-		msg.custom_save_flag = stmt.GetIntField(6);
-		msg.msg_body = stmt.GetTextField(7);
-		msg.msg_attach = stmt.GetTextField(8);
-		msg.custom_apns_text = stmt.GetTextField(9);
-		msg.msg_status = (nim::NIMMsgLogStatus)stmt.GetIntField(10);
+		nim::SysMessage msg;
+		msg.receiver_accid_ = stmt.GetTextField(1);
+		msg.sender_accid_ = stmt.GetTextField(2);
+		msg.type_ = (nim::NIMSysMsgType)stmt.GetIntField(3);
+		msg.timetag_ = stmt.GetInt64Field(4);
+		msg.id_ = stmt.GetInt64Field(5);
+		msg.support_offline_ = stmt.GetIntField(6) > 0;
+		msg.content_ = stmt.GetTextField(7);
+		msg.attach_ = stmt.GetTextField(8);
+		msg.apns_text_ = stmt.GetTextField(9);
+		msg.status_ = (nim::NIMSysMsgStatus)stmt.GetIntField(10);
 		ret_msgs.push_back(msg);
 		result = stmt.NextRow();
 	}

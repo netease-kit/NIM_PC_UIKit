@@ -85,6 +85,7 @@ void EmojiForm::InitWindow()
 		GlobalManager::FillBoxWithCache(box, L"emoji/emoji_item.xml");
 		emoj_->Add(box);
 
+		box->SetKeyboardEnabled(false);
 		box->AttachClick(nbase::Bind(&EmojiForm::OnClicked, this, std::placeholders::_1));
 		std::wstring tag = i->tag;
 		assert(tag.size() > 2);
@@ -107,6 +108,7 @@ void EmojiForm::AddSticker(std::wstring name, int num)
 		sticker->Add(box);
 		sticker->SetDataID(name);
 
+		box->SetKeyboardEnabled(false);
 		box->AttachClick(nbase::Bind(&EmojiForm::OnClicked2, this, std::placeholders::_1));
 
 		Control* c = box->FindSubControl(L"sticker");

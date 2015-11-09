@@ -27,8 +27,8 @@ public:
 	static const LPCTSTR kGroupInfoWindowId;
 	static const LPCTSTR kTeamInfoWindowId;
 	
-	void Init(const std::string& team_id, int count, const std::list<nim::TeamMemberInfo>& team_member_list);
-	void AddTeamMembersInfo(const std::list<nim::TeamMemberInfo>& team_member_list);
+	void Init(const std::string& team_id, int count, const std::list<nim::TeamMemberProperty>& team_member_list);
+	void AddTeamMembersInfo(const std::list<nim::TeamMemberProperty>& team_member_list);
 	void UpdateTeamMember();
 
 private:
@@ -37,8 +37,8 @@ private:
 	virtual void InitWindow() override;
 	bool OnInviteUesrBtnClick(ui::EventArgs *param);
 	void SelectedCompleted(const std::list<UTF8String>& id_list);
-	ui::HBox* CreateTeamMemberListItem(nim::NIMTeamUserType user_type, const std::string& team_card, const UserInfo& user_info);
-	void UpdateTeamMemberListItem(ui::Box* container_element, const std::string& team_card, const UserInfo& user_info);
+	ui::HBox* CreateTeamMemberListItem(nim::NIMTeamUserType user_type, const std::string& team_card, const nim::UserNameCard& user_info);
+	void UpdateTeamMemberListItem(ui::Box* container_element, const std::string& team_card, const nim::UserNameCard& user_info);
 	void ChangeUIByIdentity();
 	bool OnBtnDeleteClick(ui::Box* container_element, const UTF8String& user_id, ui::EventArgs* args);
 	void OnMsgbox(const UTF8String& user_id, MsgBoxRet ret);
@@ -49,14 +49,16 @@ private:
 	bool OnBtnCancelClick(ui::EventArgs* param);
 	bool OnBtnDissmissClick(ui::EventArgs* param);
 	bool OnBtnQuitClick(ui::EventArgs* param);
-	void OnTeamMemberAdd(const std::string& tid, const nim::TeamMemberInfo& team_member_info);
+	void OnTeamMemberAdd(const std::string& tid, const nim::TeamMemberProperty& team_member_info);
 	void OnTeamMemberRemove(const std::string& tid, const std::string& uid);
 	void OnTeamMemberChange(const std::string& tid_uid, const std::string& team_card);
-	void OnTeamMemberAdmin(const std::string& tid, const std::string& uid, bool admin);
-	void OnSetTeamOwner(const std::string& tid, const std::string& uid);
-	void OnUserInfoChange(const std::list<UserInfo>& uinfos);
+	void OnTeamAdminSet(const std::string& tid, const std::string& uid, bool admin);
+	void OnTeamOwnerChange(const std::string& tid, const std::string& uid);
+	void OnUserInfoChange(const std::list<nim::UserNameCard>& uinfos);
 	void OnUserPhotoReady(const std::string& accid, const std::wstring &photo_path);
+	void OnTeamRemove(const std::string& tid);
 
+	bool IsTeamMemberType(const nim::NIMTeamUserType user_type);
 private:
 	ui::ListBox* tile_box_;
 	nim::NIMTeamUserType user_type_;
@@ -64,7 +66,7 @@ private:
 	nim::NIMTeamType type_;
 	std::string tid_;
 	nim::TeamInfo team_info_;
-	nim::TeamMemberInfo my_tInfo_;
+	nim::TeamMemberProperty my_tInfo_;
 	ui::RichEdit* re_team_name_;
 	ui::RichEdit* re_team_intro_;
 	ui::Button* invitebtn_;
