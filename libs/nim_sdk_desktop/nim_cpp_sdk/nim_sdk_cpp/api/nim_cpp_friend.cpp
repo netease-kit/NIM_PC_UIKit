@@ -9,6 +9,7 @@ typedef void(*nim_friend_request)(const char *accid, NIMVerifyType verify_type, 
 typedef void(*nim_friend_delete)(const char *accid, const char *json_extension, nim_friend_opt_cb_func cb, const void *user_data);
 typedef void(*nim_friend_update)(const char *friend_json, const char *json_extension, nim_friend_opt_cb_func cb, const void *user_data);
 typedef void(*nim_friend_get_list)(const char *json_extension, nim_friend_get_list_cb_func cb, const void *user_data);
+typedef void(*nim_friend_get_profile)(const char *accid, const char *json_extension, nim_friend_get_profile_cb_func cb, const void *user_data);
 
 // 好友信息变化执行回调函数，不销毁该回调函数
 static void CallbackFriendChange(NIMFriendChangeType type, const char *result_json, const char *json_extension, const void *user_data)
@@ -54,6 +55,23 @@ static void CallbackGetFriendsList(int res_code, const char *result_json, const 
 			ParseFriendsProfile(PCharToString(result_json), friends_profile);
 			PostTaskToUIThread(std::bind((*cb_pointer), (NIMResCode)res_code, friends_profile));
 			//(*cb_pointer)((NIMResCode)res_code, friends_profile);
+		}
+		delete cb_pointer;
+	}
+}
+
+// 获取好友信息后执行回调函数，然后销毁该回调函数
+static void CallbackGetFriendProfile(const char *accid, const char *result_json, const char *json_extension, const void *user_data)
+{
+	if (user_data)
+	{
+		Friend::GetFriendProfileCallback* cb_pointer = (Friend::GetFriendProfileCallback*)user_data;
+		if (*cb_pointer)
+		{
+			FriendProfile friend_profile;
+			ParseFriendProfile(PCharToString(result_json), friend_profile);
+			PostTaskToUIThread(std::bind((*cb_pointer), accid, friend_profile));
+			//(*cb_pointer)(accid, friend_profile);
 		}
 		delete cb_pointer;
 	}
@@ -123,6 +141,16 @@ void Friend::GetList(const GetFriendsListCallback& cb, const std::string& json_e
 		get_friends_list_cb = new GetFriendsListCallback(cb);
 	}
 	return NIM_SDK_GET_FUNC(nim_friend_get_list)(json_extension.c_str(), &CallbackGetFriendsList, get_friends_list_cb);
+}
+
+void Friend::GetFriendProfile(const std::string &accid, const GetFriendProfileCallback& cb, const std::string& json_extension/* = ""*/)
+{
+	GetFriendProfileCallback* get_profile_cb = nullptr;
+	if (cb)
+	{
+		get_profile_cb = new GetFriendProfileCallback(cb);
+	}
+	return NIM_SDK_GET_FUNC(nim_friend_get_profile)(accid.c_str(), json_extension.c_str(), &CallbackGetFriendProfile, get_profile_cb);
 }
 
 bool Friend::ParseFriendAddEvent(const FriendChangeEvent& change_event, FriendAddEvent& out_event)

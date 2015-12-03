@@ -22,14 +22,16 @@ public:
 
 		SetUTF8Name(user_info.GetAccId());
 		SetUTF8DataID(user_info.GetAccId());
+
 		ui::Button* head_image_button = (ui::Button*)FindSubControl(L"head_image");
 		ui::Control* head_image_mask = (ui::Control*)FindSubControl(L"headmask");
 		head_image_mask->SetClass(L"checkbox_headimage_mask_40x40");
 		head_image_button->SetBkImage(UserService::GetInstance()->GetUserPhoto(user_info.GetAccId()));
-		ui::Label* show_name_label = (ui::Label*)FindSubControl(L"show_name");
-		show_name_label->SetUTF8Text(user_info.GetName());
 
-		nick_name = nbase::UTF8ToUTF16(user_info.GetName());
+		ui::Label* show_name_label = (ui::Label*)FindSubControl(L"show_name");
+		nick_name = UserService::GetInstance()->GetUserName(user_info.GetAccId());
+		show_name_label->SetText(nick_name);
+
 		nick_name = nbase::MakeLowerString(nick_name);
 		nick_name_full_spell = nbase::MakeLowerString(PinYinHelper::GetInstance()->ConvertToFullSpell(nick_name));
 		nick_name_simple_spell = nbase::MakeLowerString(PinYinHelper::GetInstance()->ConvertToSimpleSpell(nick_name));
@@ -98,7 +100,7 @@ private:
 	void OnCheckBox(UTF8String id, bool check);
 
 	//好友名单改变的回调
-	void OnFriendListChange(UserChangeType change_type, const nim::UserNameCard& user);
+	void OnFriendListChange(FriendChangeType change_type, const nim::UserNameCard& user);
 	//黑名单改变时的回调
 	void OnSetBlackCallback(const std::string& id, bool black);
 	

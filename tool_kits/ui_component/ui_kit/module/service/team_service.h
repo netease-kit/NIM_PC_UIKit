@@ -15,6 +15,8 @@ typedef std::function<void(const std::string&, const std::string&)> OnTeamMember
 typedef std::function<void(const std::string&, const std::string&, bool)> OnTeamAdminSet;
 typedef std::function<void(const std::string&, const std::string&)> OnTeamOwnerChange;
 
+typedef std::function<void(const nim::TeamInfo& team_info)> OnGetTeamInfo;
+
 namespace nim_comp
 {
 class TeamService : public nbase::SupportWeakCallback
@@ -36,6 +38,7 @@ public:
 
 	std::wstring GetTeamName(const std::string& tid);
 	std::wstring GetTeamPhoto(bool full_path);
+	int GetTeamType(const std::string& tid); //0: 普通群； 1: 高级群； -1: 获取不到
 
 	//从SDK获取
 	void QueryAllTeamInfo();
@@ -44,7 +47,6 @@ public:
 	void InvokeRemoveTeamMember(const std::string& tid, const std::string& uid);
 	void InvokeAddTeam(const std::string& tid, const std::string& tname, nim::NIMTeamType type);
 
-// private:
 	void InvokeRemoveTeam(const std::string& tid);
 	void InvokeAddTeamMember(const std::string& tid, const nim::TeamMemberProperty& team_member);
 	void InvokeChangeTeamName(const nim::TeamInfo& team_info);
@@ -52,6 +54,7 @@ public:
 	void InvokeSetTeamOwner(const std::string& tid, const std::string& uid);
 
 	//从SDK获取
+	void QueryTeamInfo(const std::string& tid, OnGetTeamInfo cb);
 	void QueryAllTeamInfoCb(int team_count, const std::list<nim::TeamInfo>& team_info_list);
 	void UIQueryAllTeamInfoCb(int team_count, const std::list<nim::TeamInfo>& team_info_list);
 
@@ -72,5 +75,6 @@ private:
 	std::map<int, std::unique_ptr<OnTeamOwnerChange>>		set_team_owner_cb_;
 
 	std::map<std::string,std::string> tid_tname_pair_;
+	std::map<std::string, int> tid_type_pair_;
 };
 }

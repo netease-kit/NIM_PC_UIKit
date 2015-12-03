@@ -29,11 +29,13 @@ public:
 	const std::map<std::string, nim::UserNameCard>& GetAllUserInfos();
 	bool GetUserInfo(const std::string &account, nim::UserNameCard &info);
 	nim::NIMFriendFlag GetUserType(const std::string &id);
-	std::wstring GetUserName(const std::string &id);
+	std::wstring GetUserName(const std::string &id, bool alias_prior = true);
+	std::wstring GetFriendAlias(const std::string &id);
 	std::wstring GetUserPhoto(const std::string &icon);
 	std::wstring GetUserPhotoDir();
 	UnregisterCallback RegFriendListChange(const OnFriendListChangeCallback& callback);
 	UnregisterCallback RegUserInfoChange(const OnUserInfoChangeCallback& callback);
+	UnregisterCallback RegMiscUInfoChange(const OnUserInfoChangeCallback& callback);
 	UnregisterCallback RegUserPhotoReady(const OnUserPhotoReadyCallback& callback);
 };
 

@@ -13,6 +13,17 @@
 extern"C"
 {
 #endif
+/** @typedef void (*nim_msglog_query_single_cb_func)(int res_code, const char *msg_id, const char *result, const char *json_extension, const void *user_data)
+  * 查询单条消息历史回调函数定义
+  * @param[out] res_code		操作结果，成功200
+  * @param[out] id				查询时传入的客户端消息ID
+  * @param[out] result			查询结果 Json String (Keys SEE MORE in `nim_talk_def.h` 『消息结构 Json Keys』)
+  * @param[out] json_extension	json扩展数据（备用）
+  * @param[out] user_data		APP的自定义用户数据，SDK只负责传回给回调函数，不做任何处理！
+  * @return void 无返回值
+  */ 
+typedef void (*nim_msglog_query_single_cb_func)(int res_code, const char *msg_id, const char *result, const char *json_extension, const void *user_data);
+
 /** @typedef void (*nim_msglog_query_cb_func)(int res_code, const char *id, NIMSessionType type, const char *result, const char *json_extension, const void *user_data)
   * 本地或在线查询消息的回调函数定义
   * @param[out] res_code		操作结果，成功200
@@ -91,6 +102,7 @@ enum NIMMessageType
 	kNIMMessageTypeLocation  = 4,			/**< 位置类型消息*/
 	kNIMMessageTypeNotification	= 5,		/**< 系统类型通知（包括入群出群通知等） NIMNotificationId*/
 	kNIMMessageTypeFile		 = 6,			/**< 文件类型消息*/
+	kNIMMessageTypeTips		 = 10,			/**< 提醒类型消息,Tip内容根据格式要求填入消息结构中的kNIMMsgKeyServerExt字段*/
 	kNIMMessageTypeCustom    = 100,			/**< 自定义消息*/
 
 	kNIMMessageTypeUnknown	 = 1000,		/**< 未知类型消息，作为默认值*/

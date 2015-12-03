@@ -989,13 +989,14 @@ void SessionForm::CheckHeader()
 	{
 		OnGetUserInfoCallback cb = ToWeakCallback([this](const std::list<nim::UserNameCard> &uinfos) {
 			if (uinfos.empty()) return;
-			if (uinfos.cbegin()->GetAccId() == session_id_)
+			std::string accid = uinfos.cbegin()->GetAccId();
+			if (accid == session_id_)
 			{
-				std::wstring name = IsFileTransPhone() ? L"我的手机" : nbase::UTF8ToUTF16(uinfos.cbegin()->GetName());
+				std::wstring name = IsFileTransPhone() ? L"我的手机" : UserService::GetInstance()->GetUserName(accid);
 				label_title_->SetText(name);
 				label_tid_->SetVisible(false);
 				SetTaskbarTitle(name);
-				std::wstring photo = UserService::GetInstance()->GetUserPhoto(uinfos.cbegin()->GetAccId());
+				std::wstring photo = UserService::GetInstance()->GetUserPhoto(accid);
 				btn_header_->SetBkImage(photo);
 				UpdateSessionIcon(photo);
 			}
@@ -1031,20 +1032,15 @@ void SessionForm::CreateGroup(const std::list<UTF8String>& _id_list)
 {
 	std::list<UTF8String> id_list = _id_list;
 	id_list.push_back(session_id_);
-	UTF8String user_names;
-	int i = 0;
-	for (auto it = id_list.begin(); it != id_list.end(); it++)
-	{
-		if (i < 3)
-		{
-			nim::UserNameCard userinfo;
-			UserService::GetInstance()->GetUserInfo(*it, userinfo);
-			user_names += userinfo.GetName() + ";";
-		}
-		i++;
-	}
+	
+	UTF16String user_names;
+	auto it = id_list.cbegin();
+	for (int i = 0; it != id_list.cend() && i < 2; it++, i++)
+		user_names += UserService::GetInstance()->GetUserName(*it, false) + L";";
+	user_names += UserService::GetInstance()->GetUserName(it == id_list.end() ? LoginManager::GetInstance()->GetAccount() : *it, false);
+
 	nim::TeamInfo tinfo;
-	tinfo.SetName(user_names);
+	tinfo.SetName(nbase::UTF16ToUTF8(user_names));
 	tinfo.SetType(nim::kNIMTeamTypeNormal);
 	nim::Team::CreateTeamAsync(tinfo, id_list, "", nbase::Bind(&TeamCallback::OnTeamEventCallback, std::placeholders::_1));
 
@@ -1059,8 +1055,9 @@ bool SessionForm::OnBtnHeaderClick(ui::EventArgs* param)
 			(TeamInfoForm::kClassName, session_id);
 		if (team_info_form == NULL)
 		{
+			std::wstring title = team_info_.GetType() == nim::kNIMTeamTypeNormal ? L"讨论组资料" : L"群资料";
 			team_info_form = new TeamInfoForm(false, team_info_.GetType(), session_id_, team_info_);
-			team_info_form->Create(NULL, L"群资料", WS_OVERLAPPEDWINDOW& ~WS_MAXIMIZEBOX, 0L);
+			team_info_form->Create(NULL, title.c_str(), WS_OVERLAPPEDWINDOW& ~WS_MAXIMIZEBOX, 0L);
 			team_info_form->CenterWindow();
 			team_info_form->ShowWindow(true);
 		}
@@ -1099,10 +1096,11 @@ void SessionForm::OnUserInfoChange(const std::list<nim::UserNameCard> &uinfos)
 			MsgBubbleItem* bubble_item = dynamic_cast<MsgBubbleItem*>(msg_list_->GetItemAt(i));
 			if (bubble_item != NULL && bubble_item->msg_.sender_accid_ == info.GetAccId())
 			{
+				UserService* user_service = UserService::GetInstance();
 				if (info.ExistValue(nim::kUserNameCardKeyIconUrl))
-					bubble_item->msg_header_button_->SetBkImage(UserService::GetInstance()->GetUserPhoto(info.GetAccId()));
+					bubble_item->msg_header_button_->SetBkImage(user_service->GetUserPhoto(info.GetAccId()));
 				if (bubble_item->sender_name_->IsVisible() && info.ExistValue(nim::kUserNameCardKeyName))
-					bubble_item->sender_name_->SetUTF8Text(info.GetName());
+					bubble_item->sender_name_->SetText(user_service->GetUserName(info.GetAccId()));
 			}
 		}
 	};

@@ -302,7 +302,7 @@ void AddFriendWindow::InitUserProfile(const nim::UserNameCard& uinfo)
 	headimage->SetBkImage(UserService::GetInstance()->GetUserPhoto(uinfo.GetAccId()));
 
 	Label* nick_name = (Label*)userinfo_page->FindSubControl(L"nick_name");
-	nick_name->SetUTF8Text(uinfo.GetName());
+	nick_name->SetText(UserService::GetInstance()->GetUserName(id_));
 
 	Label* id = (Label*)userinfo_page->FindSubControl(L"id");
 	id->SetUTF8Text(id_);

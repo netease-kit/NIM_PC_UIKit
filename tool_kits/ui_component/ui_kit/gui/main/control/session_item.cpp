@@ -32,57 +32,25 @@ void SessionItem::Init(const nim::SessionData &msg)
 	label_time_ = (Label*) this->FindSubControl(L"label_time");
 	box_unread_ = (Box*) this->FindSubControl(L"box_unread");
 	label_unread_ = (Label*) this->FindSubControl(L"label_unread");
+	head_image_ = (ButtonBox*)this->FindSubControl(L"head_image");
 
 	id_ = msg.id_;
+	type_ = msg.type_;
 	SetUTF8Name(id_);
 	SetUTF8DataID(id_);
 	
-	type_ = msg.type_;
-	unread_count_ = msg.unread_count_;
-	msg_time_ = msg.msg_timetag_;
-	
-	if (msg.type_ == nim::kNIMSessionTypeP2P) // 如果是P2P聊天，先获取该用户的信息，再UpdateInfo
+	UpdateInfo();
+	UpdateMsg(msg);
+
+	if (type_ == nim::kNIMSessionTypeP2P)
 	{
-		OnGetUserInfoCallback cb1 = ToWeakCallback([this, msg](const std::list<nim::UserNameCard> &uinfos) {
-			if (uinfos.empty()) return;
-			UpdateInfo();
-		});
-		UserService::GetInstance()->GetUserInfoWithEffort(std::list<std::string>(1, id_), cb1);
-		UpdateMsg(msg);
-	}
-	else // 需要先获得群里最近一条消息中所有人的昵称，再UpdateMsg
-	{
-		std::list<std::string> uids;
-		uids.push_back(msg.msg_sender_accid_);
-		Json::Reader reader;
-		Json::Value attach;
-		if (reader.parse(msg.msg_attach_, attach))
+		head_image_->AttachClick(ToWeakCallback([this](ui::EventArgs* args)
 		{
-			if (attach.isObject() && attach.isMember(nim::kNIMNotificationKeyData))
-			{
-				Json::Value data = attach[nim::kNIMNotificationKeyData];
-				if (data.isObject() && data.isMember(nim::kNIMNotificationKeyDataId))
-					uids.push_back(data[nim::kNIMNotificationKeyDataId].asString());
-				if (data.isObject() && data.isMember(nim::kNIMNotificationKeyDataIds) && data[nim::kNIMNotificationKeyDataIds].isArray())
-				{
-					Json::Value ids_json = data[nim::kNIMNotificationKeyDataIds];
-					if (ids_json.isArray())
-					{
-						for (uint32_t i = 0; i < ids_json.size(); i++)
-							uids.push_back(ids_json[i].asString());
-					}
-				}
-			}
-		}
-		OnGetUserInfoCallback cb2 = ToWeakCallback([this, msg](const std::list<nim::UserNameCard> &uinfos) {
-			if (uinfos.empty()) return;
-			UpdateMsg(msg);
-		});
-		UserService::GetInstance()->GetUserInfoWithEffort(uids, cb2);
-		UpdateInfo();
+			ProfileForm::ShowProfileForm(id_);
+			return true;
+		}));
 	}
 		
-	UpdateUnread();
 	unregister_cb.Add(TeamService::GetInstance()->RegChangeTeamName(nbase::Bind(&SessionItem::OnTeamNameChange, this, std::placeholders::_1)));
 }
 
@@ -91,27 +59,20 @@ long long SessionItem::GetMsgTime()
 	return msg_time_;
 }
 
-void SessionItem::UpdateInfo()
+void SessionItem::UpdateInfoEx()
 {
 	if (type_ == nim::kNIMSessionTypeP2P)
 	{
-		nim::UserNameCard uinfo;
-		UserService::GetInstance()->GetUserInfo(id_, uinfo);
+		UserService *user_service = UserService::GetInstance();
 		if (LoginManager::GetInstance()->IsEqual(id_))
 		{
 			label_name_->SetText(L"我的手机");
 		} 
 		else
 		{
-			label_name_->SetUTF8Text(uinfo.GetName());
+			label_name_->SetText(user_service->GetUserName(id_));
 		}
-		std::wstring head_image = UserService::GetInstance()->GetUserPhoto(id_);
-		ButtonBox* head_btn = (ButtonBox*)FindSubControl(L"head_image");
-		head_btn->SetBkImage(head_image);
-		head_btn->AttachClick(ToWeakCallback([this](ui::EventArgs* args){
-			ProfileForm::ShowProfileForm(id_);
-			return true;
-		}));
+		head_image_->SetBkImage(user_service->GetUserPhoto(id_));
 	}
 	else
 	{
@@ -149,7 +110,7 @@ static void GetMsgContent(const nim::SessionData &msg, std::wstring &show_text)
 	}
 	else if (msg.msg_type_ == nim::kNIMMessageTypeNotification)
 	{
-		GetNotifyMsg(msg.msg_attach_, msg.msg_sender_accid_, "", show_text);
+		GetNotifyMsg(msg.msg_attach_, msg.msg_sender_accid_, "", show_text, msg.id_);
 	}
 	else if (msg.msg_type_ == nim::kNIMMessageTypeCustom)
 	{
@@ -167,13 +128,10 @@ static void GetMsgContent(const nim::SessionData &msg, std::wstring &show_text)
 	}
 }
 
-void SessionItem::UpdateMsg(const nim::SessionData &msg)
+void SessionItem::UpdateMsgEx(const nim::SessionData &msg)
 {
-	//if (msg.feature == nim::kNIMMessageFeatureLeaveMsg)
-	//{
-	//	if (msg.msg_type != nim::kNIMMessageTypeNotification)
-	//		AddUnread();
-	//}
+	if (last_msg_id_ != msg.msg_id_)
+		return;
 
 	std::wstring show_text;
 	if (msg.msg_status_ != nim::kNIMMsgLogStatusDeleted)
@@ -186,9 +144,7 @@ void SessionItem::UpdateMsg(const nim::SessionData &msg)
 				; // do nothing
 			else
 			{
-				nim::UserNameCard user_info;
-				UserService::GetInstance()->GetUserInfo(msg.msg_sender_accid_, user_info);
-				std::wstring nick_name = nbase::UTF8ToUTF16(user_info.GetName());
+				std::wstring nick_name = UserService::GetInstance()->GetUserName(msg.msg_sender_accid_);
 				if (!nick_name.empty())
 				{
 					show_text = nick_name + L": " + show_text;
@@ -202,7 +158,33 @@ void SessionItem::UpdateMsg(const nim::SessionData &msg)
 		}
 	}
 	label_msg_->SetText(show_text);
+}
 
+void SessionItem::UpdateInfo()
+{
+	if (type_ == nim::kNIMSessionTypeP2P) // 如果是P2P聊天，先获取该用户的信息，再UpdateInfo(因为发消息的可能是陌生人)
+	{
+		OnGetUserInfoCallback cb1 = ToWeakCallback([this](const std::list<nim::UserNameCard> &uinfos) {
+			if (uinfos.empty()) return;
+			UpdateInfoEx();
+		});
+		UserService::GetInstance()->GetUserInfoWithEffort(std::list<std::string>(1, id_), cb1);
+	}
+	else
+		UpdateInfoEx();
+}
+
+void SessionItem::UpdateMsg(const nim::SessionData & msg)
+{
+	//更新消息id
+	last_msg_id_ = msg.msg_id_;
+
+	//更新未读条数
+	unread_count_ = msg.unread_count_;
+	UpdateUnread();
+
+	//更新时间
+	msg_time_ = msg.msg_timetag_;
 	if (msg_time_ > 0 && msg.msg_status_ != nim::kNIMMsgLogStatusDeleted)
 	{
 		std::wstring str = GetMessageTime(msg_time_, true);
@@ -212,6 +194,39 @@ void SessionItem::UpdateMsg(const nim::SessionData &msg)
 	{
 		label_time_->SetVisible(false);
 	}
+
+	//更新消息内容
+	UpdateMsgEx(msg);
+	if (type_ == nim::kNIMSessionTypeTeam) // 需要先获得群里最近一条消息中所有人的昵称，再UpdateMsg
+	{
+		std::list<std::string> uids;
+		uids.push_back(msg.msg_sender_accid_);
+		Json::Reader reader;
+		Json::Value attach;
+		if (reader.parse(msg.msg_attach_, attach))
+		{
+			if (attach.isObject() && attach.isMember(nim::kNIMNotificationKeyData))
+			{
+				Json::Value data = attach[nim::kNIMNotificationKeyData];
+				if (data.isObject() && data.isMember(nim::kNIMNotificationKeyDataId))
+					uids.push_back(data[nim::kNIMNotificationKeyDataId].asString());
+				if (data.isObject() && data.isMember(nim::kNIMNotificationKeyDataIds) && data[nim::kNIMNotificationKeyDataIds].isArray())
+				{
+					Json::Value ids_json = data[nim::kNIMNotificationKeyDataIds];
+					if (ids_json.isArray())
+					{
+						for (uint32_t i = 0; i < ids_json.size(); i++)
+							uids.push_back(ids_json[i].asString());
+					}
+				}
+			}
+		}
+		OnGetUserInfoCallback cb2 = ToWeakCallback([this, msg](const std::list<nim::UserNameCard> &uinfos) {
+			if (uinfos.empty()) return;
+			UpdateMsgEx(msg);
+		});
+		UserService::GetInstance()->GetUserInfoWithEffort(uids, cb2);
+	}		
 }
 
 void SessionItem::ClearMsg()

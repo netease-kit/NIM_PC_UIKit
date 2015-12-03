@@ -945,9 +945,7 @@ void VideoForm::CheckHeadIcon()
 
 void VideoForm::CheckFriendName()
 {
-	nim::UserNameCard info;
-	UserService::GetInstance()->GetUserInfo(session_id_, info);
-	friend_label_->SetUTF8Text(info.GetName());
+	friend_label_->SetText(UserService::GetInstance()->GetUserName(session_id_));
 }
 
 bool VideoForm::CheckAudioInputDevice()

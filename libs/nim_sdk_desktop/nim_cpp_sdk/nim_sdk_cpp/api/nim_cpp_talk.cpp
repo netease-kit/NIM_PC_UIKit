@@ -104,6 +104,7 @@ std::string Talk::CreateTextMessage(const std::string& receiver_id
 	, const NIMSessionType session_type
 	, const std::string& client_msg_id
 	, const std::string& content
+	, const MessageSetting& msg_setting
 	, __int64 timetag/* = 0*/)
 {
 	Json::Value values;
@@ -113,6 +114,8 @@ std::string Talk::CreateTextMessage(const std::string& receiver_id
 	values[kNIMMsgKeyBody] = content;
 	values[kNIMMsgKeyType] = kNIMMessageTypeText;
 	values[kNIMMsgKeyLocalTalkId] = receiver_id;
+
+	msg_setting.ToJsonValue(values);
 
 	//选填
 	if (timetag > 0)
@@ -126,6 +129,7 @@ std::string Talk::CreateImageMessage(const std::string& receiver_id
 	, const std::string& client_msg_id
 	, const IMImage& image
 	, const std::string& file_path
+	, const MessageSetting& msg_setting
 	, __int64 timetag/* = 0*/)
 {
 	Json::Value values;
@@ -137,6 +141,8 @@ std::string Talk::CreateImageMessage(const std::string& receiver_id
 	values[kNIMMsgKeyLocalFilePath] = file_path;
 	values[kNIMMsgKeyLocalTalkId] = receiver_id;
 	values[kNIMMsgKeyLocalResId] = client_msg_id;
+
+	msg_setting.ToJsonValue(values);
 
 	//选填
 	if (timetag > 0)
@@ -150,6 +156,7 @@ std::string Talk::CreateFileMessage(const std::string& receiver_id
 	, const std::string& client_msg_id
 	, const IMFile& file
 	, const std::string& file_path
+	, const MessageSetting& msg_setting
 	, __int64 timetag/* = 0*/)
 {
 	Json::Value values;
@@ -161,6 +168,8 @@ std::string Talk::CreateFileMessage(const std::string& receiver_id
 	values[kNIMMsgKeyLocalFilePath] = file_path;
 	values[kNIMMsgKeyLocalTalkId] = receiver_id;
 	values[kNIMMsgKeyLocalResId] = client_msg_id;
+
+	msg_setting.ToJsonValue(values);
 
 	//选填
 	if (timetag > 0)
@@ -174,6 +183,7 @@ std::string Talk::CreateAudioMessage(const std::string& receiver_id
 	, const std::string& client_msg_id
 	, const IMAudio& audio
 	, const std::string& file_path
+	, const MessageSetting& msg_setting
 	, __int64 timetag/* = 0*/)
 {
 	Json::Value values;
@@ -185,6 +195,8 @@ std::string Talk::CreateAudioMessage(const std::string& receiver_id
 	values[kNIMMsgKeyLocalFilePath] = file_path;
 	values[kNIMMsgKeyLocalTalkId] = receiver_id;
 	values[kNIMMsgKeyLocalResId] = client_msg_id;
+
+	msg_setting.ToJsonValue(values);
 
 	//选填
 	if (timetag > 0)
@@ -198,6 +210,7 @@ std::string Talk::CreateVideoMessage(const std::string& receiver_id
 	, const std::string& client_msg_id
 	, const IMVideo& video
 	, const std::string& file_path
+	, const MessageSetting& msg_setting
 	, __int64 timetag/* = 0*/)
 {
 	Json::Value values;
@@ -210,6 +223,8 @@ std::string Talk::CreateVideoMessage(const std::string& receiver_id
 	values[kNIMMsgKeyLocalTalkId] = receiver_id;
 	values[kNIMMsgKeyLocalResId] = client_msg_id;
 
+	msg_setting.ToJsonValue(values);
+
 	//选填
 	if (timetag > 0)
 		values[kNIMMsgKeyTime] = timetag;
@@ -221,6 +236,7 @@ std::string Talk::CreateLocationMessage(const std::string& receiver_id
 	, const NIMSessionType session_type
 	, const std::string& client_msg_id
 	, const IMLocation& location
+	, const MessageSetting& msg_setting
 	, __int64 timetag/* = 0*/)
 {
 	Json::Value values;
@@ -231,6 +247,32 @@ std::string Talk::CreateLocationMessage(const std::string& receiver_id
 	values[kNIMMsgKeyType] = kNIMMessageTypeLocation;
 	values[kNIMMsgKeyLocalTalkId] = receiver_id;
 
+	msg_setting.ToJsonValue(values);
+
+	//选填
+	if (timetag > 0)
+		values[kNIMMsgKeyTime] = timetag;
+
+	return values.toStyledString();
+}
+
+std::string Talk::CreateTipMessage(const std::string& receiver_id
+	, const NIMSessionType session_type
+	, const std::string& client_msg_id
+	, const Json::Value& tips
+	, const MessageSetting& msg_setting
+	, __int64 timetag/* = 0*/)
+{
+	Json::Value values;
+	values[kNIMMsgKeyToAccount] = receiver_id;
+	values[kNIMMsgKeyToType] = session_type;
+	values[kNIMMsgKeyClientMsgid] = client_msg_id;
+	values[kNIMMsgKeyServerExt] = tips.toStyledString();
+	values[kNIMMsgKeyType] = kNIMMessageTypeTips;
+	values[kNIMMsgKeyLocalTalkId] = receiver_id;
+
+	msg_setting.ToJsonValue(values);
+
 	//选填
 	if (timetag > 0)
 		values[kNIMMsgKeyTime] = timetag;
@@ -240,37 +282,7 @@ std::string Talk::CreateLocationMessage(const std::string& receiver_id
 
 bool Talk::ParseIMMessage(const std::string& json_msg, IMMessage& msg)
 {
-	Json::Value values;
-	Json::Reader reader;
-	if (reader.parse(json_msg, values) && values.isObject())
-	{
-		msg.session_type_ = (NIMSessionType)values[kNIMMsgKeyToType].asUInt();
-		msg.receiver_accid_ = values[kNIMMsgKeyToAccount].asString();
-		msg.sender_accid_ = values[kNIMMsgKeyFromAccount].asString();
-		msg.readonly_sender_client_type_ = values[kNIMMsgKeyFromClientType].asUInt();
-		msg.readonly_sender_device_id_ = values[kNIMMsgKeyFromDeviceId].asString();
-		msg.readonly_sender_nickname_ = values[kNIMMsgKeyFromNick].asString();
-		msg.timetag_ = values[kNIMMsgKeyTime].asUInt64();
-
-		msg.type_ = (NIMMessageType)values[kNIMMsgKeyType].asUInt();
-		msg.content_ = values[kNIMMsgKeyBody].asString();
-		msg.attach_ = values[kNIMMsgKeyAttach].asString();
-		msg.client_msg_id_ = values[kNIMMsgKeyClientMsgid].asString();
-		msg.readonly_server_id_ = values[kNIMMsgKeyServerMsgid].asUInt64();
-		msg.resend_flag_ = values[kNIMMsgKeyResendFlag].asUInt() > 0;
-		msg.support_cloud_history_ = values[kNIMMsgKeyHistorySave].asUInt() > 0;
-		msg.support_roam_msg_ = values[kNIMMsgKeyMsgRoaming].asUInt() > 0;
-		msg.support_sync_msg_ = values[kNIMMsgKeyMsgSync] > 0;
-
-		msg.local_res_path_ = values[kNIMMsgKeyLocalFilePath].asString();
-		msg.local_talk_id_ = values[kNIMMsgKeyLocalTalkId].asString();
-		msg.local_res_id_ = values[kNIMMsgKeyLocalResId].asString();
-		msg.status_ = (NIMMsgLogStatus)values[kNIMMsgKeyLocalLogStatus].asUInt();
-		msg.sub_status_ = (NIMMsgLogSubStatus)values[kNIMMsgKeyLocalLogSubStatus].asUInt();
-
-		return true;
-	}
-	return false;
+	return ParseMessage(json_msg, msg);
 }
 
 bool Talk::ParseImageMessageAttach(const IMMessage& msg, IMImage& image)

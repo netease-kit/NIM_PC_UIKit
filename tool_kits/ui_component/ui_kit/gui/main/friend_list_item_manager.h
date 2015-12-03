@@ -24,7 +24,7 @@ public:
 private:
 	void AddListItem(const nim::UserNameCard& user_info);
 	void DeleteListItem(const nim::UserNameCard& user_info);
-	void OnFriendListChange(UserChangeType change_type, const nim::UserNameCard& user);
+	void OnFriendListChange(FriendChangeType change_type, const nim::UserNameCard& user);
 	void OnUserInfoChange(const std::list<nim::UserNameCard> &uinfos);
 	void OnBlackListChange(const std::string& id, bool is_black);
 	void OnUserPhotoReady(const std::string& accid, const std::wstring &photo_path);

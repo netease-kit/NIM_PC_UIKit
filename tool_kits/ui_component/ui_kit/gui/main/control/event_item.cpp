@@ -53,6 +53,7 @@ bool TeamEventItem::InitInfo(const nim::SysMessage &json)
 	btn_head_->SetBkImage(TeamService::GetInstance()->GetTeamPhoto(false));
 	evt_team_->SetText(TeamService::GetInstance()->GetTeamName(tid_));
 	evt_time_->SetText(GetMessageTime(msg_time_, false));
+
 	std::wstring uname = UserService::GetInstance()->GetUserName(acc_id_);
 
 	if (msg_type_ == nim::kNIMSysMsgTypeTeamApply)

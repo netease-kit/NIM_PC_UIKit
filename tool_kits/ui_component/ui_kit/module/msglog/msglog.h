@@ -79,7 +79,7 @@ void CustomSysMessageToIMMessage(const nim::SysMessage &sys_msg, nim::IMMessage 
 
 bool StringToJson(const std::string &str, Json::Value &json);
 
-void GetNotifyMsg(const std::string& msg_attach, const std::string& from_account, const std::string& to_account, std::wstring &show_text);
+void GetNotifyMsg(const std::string& msg_attach, const std::string& from_account, const std::string& to_account, std::wstring &show_text, const std::string& session_id);
 
 //判断是否是语音通话的话单消息
 bool IsNetCallMsg(nim::NIMMessageType msg_type, const std::string& msg_attach);

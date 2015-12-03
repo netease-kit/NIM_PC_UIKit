@@ -2,6 +2,7 @@
 #include "module/session/session_manager.h"
 #include "module/service/mute_black_service.h"
 #include "head_modify_form.h"
+#include "api/nim_cpp_friend.h"
 
 namespace nim_comp
 {
@@ -42,6 +43,9 @@ ProfileForm::ProfileForm()
 	auto user_info_change_cb = nbase::Bind(&ProfileForm::OnUserInfoChange, this, std::placeholders::_1);
 	unregister_cb.Add(UserService::GetInstance()->RegUserInfoChange(user_info_change_cb));
 
+	auto misc_uinfo_change_cb = nbase::Bind(&ProfileForm::OnMiscUInfoChange, this, std::placeholders::_1);
+	unregister_cb.Add(UserService::GetInstance()->RegMiscUInfoChange(misc_uinfo_change_cb));
+
 	auto friend_list_change_cb = nbase::Bind(&ProfileForm::OnFriendListChange, this, std::placeholders::_1, std::placeholders::_2);
 	unregister_cb.Add(UserService::GetInstance()->RegFriendListChange(friend_list_change_cb));
 
@@ -77,11 +81,15 @@ std::wstring ProfileForm::GetWindowId() const
 
 void ProfileForm::InitWindow()
 {
-	m_pRoot->AttachBubbledEvent(ui::kEventAll, nbase::Bind(&ProfileForm::Notify, this, std::placeholders::_1));
+	m_pRoot->AttachBubbledEvent(ui::kEventTab, nbase::Bind(&ProfileForm::Notify, this, std::placeholders::_1));
 
 	head_image_btn = static_cast<ui::Button*>(FindControl(L"head_image"));
+
+	show_name_label = static_cast<ui::Label*>(FindControl(L"show_name"));
+	user_id_label = static_cast<ui::Label*>(FindControl(L"userid"));
 	nickname_label = static_cast<ui::Label*>(FindControl(L"nickname"));
-	user_id = static_cast<ui::Label*>(FindControl(L"userid"));
+	sex_icon = static_cast<ui::CheckBox*>(FindControl(L"sex_icon"));
+
 	notify_switch = static_cast<ui::CheckBox*>(FindControl(L"notify_switch"));
 	black_switch = static_cast<ui::CheckBox*>(FindControl(L"black_switch"));
 	start_chat = static_cast<ui::Button*>(FindControl(L"start_chat"));
@@ -89,24 +97,32 @@ void ProfileForm::InitWindow()
 	delete_friend = static_cast<ui::Button*>(FindControl(L"delete_friend"));
 	add_friend = static_cast<ui::Button*>(FindControl(L"add_friend"));
 
-	sex_icon = static_cast<ui::CheckBox*>(FindControl(L"sex_icon"));
 	btn_modify_info = static_cast<ui::Button*>(FindControl(L"modify_info"));
 	btn_cancel_modify = static_cast<ui::Button*>(FindControl(L"cancel_modify"));
 	btn_save_modify = static_cast<ui::Button*>(FindControl(L"save_modify"));
+	
+	alias_box = static_cast<ui::HBox*>(FindControl(L"alias_box"));
+	alias_edit = static_cast<ui::RichEdit*>(FindControl(L"alias_edit"));
+	
 	nickname_box = static_cast<ui::HBox*>(FindControl(L"nickname_box"));
 	nickname_edit = static_cast<ui::RichEdit*>(FindControl(L"nickname_edit"));
 	nickname_error_tip = static_cast<ui::Label*>(FindControl(L"nickname_error_tip"));
+	
 	sex_box = static_cast<ui::HBox*>(FindControl(L"sex_box"));
 	sex_option = static_cast<ui::Combo*>(FindControl(L"sex_option"));
+	
 	birthday_label = static_cast<ui::Label*>(FindControl(L"birthday"));
 	birthday_combo_box = static_cast<ui::HBox*>(FindControl(L"birthday_combobox"));
 	birth_year_combo = static_cast<ui::Combo*>(birthday_combo_box->FindSubControl(L"year"));
 	birth_month_combo = static_cast<ui::Combo*>(birthday_combo_box->FindSubControl(L"month"));
 	birth_day_combo = static_cast<ui::Combo*>(birthday_combo_box->FindSubControl(L"day"));
+	
 	phone_label = static_cast<ui::Label*>(FindControl(L"phone"));
 	phone_edit = static_cast<ui::RichEdit*>(FindControl(L"phone_edit"));
+	
 	email_label = static_cast<ui::Label*>(FindControl(L"email"));
 	email_edit = static_cast<ui::RichEdit*>(FindControl(L"email_edit"));
+	
 	signature_label = static_cast<ui::Label*>(FindControl(L"signature"));
 	signature_edit = static_cast<ui::RichEdit*>(FindControl(L"signature_edit"));
 }
@@ -114,39 +130,61 @@ void ProfileForm::InitWindow()
 void ProfileForm::InitUserInfo(const nim::UserNameCard &info)
 {
 	m_uinfo = info;
-	InitLabels();
 
 	if (m_uinfo.GetAccId() == LoginManager::GetInstance()->GetAccount())
+		user_type = -1;
+	else
+		user_type = UserService::GetInstance()->GetUserType(m_uinfo.GetAccId());
+
+	if (user_type == -1) // 自己的名片
 	{
+		head_image_btn->SetMouseEnabled(true); // 可点击头像进行更换
 		btn_modify_info->SetVisible(true); // 显示“编辑”按钮
 		head_image_btn->SetMouseEnabled(true); // 可点击头像进行更换
+
+		FindControl(L"only_other")->SetVisible(false); // 当名片是自己的时候，下面两块隐藏
+
 		nickname_edit->SetLimitText(10);
 		phone_edit->SetLimitText(13);
 		email_edit->SetLimitText(30);
 		signature_edit->SetLimitText(30);
+
+		head_image_btn->AttachClick(nbase::Bind(&ProfileForm::OnHeadImageClicked, this, std::placeholders::_1));
+
 		birth_year_combo->AttachSelect(nbase::Bind(&ProfileForm::OnBirthdayComboSelect, this, std::placeholders::_1));
 		birth_month_combo->AttachSelect(nbase::Bind(&ProfileForm::OnBirthdayComboSelect, this, std::placeholders::_1));
-		FindControl(L"only_other")->SetVisible(false); // 当名片是自己的时候，下面两块隐藏
+
 		btn_modify_info->AttachClick(nbase::Bind(&ProfileForm::OnModifyOrCancelBtnClicked, this, std::placeholders::_1, true));
 		btn_cancel_modify->AttachClick(nbase::Bind(&ProfileForm::OnModifyOrCancelBtnClicked, this, std::placeholders::_1, false));
 		btn_save_modify->AttachClick(nbase::Bind(&ProfileForm::OnSaveInfoBtnClicked, this, std::placeholders::_1));
-		head_image_btn->AttachClick(nbase::Bind(&ProfileForm::OnHeadImageClicked, this, std::placeholders::_1));
 	}
 	else
 	{
 		CheckInMuteBlack();
+		add_or_del->SelectItem(user_type == nim::kNIMFriendFlagNormal ? 0 : 1);
+
+		alias_edit->SetLimitText(16);
+		alias_edit->SetSelAllOnFocus(true);
+		alias_edit->AttachSetFocus(nbase::Bind(&ProfileForm::OnAliasEditGetFocus, this, std::placeholders::_1));
+		alias_edit->AttachKillFocus(nbase::Bind(&ProfileForm::OnAliasEditLoseFocus, this, std::placeholders::_1));
+		alias_edit->AttachMouseEnter(nbase::Bind(&ProfileForm::OnAliasEditMouseEnter, this, std::placeholders::_1));
+		alias_edit->AttachMouseLeave(nbase::Bind(&ProfileForm::OnAliasEditMouseLeave, this, std::placeholders::_1));
+		alias_edit->AttachReturn(nbase::Bind(&ProfileForm::OnReturnOnAliasEdit, this, std::placeholders::_1));
+
 		notify_switch->AttachSelect(nbase::Bind(&ProfileForm::OnNotifySwitchSelected, this, std::placeholders::_1));
 		notify_switch->AttachUnSelect(nbase::Bind(&ProfileForm::OnNotifySwitchUnSelected, this, std::placeholders::_1));
 		black_switch->AttachSelect(nbase::Bind(&ProfileForm::OnBlackSwitchSelected, this, std::placeholders::_1));
 		black_switch->AttachUnSelect(nbase::Bind(&ProfileForm::OnBlackSwitchUnSelected, this, std::placeholders::_1));
-		start_chat->AttachClick(nbase::Bind(&ProfileForm::OnStartChatBtnClicked, this, std::placeholders::_1));
-		add_or_del->SelectItem(UserService::GetInstance()->GetUserType(m_uinfo.GetAccId()) == nim::kNIMFriendFlagNormal ? 0 : 1);
-		delete_friend->AttachClick(nbase::Bind(&ProfileForm::OnDeleteFriendBtnClicked, this, std::placeholders::_1));
-		add_friend->AttachClick(nbase::Bind(&ProfileForm::OnAddFriendBtnClicked, this, std::placeholders::_1));
 
 		unregister_cb.Add(MuteBlackService::GetInstance()->RegSyncSetMuteCallback(nbase::Bind(&ProfileForm::OnNotifyChangeCallback, this, std::placeholders::_1, std::placeholders::_2)));
 		unregister_cb.Add(MuteBlackService::GetInstance()->RegSyncSetBlackCallback(nbase::Bind(&ProfileForm::OnBlackChangeCallback, this, std::placeholders::_1, std::placeholders::_2)));
+		
+		start_chat->AttachClick(nbase::Bind(&ProfileForm::OnStartChatBtnClicked, this, std::placeholders::_1));
+		delete_friend->AttachClick(nbase::Bind(&ProfileForm::OnDeleteFriendBtnClicked, this, std::placeholders::_1));
+		add_friend->AttachClick(nbase::Bind(&ProfileForm::OnAddFriendBtnClicked, this, std::placeholders::_1));
 	}
+
+	InitLabels();
 }
 
 void ProfileForm::CheckInMuteBlack()
@@ -294,9 +332,12 @@ bool ProfileForm::OnHeadImageClicked(ui::EventArgs * args)
 
 bool ProfileForm::OnModifyOrCancelBtnClicked(ui::EventArgs* args, bool to_modify)
 {
-	btn_modify_info->SetVisible(!to_modify);
-	btn_save_modify->SetVisible(to_modify);
-	btn_cancel_modify->SetVisible(to_modify);
+	if (LoginManager::GetInstance()->IsEqual(m_uinfo.GetAccId()))
+	{
+		btn_modify_info->SetVisible(!to_modify);
+		btn_save_modify->SetVisible(to_modify);
+		btn_cancel_modify->SetVisible(to_modify);
+	}
 	nickname_box->SetVisible(to_modify);
 	sex_box->SetVisible(to_modify);
 	birthday_label->SetVisible(!to_modify);
@@ -391,6 +432,47 @@ bool ProfileForm::OnSaveInfoBtnClicked(ui::EventArgs * args)
 	return true;
 }
 
+bool nim_comp::ProfileForm::OnAliasEditGetFocus(ui::EventArgs * args)
+{
+	alias_edit->SetBorderSize(1);
+	return false;
+}
+
+bool ProfileForm::OnAliasEditLoseFocus(ui::EventArgs * args)
+{
+	alias_edit->SetBorderSize(0);
+
+	if(alias_edit->GetText() == UserService::GetInstance()->GetFriendAlias(m_uinfo.GetAccId()))
+		return false;
+
+	nim::FriendProfile profile;
+	profile.SetAccId(m_uinfo.GetAccId());
+	profile.SetAlias(alias_edit->GetUTF8Text());
+	nim::Friend::Update(profile, nullptr);
+
+	return true;
+}
+
+bool ProfileForm::OnAliasEditMouseEnter(ui::EventArgs * args)
+{
+	if(!alias_edit->IsFocused())
+		alias_edit->SetBorderSize(1);
+	return false;
+}
+
+bool ProfileForm::OnAliasEditMouseLeave(ui::EventArgs * args)
+{
+	if(!alias_edit->IsFocused())
+		alias_edit->SetBorderSize(0);
+	return false;
+}
+
+bool nim_comp::ProfileForm::OnReturnOnAliasEdit(ui::EventArgs * args)
+{
+	alias_edit->GetParent()->SetFocus();
+	return false;
+}
+
 void ProfileForm::InitBirthdayCombo()
 {
 	birth_year_combo->RemoveAll(); 
@@ -474,14 +556,17 @@ bool ProfileForm::OnBirthdayComboSelect(ui::EventArgs * args)
 	return true;
 }
 
-void ProfileForm::OnFriendListChange(UserChangeType change_type, const nim::UserNameCard & info)
+void ProfileForm::OnFriendListChange(FriendChangeType change_type, const nim::UserNameCard & info)
 {
 	if (info.GetAccId() == m_uinfo.GetAccId())
 	{
 		if (change_type == kChangeTypeAdd)
-			add_or_del->SelectItem(0);
+			user_type = nim::kNIMFriendFlagNormal;
 		else if (change_type == kChangeTypeDelete)
-			add_or_del->SelectItem(1);
+			user_type = nim::kNIMFriendFlagNotFriend;
+		
+		add_or_del->SelectItem(user_type == nim::kNIMFriendFlagNormal ? 0 : 1);
+		SetShowName();
 	}
 }
 
@@ -492,14 +577,11 @@ void ProfileForm::OnUserInfoChange(const std::list<nim::UserNameCard>& uinfos)
 		if (m_uinfo.GetAccId() == info.GetAccId())
 		{
 			m_uinfo.Update(info);
-			if (info.ExistValue(nim::kUserNameCardKeyIconUrl) && \
-				!info.ExistValue((nim::UserNameCardValueKey)(nim::kUserNameCardKeyAll - nim::kUserNameCardKeyIconUrl)))
+			if (info.ExistValue(nim::kUserNameCardKeyIconUrl))
+				head_image_btn->SetBkImage(UserService::GetInstance()->GetUserPhoto(m_uinfo.GetAccId()));
+			if(info.ExistValue(nim::kUserNameCardKeyName))
 			{
-				head_image_btn->SetBkImage(UserService::GetInstance()->GetUserPhoto(m_uinfo.GetAccId())); //头像
-			}
-			else
-			{
-				InitLabels();
+				SetShowName();
 				OnModifyOrCancelBtnClicked(nullptr, false);
 			}
 			break;
@@ -507,12 +589,25 @@ void ProfileForm::OnUserInfoChange(const std::list<nim::UserNameCard>& uinfos)
 	}
 }
 
+void nim_comp::ProfileForm::OnMiscUInfoChange(const std::list<nim::UserNameCard>& uinfos)
+{
+	for (auto info : uinfos)
+	{
+		if (m_uinfo.GetAccId() == info.GetAccId())
+		{
+			m_uinfo.Update(info);
+			InitLabels();
+			OnModifyOrCancelBtnClicked(nullptr, false);
+			break;
+		}
+	}
+}
+
 void ProfileForm::InitLabels()
 {
-	SetTaskbarTitle(nbase::UTF8ToUTF16(m_uinfo.GetName()) + L"的名片"); // 任务栏标题
+	SetShowName();
+
 	head_image_btn->SetBkImage(UserService::GetInstance()->GetUserPhoto(m_uinfo.GetAccId())); //头像
-	if (m_uinfo.ExistValue(nim::kUserNameCardKeyName))
-		nickname_label->SetText(nbase::UTF8ToUTF16(m_uinfo.GetName())); // 头像右边的昵称
 
 	if (m_uinfo.ExistValue(nim::kUserNameCardKeyGender))
 	{
@@ -532,7 +627,8 @@ void ProfileForm::InitLabels()
 		}
 	}
 
-	user_id->SetText(L"帐号：" + nbase::UTF8ToUTF16(m_uinfo.GetAccId()));//帐号
+	user_id_label->SetText(L"帐号：" + nbase::UTF8ToUTF16(m_uinfo.GetAccId()));//帐号
+
 	if (m_uinfo.ExistValue(nim::kUserNameCardKeyBirthday))
 		birthday_label->SetText(nbase::UTF8ToUTF16(m_uinfo.GetBirth())); //生日
 	if (m_uinfo.ExistValue(nim::kUserNameCardKeyMobile))
@@ -541,6 +637,36 @@ void ProfileForm::InitLabels()
 		email_label->SetText(nbase::UTF8ToUTF16(m_uinfo.GetEmail())); //邮箱
 	if (m_uinfo.ExistValue(nim::kUserNameCardKeySignature))
 		signature_label->SetText(nbase::UTF8ToUTF16(m_uinfo.GetSignature())); //签名
+}
+
+void ProfileForm::SetShowName()
+{
+	UserService* user_service = UserService::GetInstance();
+	std::wstring show_name = user_service->GetUserName(m_uinfo.GetAccId());
+	show_name_label->SetText(show_name);
+	SetTaskbarTitle(show_name + L"的名片"); //任务栏标题
+
+	if (user_type == nim::kNIMFriendFlagNormal) //好友
+	{
+		std::wstring alias = user_service->GetFriendAlias(m_uinfo.GetAccId());
+
+		alias_box->SetVisible(true); //可以设置备注名
+		if(!alias_edit->IsFocused())
+			alias_edit->SetText(alias); //备注名编辑框显示备注名
+
+		if (!alias.empty())
+		{
+			nickname_label->SetVisible(true); //账号下面显示昵称
+			nickname_label->SetText(L"昵称：" + user_service->GetUserName(m_uinfo.GetAccId(), false));
+		}
+		else
+			nickname_label->SetVisible(false);
+	}
+	else //不是好友，不显示备注名
+	{
+		nickname_label->SetVisible(false);
+		alias_box->SetVisible(false);
+	}
 }
 
 void ProfileForm::InitEdits()

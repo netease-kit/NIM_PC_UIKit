@@ -39,7 +39,7 @@ GroupList::GroupList(ui::TreeView* group_list) :
 	tree_node->SetVisible(false);
 	tree_node->SetEnabled(false);
 
-	tree_node = ListItemUtil::CreateFirstLetterListItem(L"普通群");
+	tree_node = ListItemUtil::CreateFirstLetterListItem(L"讨论组");
 	group_list_->GetRootNode()->AddChildNode(tree_node);
 	tree_node_ver_.push_back(tree_node);
 	tree_node->SetVisible(false);

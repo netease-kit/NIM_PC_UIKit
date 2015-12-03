@@ -400,9 +400,7 @@ void RtsForm::ShowBoardUI()
 }
 void RtsForm::ShowHeader()
 {
-	nim::UserNameCard info;
-	UserService::GetInstance()->GetUserInfo(uid_, info);
-	std::wstring name = nbase::UTF8ToUTF16(info.GetName());
+	std::wstring name = UserService::GetInstance()->GetUserName(uid_);
 	Label* friend_name = (Label*)FindControl(L"friend_name");
 	friend_name->SetText(name);
 
@@ -411,7 +409,7 @@ void RtsForm::ShowHeader()
 	Label* title = (Label*)FindControl(L"title");
 	title->SetText(title_text);
 
-	std::wstring photo = UserService::GetInstance()->GetUserPhoto(info.GetAccId());
+	std::wstring photo = UserService::GetInstance()->GetUserPhoto(uid_);
 	Button* headicon = (Button*)FindControl(L"headicon");
 	headicon->SetBkImage(photo);
 }
@@ -599,10 +597,10 @@ void RtsForm::ShowEndMsg()
 
 void RtsForm::OnControlNotify(const std::string& session_id, const std::string& uid, const std::string& text)
 {
-	nim::UserNameCard info;
-	UserService::GetInstance()->GetUserInfo(uid, info);
-	std::string name = info.GetName().empty() ? uid : info.GetName();
-	ctrl_notify_->SetUTF8Text(name + ":" + text);
+	std::wstring name = UserService::GetInstance()->GetUserName(uid);
+	if (name.empty())
+		name = nbase::UTF8ToUTF16(uid);
+	ctrl_notify_->SetText(name + L":" + nbase::UTF8ToUTF16(text));
 	ctrl_notify_->SetVisible(true);
 	auto closure = nbase::Bind(&RtsForm::HideCtrlNotifyTip, this);
 	nbase::ThreadManager::PostDelayedTask(kThreadUI, closure, nbase::TimeDelta::FromSeconds(3));

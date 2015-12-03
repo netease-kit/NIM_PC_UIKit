@@ -23,6 +23,7 @@ class MsgLog
 
 public:
 	typedef std::function<void(nim::NIMResCode res_code, const std::string& id, nim::NIMSessionType to_type, const QueryMsglogResult& result)> QueryMsgCallback;
+	typedef std::function<void(nim::NIMResCode res_code, const std::string& msg_id, const IMMessage& msg)> QuerySingleMsgCallback; /**< 查询单条消息历史回调模板 */
 	typedef std::function<void(nim::NIMResCode res_code, const std::string& uid, nim::NIMSessionType to_type)> ModifyMultipleMsglogCallback;
 	typedef ModifyMultipleMsglogCallback BatchStatusReadCallback;
 	typedef ModifyMultipleMsglogCallback BatchStatusDeleteCallback;
@@ -36,6 +37,15 @@ public:
 
 	typedef std::function<void(nim::NIMResCode res_code)> DBFunctionCallback;
 	typedef std::function<void(__int64 imported_count, __int64 total_count)> ImportDbPrgCallback;
+
+	/** @fn static bool QueryMsgByIDAysnc(const std::string &client_msg_id, const QuerySingleMsgCallback &cb, const std::string &json_extension = "")
+	* 根据消息ID查询本地（单条）消息
+	* @param[in] client_msg_id		客户端消息ID
+	* @param[in] json_extension	json扩展参数（备用，目前不需要）
+	* @param[in] cb				查询本地消息的回调函数
+	* @return bool 检查参数如果不符合要求则返回失败
+	*/
+	static bool QueryMsgByIDAysnc(const std::string &client_msg_id, const QuerySingleMsgCallback &cb, const std::string &json_extension = "");
 
 	/** @fn static bool QueryMsgAsync(const std::string& account_id, nim::NIMSessionType to_type, int limit_count, __int64 last_time, const QueryMsgCallback& cb, const std::string& json_extension = "")
 	* 查询本地消息
@@ -76,6 +86,33 @@ public:
 		, __int64 end_msg_id
 		, bool reverse
 		, bool need_save_to_local
+		, const QueryMsgCallback& cb
+		, const std::string& json_extension = "");
+
+	/** @fn static bool QueryMsgByOptionsAsync(NIMMsgLogQueryRange query_range, const std::list<std::string> &ids, nim::NIMSessionType to_type, int limit_count, __int64 from_time, __int64 end_time, __int64 end_msg_id, bool reverse, NIMMessageType msg_type, const std::string &search_content, const QueryMsgCallback& cb, const std::string& json_extension = "")
+	* 在线查询消息（不包括系统消息）
+	* @param[in] query_range	消息历史的检索范围（目前暂不支持某些范围的组合检索，详见NIMMsgLogQueryRange说明）
+	* @param[in] ids			会话id（对方的account id或者群组tid）的集合，目前暂不支持多个的组合检索，详见NIMMsgLogQueryRange说明
+	* @param[in] limit_count	本次查询的消息条数上限(最多100条)
+	* @param[in] from_time		起始时间点，单位：毫秒
+	* @param[in] end_time		结束时间点，单位：毫秒
+	* @param[in] end_msg_id		结束查询的最后一条消息的server_msg_id(不包含在查询结果中)
+	* @param[in] reverse		true：反向查询(按时间正序起查，正序排列)，false：按时间逆序起查，逆序排列（建议默认为false）
+	* @param[in] msg_type		检索的消息类型（目前只支持kNIMMessageTypeText、kNIMMessageTypeImage和kNIMMessageTypeFile这三种类型消息）
+	* @param[in] search_content	检索文本（目前只支持kNIMMessageTypeText和kNIMMessageTypeFile这两种类型消息的文本关键字检索，即支持文字消息和文件名的检索。如果合并检索，需使用未知类型消息kNIMMessageTypeUnknown）
+	* @param[in] json_extension	json扩展参数（备用，目前不需要）
+	* @param[in] cb				在线查询消息的回调函数
+	* @return bool 检查参数如果不符合要求则返回失败
+	*/
+	static bool QueryMsgByOptionsAsync(NIMMsgLogQueryRange query_range
+		, const std::list<std::string> &ids
+		, int limit_count
+		, __int64 from_time
+		, __int64 end_time
+		, __int64 end_msg_id
+		, bool reverse
+		, NIMMessageType msg_type
+		, const std::string &search_content
 		, const QueryMsgCallback& cb
 		, const std::string& json_extension = "");
 

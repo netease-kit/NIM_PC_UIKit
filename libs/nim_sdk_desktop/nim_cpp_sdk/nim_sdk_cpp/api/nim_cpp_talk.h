@@ -61,12 +61,13 @@ public:
 	*/
 	static void RegReceiveCb(const ReveiveMsgCallback& cb, const std::string& json_extension = "");
 
-	/** @fn static std::string CreateTextMessage(const std::string& receiver_id, const NIMSessionType session_type, const std::string& client_msg_id, const std::string& content)
-	/* 生成文字消息内容,生成的字符串在调用SendMsg时直接传入 
+	/** @fn static std::string CreateTextMessage(const std::string& receiver_id, const NIMSessionType session_type, const std::string& client_msg_id, const std::string& content, const MessageSetting& msg_setting, __int64 timetag  = 0)
+	/* 生成文字消息内容,生成的字符串在调用SendMsg时直接传入
 	*  @param[in] receiver_id 聊天对象的 ID,如果是单聊,为用户帐号,如果是群聊,为群组 ID
 	*  @param[in] session_type NIMSessionType,聊天类型,单聊或群组
 	*  @param[in] client_msg_id 客户端消息id,建议uuid
 	*  @param[in] content 文本内容
+	*  @param[in] msg_setting 消息属性设置
 	*  @param[in] timetag 消息时间
 	*  @return std::string 文字消息Json字符串
 	*/
@@ -74,15 +75,17 @@ public:
 		, const NIMSessionType session_type
 		, const std::string& client_msg_id
 		, const std::string& content
+		, const MessageSetting& msg_setting
 		, __int64 timetag = 0);
 
-	/** @fn static std::string CreateImageMessage(const std::string& receiver_id, const NIMSessionType session_type, const std::string& client_msg_id, const IMImage& image, const std::string& file_path)
+	/** @fn static std::string CreateImageMessage(const std::string& receiver_id, const NIMSessionType session_type, const std::string& client_msg_id, const IMImage& image, const std::string& file_path, const MessageSetting& msg_setting, __int64 timetag  = 0)
 	/* 生成图片消息内容,生成的字符串在调用SendMsg时直接传入
 	*  @param[in] receiver_id 聊天对象的 ID,如果是单聊,为用户帐号,如果是群聊,为群组 ID
 	*  @param[in] session_type NIMSessionType,聊天类型,单聊或群组
 	*  @param[in] client_msg_id 客户端消息id,建议uuid
 	*  @param[in] image IMImage,图片文件信息
-	*  @param[in] file 文件本地绝对路径
+	*  @param[in] file_path 文件本地绝对路径
+	*  @param[in] msg_setting 消息属性设置
 	*  @param[in] timetag 消息时间
 	*  @return std::string 图片消息Json字符串
 	*/
@@ -91,15 +94,17 @@ public:
 		, const std::string& client_msg_id
 		, const IMImage& image
 		, const std::string& file_path
+		, const MessageSetting& msg_setting
 		, __int64 timetag = 0);
 
-	/** @fn static std::string CreateFileMessage(const std::string& receiver_id, const NIMSessionType session_type, const std::string& client_msg_id, const IMFile& file, const std::string& file_path)
+	/** @fn static std::string CreateFileMessage(const std::string& receiver_id, const NIMSessionType session_type, const std::string& client_msg_id, const IMFile& file, const std::string& file_path, const MessageSetting& msg_setting, __int64 timetag  = 0)
 	/* 生成文件消息内容,生成的字符串在调用SendMsg时直接传入
 	*  @param[in] receiver_id 聊天对象的 ID,如果是单聊,为用户帐号,如果是群聊,为群组 ID
 	*  @param[in] session_type NIMSessionType,聊天类型,单聊或群组
 	*  @param[in] client_msg_id 客户端消息id,建议uuid
 	*  @param[in] file IMFile,文件信息
-	*  @param[in] file 文件本地绝对路径
+	*  @param[in] file_path 文件本地绝对路径
+	*  @param[in] msg_setting 消息属性设置
 	*  @param[in] timetag 消息时间
 	*  @return std::string 文件消息Json字符串
 	*/
@@ -108,15 +113,17 @@ public:
 		, const std::string& client_msg_id
 		, const IMFile& file
 		, const std::string& file_path
+		, const MessageSetting& msg_setting
 		, __int64 timetag = 0);
 
-	/** @fn static std::string CreateAudioMessage(const std::string& receiver_id, const NIMSessionType session_type, const std::string& client_msg_id, const IMAudio& audio, const std::string& file_path)
+	/** @fn static std::string CreateAudioMessage(const std::string& receiver_id, const NIMSessionType session_type, const std::string& client_msg_id, const IMAudio& audio, const std::string& file_path, const MessageSetting& msg_setting, __int64 timetag  = 0)
 	/* 生成语音消息内容,生成的字符串在调用SendMsg时直接传入
 	*  @param[in] receiver_id 聊天对象的 ID,如果是单聊,为用户帐号,如果是群聊,为群组 ID
 	*  @param[in] session_type NIMSessionType,聊天类型,单聊或群组
 	*  @param[in] client_msg_id 客户端消息id,建议uuid
 	*  @param[in] audio IMAudio,语音文件信息
-	*  @param[in] file 文件本地绝对路径
+	*  @param[in] file_path 文件本地绝对路径
+	*  @param[in] msg_setting 消息属性设置
 	*  @param[in] timetag 消息时间
 	*  @return std::string 语音消息Json字符串
 	*/
@@ -125,15 +132,17 @@ public:
 		, const std::string& client_msg_id
 		, const IMAudio& audio
 		, const std::string& file_path
+		, const MessageSetting& msg_setting
 		, __int64 timetag = 0);
 
-	/** @fn static std::string CreateVideoMessage(const std::string& receiver_id, const NIMSessionType session_type, const std::string& client_msg_id, const IMVideo& video, const std::string& file_path)
+	/** @fn static std::string CreateVideoMessage(const std::string& receiver_id, const NIMSessionType session_type, const std::string& client_msg_id, const IMVideo& video, const std::string& file_path, const MessageSetting& msg_setting, __int64 timetag  = 0)
 	/* 生成视频消息内容,生成的字符串在调用SendMsg时直接传入
 	*  @param[in] receiver_id 聊天对象的 ID,如果是单聊,为用户帐号,如果是群聊,为群组 ID
 	*  @param[in] session_type NIMSessionType,聊天类型,单聊或群组
 	*  @param[in] client_msg_id 客户端消息id,建议uuid
 	*  @param[in] video IMVideo,视频文件信息
-	*  @param[in] file 文件本地绝对路径
+	*  @param[in] file_path 文件本地绝对路径
+	*  @param[in] msg_setting 消息属性设置
 	*  @param[in] timetag 消息时间
 	*  @return std::string 视频消息Json字符串
 	*/
@@ -142,14 +151,16 @@ public:
 		, const std::string& client_msg_id
 		, const IMVideo& video
 		, const std::string& file_path
+		, const MessageSetting& msg_setting
 		, __int64 timetag = 0);
 
-	/** @fn static std::string CreateVideoMessage(const std::string& receiver_id, const NIMSessionType session_type, const std::string& client_msg_id, const IMLocation& location)
+	/** @fn static std::string CreateLocationMessage(const std::string& receiver_id, const NIMSessionType session_type, const std::string& client_msg_id, const IMLocation& location, const MessageSetting& msg_setting, __int64 timetag  = 0)
 	/* 生成位置消息内容,生成的字符串在调用SendMsg时直接传入
 	*  @param[in] receiver_id 聊天对象的 ID,如果是单聊,为用户帐号,如果是群聊,为群组 ID
 	*  @param[in] session_type NIMSessionType,聊天类型,单聊或群组
 	*  @param[in] client_msg_id 客户端消息id,建议uuid
 	*  @param[in] location IMLocation,位置信息
+	*  @param[in] msg_setting 消息属性设置
 	*  @param[in] timetag 消息时间
 	*  @return std::string 位置消息Json字符串
 	*/
@@ -157,6 +168,24 @@ public:
 		, const NIMSessionType session_type
 		, const std::string& client_msg_id
 		, const IMLocation& location
+		, const MessageSetting& msg_setting
+		, __int64 timetag = 0);
+
+	/** @fn static std::string CreateTipMessage(const std::string& receiver_id, const NIMSessionType session_type, const std::string& client_msg_id, const Json::Value& tips, const MessageSetting& msg_setting, __int64 timetag  = 0)
+	/* 生成Tip消息内容,生成的字符串在调用SendMsg时直接传入
+	*  @param[in] receiver_id 聊天对象的 ID,如果是单聊,为用户帐号,如果是群聊,为群组 ID
+	*  @param[in] session_type NIMSessionType,聊天类型,单聊或群组
+	*  @param[in] client_msg_id 客户端消息id,建议uuid
+	*  @param[in] tips Tip内容
+	*  @param[in] msg_setting 消息属性设置
+	*  @param[in] timetag 消息时间
+	*  @return std::string 位置消息Json字符串
+	*/
+	static std::string CreateTipMessage(const std::string& receiver_id
+		, const NIMSessionType session_type
+		, const std::string& client_msg_id
+		, const Json::Value& tips
+		, const MessageSetting& msg_setting
 		, __int64 timetag = 0);
 
 	/** @fn static bool ParseIMMessage(const std::string& json_msg, IMMessage& msg)

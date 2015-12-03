@@ -106,7 +106,7 @@ MsgBubbleItem* SessionForm::ShowMsg(const nim::IMMessage &msg, bool first, bool 
 		else
 			msg_list_->Add(cell);
 		cell->InitControl();
-		cell->InitInfo(msg);
+		cell->InitInfo(msg, session_id_);
 		return nullptr;
 	}
 	else if (msg.type_ == nim::kNIMMessageTypeCustom)
@@ -147,7 +147,7 @@ MsgBubbleItem* SessionForm::ShowMsg(const nim::IMMessage &msg, bool first, bool 
 						else
 							msg_list_->Add(cell);
 						cell->InitControl();
-						cell->InitInfo(msg);
+						cell->InitInfo(msg, session_id_);
 						return nullptr;
 					}
 				}
@@ -179,7 +179,13 @@ MsgBubbleItem* SessionForm::ShowMsg(const nim::IMMessage &msg, bool first, bool 
 	if (bubble_right || msg.session_type_ == nim::kNIMSessionTypeP2P)
 		item->SetShowName(false, "");
 	else
-		item->SetShowName(true, msg.readonly_sender_nickname_);
+	{
+		std::wstring sender = UserService::GetInstance()->GetUserName(msg.sender_accid_);
+		if (!sender.empty())
+			item->SetShowName(true, nbase::UTF16ToUTF8(sender));
+		else
+			item->SetShowName(true, msg.readonly_sender_nickname_);
+	}
 
 	id_bubble_pair_[bubble_id] = item;
 
@@ -234,7 +240,7 @@ void SessionForm::SendText( const std::string &text )
 
 	AddSendingMsg(msg);
 
-	std::string json_msg = nim::Talk::CreateTextMessage(msg.receiver_accid_, msg.session_type_, msg.client_msg_id_, msg.content_, msg.timetag_);
+	std::string json_msg = nim::Talk::CreateTextMessage(msg.receiver_accid_, msg.session_type_, msg.client_msg_id_, msg.content_, nim::MessageSetting(), msg.timetag_);
 	nim::Talk::SendMsg(json_msg);
 }
 
@@ -267,8 +273,7 @@ void SessionForm::SendImage( const std::wstring &src )
 	msg.attach_ = img.ToJsonString();
 
 	AddSendingMsg(msg);
-
-	std::string json_msg = nim::Talk::CreateImageMessage(msg.receiver_accid_, msg.session_type_, msg.client_msg_id_, img, msg.local_res_path_, msg.timetag_);
+	std::string json_msg = nim::Talk::CreateImageMessage(msg.receiver_accid_, msg.session_type_, msg.client_msg_id_, img, msg.local_res_path_, nim::MessageSetting(), msg.timetag_);
 	nim::Talk::SendMsg(json_msg);
 }
 
@@ -277,9 +282,9 @@ void SessionForm::SendSnapChat(const std::wstring &src)
 	auto weak_flag = this->GetWeakFlag();
 	nim::IMMessage msg;
 	PackageMsg(msg);
-	msg.support_cloud_history_ = 0;
-	msg.support_roam_msg_ = 0;
-	msg.support_sync_msg_ = 0;
+	msg.msg_setting_.server_history_saved_ = nim::BS_FALSE;
+	msg.msg_setting_.roaming_ = nim::BS_FALSE;
+	msg.msg_setting_.self_sync_ = nim::BS_FALSE;
 	//TODO(litianyi)
 	std::wstring filename = nbase::UTF8ToUTF16(msg.client_msg_id_);
 	std::wstring dest = GetUserImagePath() + filename;
@@ -347,7 +352,7 @@ void SessionForm::SendFile(const std::wstring &src)
 		cb_pointer = new nim::Talk::FileUpPrgCallback(bubble->GetFileUpPrgCallback());
 		SessionManager::GetInstance()->AddFileUpProgressCb(msg.client_msg_id_, cb_pointer);
 	}
-	std::string json_msg = nim::Talk::CreateFileMessage(msg.receiver_accid_, msg.session_type_, msg.client_msg_id_, file, msg.local_res_path_, msg.timetag_);
+	std::string json_msg = nim::Talk::CreateFileMessage(msg.receiver_accid_, msg.session_type_, msg.client_msg_id_, file, msg.local_res_path_, nim::MessageSetting(), msg.timetag_);
 	nim::Talk::SendMsg(json_msg, msg.client_msg_id_, cb_pointer);
 }
 

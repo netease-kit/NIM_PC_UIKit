@@ -1,3 +1,11 @@
+/** @file nim_sysmsg_helper.cpp
+  * @brief sysmsg 辅助方法和数据结构定义
+  * @copyright (c) 2015, NetEase Inc. All rights reserved
+  * @author Oleg
+  * @date 2015/10/20
+  */
+
+#include "assert.h"
 #include "nim_sysmsg_helper.h"
 
 namespace nim
@@ -52,9 +60,20 @@ void ParseSysMessageContent(const Json::Value& content_json, SysMessage& msg)
 	msg.content_ = content_json[kNIMSysMsgKeyMsg].asString();
 	msg.attach_ = content_json[kNIMSysMsgKeyAttach].asString();
 	msg.id_ = content_json[kNIMSysMsgKeyMsgId].asUInt64();
-	msg.support_offline_ = content_json[kNIMSysMsgKeyCustomSaveFlag].asUInt() == 0 ? false : true;
+	if (content_json[kNIMSysMsgKeyCustomSaveFlag].isUInt())
+		msg.support_offline_ = content_json[kNIMSysMsgKeyCustomSaveFlag].asInt() == 1 ? BS_TRUE : BS_FALSE;
 	msg.apns_text_ = content_json[kNIMSysMsgKeyCustomApnsText].asString();
 	msg.status_ = (NIMSysMsgStatus)content_json[kNIMSysMsgKeyLocalStatus].asUInt();
+	if (content_json[kNIMSysMsgKeyPushEnable].isUInt())
+		msg.push_enable_ = content_json[kNIMSysMsgKeyPushEnable].asInt() == 1 ? BS_TRUE : BS_FALSE;
+	if (content_json[kNIMSysMsgKeyNeedBadge].isUInt())
+		msg.push_need_badge_ = content_json[kNIMSysMsgKeyNeedBadge].asInt() == 1 ? BS_TRUE : BS_FALSE;
+	if (content_json[kNIMSysMsgKeyPushNeedNick].isUInt())
+		msg.push_need_nick_ = content_json[kNIMSysMsgKeyPushNeedNick].asInt() == 1 ? BS_TRUE : BS_FALSE;
+	Json::Reader reader;
+	std::string payload = content_json[kNIMSysMsgKeyPushPayload].asString();
+	if (!payload.empty() && (!reader.parse(payload, msg.push_payload_) || !msg.push_payload_.isObject()))
+		assert(0);
 }
 
 }

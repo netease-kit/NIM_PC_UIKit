@@ -30,6 +30,7 @@ public:
 	typedef NotifySysmsgResCallback	QuerySysmsgUnreadCallback;
 	typedef NotifySysmsgResCallback	ReadAllCallback;
 	typedef NotifySysmsgResCallback	DeleteAllCallback;
+	typedef NotifySysmsgResCallback	BatchSetCallback;			/**< 批量调整系统消息自定义通知回调模板 */
 	typedef std::function<void(nim::NIMResCode res_code, __int64 msg_id, int unread_count)>	NotifySingleSysmsgCallback;
 	typedef NotifySingleSysmsgCallback SetStatusCallback;
 	typedef NotifySingleSysmsgCallback DeleteCallback;
@@ -127,6 +128,25 @@ public:
 	* @return void 无返回值
 	*/
 	static void DeleteAllAsync(const DeleteAllCallback& cb, const std::string& json_extension = "");
+
+	/** @fn static void SetStatusByTypeAsync(NIMSysMsgType type, NIMSysMsgStatus status, const BatchSetCallback& cb, const std::string& json_extension = "")
+	* 按类型设置系统通知状态
+	* @param[in] type 类型
+	* @param[in] status 状态
+	* @param[in] json_extension json扩展参数（备用，目前不需要）
+	* @param[in] cb			回调函数
+	* @return void 无返回值
+	*/
+	static void SetStatusByTypeAsync(NIMSysMsgType type, NIMSysMsgStatus status, const BatchSetCallback& cb, const std::string& json_extension = "");
+
+	/** @fn static void DeleteStatusByTypeAsync(NIMSysMsgType type, const BatchSetCallback& cb, const std::string& json_extension = "")
+	* 按类型删除系统通知
+	* @param[in] type 类型
+	* @param[in] json_extension json扩展参数（备用，目前不需要）
+	* @param[in] cb			回调函数
+	* @return void 无返回值
+	*/
+	static void DeleteStatusByTypeAsync(NIMSysMsgType type, const BatchSetCallback& cb, const std::string& json_extension = "");
 };
 
 } 

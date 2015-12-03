@@ -3,6 +3,7 @@
 
 #include <string>
 #include <list>
+#include <assert.h>
 #include "json.h"
 
 namespace nim
@@ -170,6 +171,30 @@ struct FriendProfile
 		if (update_timetag_ > 0)
 			friend_profile_json[kNIMFriendKeyUpdateTime] = update_timetag_;
 		return friend_profile_json.toStyledString();
+	}
+
+	void Update(const FriendProfile& profile)
+	{
+		assert(profile.accid_ == accid_);
+		if (profile.accid_ != accid_)
+			return;
+
+		if (profile.ExistValue(kFriendProfileKeyRelationship))
+			relationship_ = profile.relationship_;
+		if (profile.ExistValue(kFriendProfileKeyPassiveRelationship))
+			passive_relationship_ = profile.passive_relationship_;
+		if (profile.ExistValue(kFriendProfileKeySource))
+			source_ = profile.source_;
+		if (profile.ExistValue(kFriendProfileKeyAlias))
+			alias_ = profile.alias_;
+		if (profile.ExistValue(kFriendProfileKeyBits))
+			bits_ = profile.bits_;
+		if (profile.ExistValue(kFriendProfileKeyEx))
+			expand_ = profile.expand_;
+		if (profile.create_timetag_ > 0)
+			create_timetag_ = profile.create_timetag_;
+		if (profile.update_timetag_ > 0)
+			update_timetag_ = profile.update_timetag_;
 	}
 
 private:

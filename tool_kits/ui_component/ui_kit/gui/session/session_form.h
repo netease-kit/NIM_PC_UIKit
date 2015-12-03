@@ -21,7 +21,7 @@ const int kCellWritingTime = 5;
 const int kCellCancelWriting = 7;
 
 /** @class SessionForm
-  * @brief 会话窗体；用来创建个人会话、普通群会话、高级群会话的窗体
+  * @brief 会话窗体；用来创建个人会话、讨论组会话、高级群会话的窗体
   * @copyright (c) 2015, NetEase Inc. All rights reserved
   * @author Redrain
   * @date 2015/9/10
@@ -328,7 +328,7 @@ private:
 	bool OnBtnInvite(ui::EventArgs* param);
 
 	/** 
-	* 邀请完毕后的回调函数，根据邀请的名单把个人会话升级带普通群会话
+	* 邀请完毕后的回调函数，根据邀请的名单把个人会话升级带讨论组会话
 	* @param[in] id_list 邀请的好友帐号数组
 	* @return void 无返回值
 	*/

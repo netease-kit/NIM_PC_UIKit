@@ -14,7 +14,8 @@ typedef void(*nim_sysmsg_delete_async)(__int64 msg_id, const char *json_extensio
 typedef void(*nim_sysmsg_delete_all_async)(const char *json_extension, nim_sysmsg_res_cb_func cb, const void *user_data);
 typedef void(*nim_sysmsg_reg_custom_notification_arc_cb)(const char *json_extension, nim_custom_sysmsg_arc_cb_func cb, const void *user_data);
 typedef void(*nim_sysmsg_send_custom_notification)(const char *json_msg, const char *json_extension);
-
+typedef void(*nim_sysmsg_set_logs_status_by_type_async)(NIMSysMsgType type, NIMSysMsgStatus status, const char *json_extension, nim_sysmsg_res_cb_func cb, const void *user_data);
+typedef void(*nim_sysmsg_delete_logs_by_type_async)(NIMSysMsgType type, const char *json_extension, nim_sysmsg_res_cb_func cb, const void *user_data);
 
 static void CallbackSysmsgChange(const char *result, const char *json_extension, const void *callback)
 {
@@ -207,6 +208,26 @@ SystemMsg::ReceiveSysmsgCallback* cb_pointer = nullptr;
 		 cb_pointer = new DeleteAllCallback(cb);
 	 }
 	 return NIM_SDK_GET_FUNC(nim_sysmsg_delete_all_async)(json_extension.c_str(), &CallbackNotifySysmsgRes, cb_pointer);
+ }
+
+ void SystemMsg::SetStatusByTypeAsync(NIMSysMsgType type, NIMSysMsgStatus status, const BatchSetCallback& cb, const std::string& json_extension/* = ""*/)
+ {
+	 BatchSetCallback* cb_pointer = nullptr;
+	 if (cb)
+	 {
+		 cb_pointer = new BatchSetCallback(cb);
+	 } 
+	 return NIM_SDK_GET_FUNC(nim_sysmsg_set_logs_status_by_type_async)(type, status, json_extension.c_str(), &CallbackNotifySysmsgRes, cb_pointer);
+ }
+
+ void SystemMsg::DeleteStatusByTypeAsync(NIMSysMsgType type, const BatchSetCallback& cb, const std::string& json_extension/* = ""*/)
+ {
+	 BatchSetCallback* cb_pointer = nullptr;
+	 if (cb)
+	 {
+		 cb_pointer = new BatchSetCallback(cb);
+	 }
+	 return NIM_SDK_GET_FUNC(nim_sysmsg_delete_logs_by_type_async)(type, json_extension.c_str(), &CallbackNotifySysmsgRes, cb_pointer);
  }
 
 }

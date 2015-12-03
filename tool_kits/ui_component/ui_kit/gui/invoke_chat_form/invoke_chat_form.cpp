@@ -63,6 +63,17 @@ LRESULT InvokeChatForm::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 void InvokeChatForm::InitWindow()
 {
+	std::wstring title_id;
+	if(uid_or_tid_ == "CreateGroupWnd")
+		title_id = L"STRING_INVITEUSERFORM_CREATE_GROUP";
+	else if (uid_or_tid_ == "CreateTeamWnd")
+		title_id = L"STRING_INVITEUSERFORM_CREATE_TEAM";
+	else
+		title_id = L"STRING_INVOKECHATFORM_CAPTION";
+	std::wstring title = ui::MutiLanSupport::GetInstance()->GetStringViaID(title_id);
+	SetTaskbarTitle(title);
+	((Label*)FindControl(L"title"))->SetText(title);
+
 	friend_list_ = (ui::TreeView*)FindControl(L"user_list");
 	friend_list_->AttachBubbledEvent(kEventClick, nbase::Bind(&InvokeChatForm::OnListItemClick, this, std::placeholders::_1));
 	search_result_list_ = static_cast<ui::ListBox*>(FindControl(L"search_result"));
@@ -137,7 +148,7 @@ void InvokeChatForm::AddTreeNode(ui::TreeNode* tree_node)
 
 void InvokeChatForm::AddListItem(const nim::UserNameCard& all_info, bool is_enable)
 {
-	wstring ws_show_name = nbase::UTF8ToUTF16(all_info.GetName());
+	wstring ws_show_name = UserService::GetInstance()->GetUserName(all_info.GetAccId());
 	string spell = PinYinHelper::GetInstance()->ConvertToFullSpell(ws_show_name);
 	wstring ws_spell = nbase::UTF8ToUTF16(spell);
 	CInvokeChatTileListUI* tile_layout;
@@ -165,7 +176,7 @@ void InvokeChatForm::AddListItem(const nim::UserNameCard& all_info, bool is_enab
 
 void InvokeChatForm::RemoveListItem(const nim::UserNameCard& all_info)
 {
-	wstring ws_show_name = nbase::UTF8ToUTF16(all_info.GetName());
+	wstring ws_show_name = UserService::GetInstance()->GetUserName(all_info.GetAccId());
 	string spell = PinYinHelper::GetInstance()->ConvertToFullSpell(ws_show_name);
 	wstring ws_spell = nbase::UTF8ToUTF16(spell);
 	CInvokeChatTileListUI* tile_layout;
@@ -385,7 +396,7 @@ ui::HBox* InvokeChatForm::CreateSelectedListItem(const nim::UserNameCard& user_i
 	container_element->SetUTF8Name(user_info.GetAccId());
 	container_element->SetUTF8DataID(user_info.GetAccId());
 	Label* show_name_label = (Label*)container_element->FindSubControl(L"show_name");
-	show_name_label->SetUTF8Text(user_info.GetName());
+	show_name_label->SetText(UserService::GetInstance()->GetUserName(user_info.GetAccId()));
 	Button* btn_delete = (Button*)container_element->FindSubControl(L"delete");
 	btn_delete->AttachClick(nbase::Bind(&InvokeChatForm::OnBtnDeleteClick, this, user_info.GetAccId(), std::placeholders::_1));
 
@@ -454,7 +465,7 @@ bool InvokeChatForm::OnBtnCancelClick(ui::EventArgs* param)
 	return true;
 }
 
-void InvokeChatForm::OnFriendListChange(UserChangeType change_type, const nim::UserNameCard& user)
+void InvokeChatForm::OnFriendListChange(FriendChangeType change_type, const nim::UserNameCard& user)
 {
 	UTF8String current_user_id = LoginManager::GetInstance()->GetAccount();
 	if (current_user_id == user.GetAccId())

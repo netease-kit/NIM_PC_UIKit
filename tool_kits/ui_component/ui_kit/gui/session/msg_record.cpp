@@ -45,7 +45,7 @@ void MsgRecordForm::ShowMsg(const nim::IMMessage &msg, bool first, bool show_tim
 		else
 			msg_list_->Add(cell);
 		cell->InitControl();
-		cell->InitInfo(msg);
+		cell->InitInfo(msg, session_id_);
 		return;
 	}
 	else if (msg.type_ == nim::kNIMMessageTypeCustom)
@@ -86,7 +86,7 @@ void MsgRecordForm::ShowMsg(const nim::IMMessage &msg, bool first, bool show_tim
 						else
 							msg_list_->Add(cell);
 						cell->InitControl();
-						cell->InitInfo(msg);
+						cell->InitInfo(msg, session_id_);
 						return;
 					}
 				}
@@ -124,8 +124,13 @@ void MsgRecordForm::ShowMsg(const nim::IMMessage &msg, bool first, bool show_tim
 	if (bubble_right || msg.session_type_ == nim::kNIMSessionTypeP2P)
 		item->SetShowName(false, "");
 	else
-		item->SetShowName(true, msg.readonly_sender_nickname_);
-
+	{
+		std::wstring sender = UserService::GetInstance()->GetUserName(msg.sender_accid_);
+		if (!sender.empty())
+			item->SetShowName(true, nbase::UTF16ToUTF8(sender));
+		else
+			item->SetShowName(true, msg.readonly_sender_nickname_);
+	}
 
 	if (msg.type_ == nim::kNIMMessageTypeAudio)
 		item->SetPlayed(true);

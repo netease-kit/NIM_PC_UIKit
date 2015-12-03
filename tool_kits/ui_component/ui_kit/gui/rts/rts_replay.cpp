@@ -168,6 +168,7 @@ int RtsReplay::OnParseData(std::string data, std::list<DrawOpInfo>& info_lists)
 		case DrawOpUndo:
 		case DrawOpMove:
 		case DrawOpEnd:
+		case DrawOpClear:
 			info_lists.push_back(info);
 			count++;
 			break;

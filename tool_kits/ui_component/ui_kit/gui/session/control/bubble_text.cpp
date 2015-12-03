@@ -34,7 +34,7 @@ void MsgBubbleText::InitInfo(const nim::IMMessage &msg)
 	std::wstring str = nbase::UTF8ToUTF16(msg.content_);
 	if (IsNetCallMsg((nim::NIMMessageType)msg.type_, msg.attach_))
 	{
-		GetNotifyMsg(msg.attach_, msg.sender_accid_, msg.receiver_accid_, str);
+		GetNotifyMsg(msg.attach_, msg.sender_accid_, msg.receiver_accid_, str, sid_);
 		msg_.content_ = nbase::UTF16ToUTF8(str);
 	}
 	else if (msg.type_ == nim::kNIMMessageTypeCustom)

@@ -42,6 +42,7 @@ void UserService::OnFriendListChange(const nim::FriendChangeEvent& change_event)
 {
 	std::list<std::string> add_list;
 	std::list<std::string> delete_list;
+	std::list<std::string> update_list; // 需要更换备注名的用户列表
 
 	switch (change_event.type_)
 	{
@@ -50,6 +51,7 @@ void UserService::OnFriendListChange(const nim::FriendChangeEvent& change_event)
 		nim::FriendDelEvent del_event;
 		nim::Friend::ParseFriendDelEvent(change_event, del_event);
 		delete_list.push_back(del_event.accid_);
+		update_list.push_back(del_event.accid_); // 删除好友之后，其原来的备注名改为其昵称
 		friend_list_.erase(del_event.accid_); // 从friend_list_删除
 		break;
 	}
@@ -59,8 +61,18 @@ void UserService::OnFriendListChange(const nim::FriendChangeEvent& change_event)
 		nim::Friend::ParseFriendAddEvent(change_event, add_event);
 		if (add_event.add_type_ == nim::kNIMVerifyTypeAdd || add_event.add_type_ == nim::kNIMVerifyTypeAgree)
 		{
-			add_list.push_back(add_event.accid_);
-			friend_list_.insert(add_event.accid_);
+			// 此处根据accid获取该好友的FriendProfile，添加到friend_list_中。
+			nim::Friend::GetFriendProfileCallback cb = ToWeakCallback([this](const std::string& accid, const nim::FriendProfile& user_profile) 
+			{
+				friend_list_[user_profile.GetAccId()] = user_profile;
+				std::list<std::string> add_list(1, user_profile.GetAccId());
+				OnGetUserInfoCallback cb = ToWeakCallback([this](std::list<nim::UserNameCard> uinfos) {
+					if (uinfos.empty()) return;
+					InvokeFriendListChangeCallback(kChangeTypeAdd, *uinfos.cbegin());
+				});
+				GetUserInfoWithEffort(add_list, cb);
+			});
+			nim::Friend::GetFriendProfile(add_event.accid_, cb);
 		}
 		break;
 	}
@@ -70,17 +82,38 @@ void UserService::OnFriendListChange(const nim::FriendChangeEvent& change_event)
 		nim::Friend::ParseFriendProfileSyncEvent(change_event, sync_event);
 		for (auto& info : sync_event.profiles_)
 		{
+			std::string accid = info.GetAccId();
 			if (info.GetRelationship() == nim::kNIMFriendFlagNormal)
 			{
-				add_list.push_back(info.GetAccId());
-				friend_list_.insert(info.GetAccId());
+				if (GetUserType(accid) == nim::kNIMFriendFlagNotFriend) //不在friend_list_里面，就添加进去
+				{
+					add_list.push_back(accid);
+					friend_list_.insert(decltype(friend_list_)::value_type(accid, info));
+				}
+				else //在friend_list_里面，则更新之
+				{
+					update_list.push_back(accid);
+					friend_list_.at(accid).Update(info);
+				}
 			}
 			else
 			{
-				delete_list.push_back(info.GetAccId());
-				friend_list_.erase(info.GetAccId()); // 从friend_list_删除
+				delete_list.push_back(accid);
+				update_list.push_back(accid); // 删除好友之后，其原来的备注名改为其昵称
+				friend_list_.erase(accid); // 从friend_list_删除
 			}
 		}
+		break;
+	}
+	case nim::kNIMFriendChangeTypeUpdate:
+	{
+		nim::FriendProfileUpdateEvent update_event;
+		nim::Friend::ParseFriendProfileUpdateEvent(change_event, update_event);
+
+		std::string accid = update_event.profile_.GetAccId();
+		update_list.push_back(accid);
+		friend_list_.at(accid).Update(update_event.profile_);
+
 		break;
 	}
 	default:
@@ -95,6 +128,7 @@ void UserService::OnFriendListChange(const nim::FriendChangeEvent& change_event)
 		});
 		GetUserInfoWithEffort(add_list, cb);
 	}
+
 	if (!delete_list.empty())
 	{
 		OnGetUserInfoCallback cb = ToWeakCallback([this](std::list<nim::UserNameCard> uinfos) {
@@ -103,26 +137,52 @@ void UserService::OnFriendListChange(const nim::FriendChangeEvent& change_event)
 		});
 		GetUserInfoWithEffort(delete_list, cb);
 	}
+
+	if (!update_list.empty())
+	{
+		std::list<nim::UserNameCard> uinfos;
+		for (auto iter = update_list.cbegin(); iter != update_list.cend(); iter++)
+		{
+			nim::UserNameCard info;
+			info.SetAccId(*iter);
+			info.SetName(nbase::UTF16ToUTF8(GetUserName(*iter, false))); //UserNameCard还是填入用户的昵称
+			uinfos.push_back(info);
+		}
+
+		for (auto& it : uinfo_change_cb_list_) //通知上层修改用户的备注名
+			(*(it.second))(uinfos);
+	}
 }
 
-void UserService::OnUserInfoChange(const std::list<nim::UserNameCard> &json_result)
+void UserService::OnUserInfoChange(const std::list<nim::UserNameCard> &uinfo_list)
 {
 	assert(nbase::MessageLoop::current()->ToUIMessageLoop());
 
-	for (auto& info : json_result)
+	std::list<nim::UserNameCard> name_photo_list;
+	std::list<nim::UserNameCard> misc_uinfo_list;
+
+	for (auto& info : uinfo_list)
 	{
 		auto iter = all_user_.find(info.GetAccId());
-		if (iter != all_user_.end())
+		if (iter != all_user_.end()) //all_user_中存在，就更新
 			iter->second.Update(info);
-		else
+		else //all_user_中不存在，就获取该用户信息并插入all_user_
 			InvokeGetUserInfo(std::list<std::string>(1, info.GetAccId()), nullptr);
 
 		if (!info.GetIconUrl().empty())
 			DownloadUserPhoto(info);
+
+		if (info.ExistValue(nim::kUserNameCardKeyName) || info.ExistValue(nim::kUserNameCardKeyIconUrl)) //用户名或头像变化了
+			name_photo_list.push_back(info);
+		if (info.ExistValue((nim::UserNameCardValueKey)(nim::kUserNameCardKeyAll - nim::kUserNameCardKeyName - nim::kUserNameCardKeyIconUrl))) //用户其他信息变化了
+			misc_uinfo_list.push_back(info);
 	}
 
-	for (auto& it : uinfo_change_cb_list_) // 执行回调列表中所有回调
-		(*(it.second))(json_result);
+	// 执行回调列表中所有回调
+	for (auto& it : uinfo_change_cb_list_) 
+		(*(it.second))(name_photo_list);
+	for (auto& it : misc_uinfo_change_cb_list_)
+		(*(it.second))(misc_uinfo_list);
 }
 
 UnregisterCallback UserService::RegFriendListChange(const OnFriendListChangeCallback& callback)
@@ -149,6 +209,18 @@ UnregisterCallback UserService::RegUserInfoChange(const OnUserInfoChangeCallback
 	return cb;
 }
 
+UnregisterCallback nim_comp::UserService::RegMiscUInfoChange(const OnUserInfoChangeCallback & callback)
+{
+	OnUserInfoChangeCallback* new_callback = new OnUserInfoChangeCallback(callback);
+	int cb_id = (int)new_callback;
+	assert(nbase::MessageLoop::current()->ToUIMessageLoop());
+	misc_uinfo_change_cb_list_[cb_id].reset(new_callback);
+	auto cb = ToWeakCallback([this, cb_id]() {
+		misc_uinfo_change_cb_list_.erase(cb_id);
+	});
+	return cb;
+}
+
 UnregisterCallback UserService::RegUserPhotoReady(const OnUserPhotoReadyCallback & callback)
 {
 	OnUserPhotoReadyCallback* new_callback = new OnUserPhotoReadyCallback(callback);
@@ -161,7 +233,7 @@ UnregisterCallback UserService::RegUserPhotoReady(const OnUserPhotoReadyCallback
 	return cb;
 }
 
-void UserService::UIFriendListChangeCallback(UserChangeType change_type, const nim::UserNameCard& uinfo)
+void UserService::UIFriendListChangeCallback(FriendChangeType change_type, const nim::UserNameCard& uinfo)
 {
 	assert(nbase::MessageLoop::current()->ToUIMessageLoop());
 	for (auto& it : friend_list_change_cb_list_)
@@ -170,7 +242,7 @@ void UserService::UIFriendListChangeCallback(UserChangeType change_type, const n
 	}
 }
 
-void UserService::InvokeFriendListChangeCallback(UserChangeType change_type, const nim::UserNameCard& user_infos)
+void UserService::InvokeFriendListChangeCallback(FriendChangeType change_type, const nim::UserNameCard& user_infos)
 {
 	auto task = nbase::Bind(&UserService::UIFriendListChangeCallback, this, change_type, user_infos);
 	nbase::ThreadManager::PostTask(kThreadUI, task);
@@ -260,7 +332,7 @@ void UserService::InvokeGetAllUserInfo(const OnGetUserInfoCallback& cb)
 		for (auto& it : user_profile_list)
 		{
 			if (it.GetRelationship() == nim::kNIMFriendFlagNormal)
-				friend_list_.insert(it.GetAccId()); //插入friend_list_（类的成员变量）好友列表
+				friend_list_[it.GetAccId()] = it; //插入friend_list_（类的成员变量）好友列表
 			account_list.push_back(it.GetAccId());
 		}
 		if(!account_list.empty())
@@ -392,11 +464,23 @@ nim::NIMFriendFlag UserService::GetUserType(const std::string &id)
 	return (friend_list_.find(id) != friend_list_.end() ? nim::kNIMFriendFlagNormal : nim::kNIMFriendFlagNotFriend);
 }
 
-std::wstring UserService::GetUserName(const std::string &id)
+std::wstring UserService::GetUserName(const std::string &id, bool alias_prior/* = true */)
 {
 	nim::UserNameCard info;
 	GetUserInfo(id, info);
+
+	if(alias_prior && GetUserType(id) == nim::kNIMFriendFlagNormal && !friend_list_.at(id).GetAlias().empty()) //优先使用备注名
+		return nbase::UTF8ToUTF16(friend_list_.at(id).GetAlias());
+
 	return nbase::UTF8ToUTF16(info.GetName());
+}
+
+std::wstring UserService::GetFriendAlias(const std::string & id)
+{
+	auto iter = friend_list_.find(id);
+	if (iter == friend_list_.cend())
+		return L"";
+	return nbase::UTF8ToUTF16(iter->second.GetAlias());
 }
 
 std::wstring UserService::GetUserPhoto(const std::string &accid)

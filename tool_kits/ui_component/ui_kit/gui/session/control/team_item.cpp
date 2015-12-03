@@ -111,7 +111,7 @@ void TeamItem::SetMemberName(const nim::UserNameCard& uinfo, const std::string& 
 	}
 	if (team_card.empty() && team_card_.empty())
 	{
-		member_name_->SetUTF8Text(uinfo.GetName());
+		member_name_->SetText(UserService::GetInstance()->GetUserName(uinfo.GetAccId()));
 	}
 
 }

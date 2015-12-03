@@ -74,7 +74,7 @@ void BlackListWindow::RestoreUserInfo(const nim::UserNameCard &info)
 	ui::Control* head_image = black_item->FindSubControl(L"head_image");
 	ui::Label* contact = static_cast<ui::Label*>(black_item->FindSubControl(L"contact"));
 	head_image->SetBkImage(UserService::GetInstance()->GetUserPhoto(info.GetAccId()));
-	contact->SetUTF8Text(info.GetName());
+	contact->SetText(UserService::GetInstance()->GetUserName(info.GetAccId()));
 }
 
 void BlackListWindow::AddBlackListMember(const nim::UserNameCard & info)

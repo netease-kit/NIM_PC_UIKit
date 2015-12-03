@@ -23,6 +23,7 @@ public:
 	typedef std::function<void(const FriendChangeEvent& )> FriendChangeCallback;
 	typedef std::function<void(NIMResCode res_code)> FriendOptCallback;
 	typedef std::function<void(NIMResCode res_code, const std::list<nim::FriendProfile>& user_profile_list)> GetFriendsListCallback;
+	typedef std::function<void(const std::string& accid, const nim::FriendProfile& user_profile)> GetFriendProfileCallback;	/**< 获取好友信息回调模板 */
 
 public:
 	/** @fn static void RegChangeCb(const FriendChangeCallback &cb, const std::string& json_extension = "")
@@ -69,6 +70,15 @@ public:
 	* @return void 无返回值
 	*/
 	static void GetList(const GetFriendsListCallback& cb, const std::string& json_extension = "");
+
+	/** @fn static void GetFriendProfile(const std::string &accid, const GetFriendProfileCallback& cb, const std::string& json_extension = "")
+	* 获取好友信息
+	* @param[in] accid	对方帐号
+	* @param[in] cb	获取好友信息回调函数
+	* @param[in] json_extension json扩展参数（备用，目前不需要）
+	* @return void 无返回值
+	*/
+	static void GetFriendProfile(const std::string &accid, const GetFriendProfileCallback& cb, const std::string& json_extension = "");
 
 	/** @fn static bool ParseFriendAddEvent(const FriendChangeEvent& change_event, FriendAddEvent& add_event)
 	* 解析收到的好友添加请求通知

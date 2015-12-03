@@ -62,8 +62,9 @@ void MemberManagerForm::InitWindow()
 	Button* head_image_button = (Button*)FindControl(L"head_image");
 	head_image_button->SetBkImage(UserService::GetInstance()->GetUserPhoto(user_info.GetAccId()));
 	Label* show_name_label = (Label*)FindControl(L"show_name");
-	show_name_label->SetUTF8Text(user_info.GetName());
+	show_name_label->SetText(UserService::GetInstance()->GetUserName(user_info.GetAccId()));
 	re_team_card_ = (ui::RichEdit*)FindControl(L"team_card");
+	re_team_card_->SetLimitText(10);
 	ui::Button* btn_confirm = (ui::Button*)FindControl(L"confirm");
 	btn_confirm->AttachClick(nbase::Bind(&MemberManagerForm::OnBtnConfirmClick, this, std::placeholders::_1));
 	ui::Button* btn_cancel = (ui::Button*)FindControl(L"cancel");

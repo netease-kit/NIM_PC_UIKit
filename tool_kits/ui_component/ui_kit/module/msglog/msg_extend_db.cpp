@@ -158,7 +158,7 @@ std::vector<nim::SysMessage> MsgExDB::QueryMsgData(int64_t time, int limit)
 		msg.type_ = (nim::NIMSysMsgType)stmt.GetIntField(3);
 		msg.timetag_ = stmt.GetInt64Field(4);
 		msg.id_ = stmt.GetInt64Field(5);
-		msg.support_offline_ = stmt.GetIntField(6) > 0;
+		msg.support_offline_ = stmt.GetIntField(6) > 0 ? nim::BS_TRUE : nim::BS_FALSE;
 		msg.content_ = stmt.GetTextField(7);
 		msg.attach_ = stmt.GetTextField(8);
 		msg.apns_text_ = stmt.GetTextField(9);

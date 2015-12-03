@@ -80,6 +80,16 @@ typedef void (*nim_friend_opt_cb_func)(int res_code, const char *json_extension,
   */
 typedef void (*nim_friend_get_list_cb_func)(int res_code, const char *friend_list_json, const char *json_extension, const void *user_data);
 
+/** @typedef void (*nim_friend_get_profile_cb_func)(const char *accid, const char *friend_profile_json, const char *json_extension, const void *user_data)
+  * 获取好友信息的回调函数定义
+  * @param[out] accid		好友ID
+  * @param[out] friend_profile_json		好友简况
+  * @param[out] json_extension	json扩展数据（备用）
+  * @param[out] user_data		APP的自定义用户数据，SDK只负责传回给回调函数，不做任何处理！
+  * @return void 无返回值
+  */
+typedef void (*nim_friend_get_profile_cb_func)(const char *accid, const char *friend_profile_json, const char *json_extension, const void *user_data);
+
 /** @typedef void (*nim_friend_change_cb_func)(NIMFriendChangeType type, const char *result_json ,const char *json_extension, const void *user_data)
   * 好友数据变化（添加、删除、更新）的监听回调函数定义
   * @param[out] type		NIMFriendChangeType，数据变化类型

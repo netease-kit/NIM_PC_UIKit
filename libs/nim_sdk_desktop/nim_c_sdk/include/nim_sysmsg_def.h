@@ -100,7 +100,7 @@ static const char *kNIMSysMsgKeyLocalUnreadCount= "unread_count";		/**< int, 每
 static const char *kNIMSysMsgKeyLocalContent	= "content";			/**< json string, 协议定义的系统消息结构 */ 
 /** @}*/ //接收系统消息Json Keys，本地定义
 
-/** @name 系统消息结构 Json Keys，协议定义
+/** @name 系统消息/客户端自定义通知结构 Json Keys，协议定义
   * @{
   */
 static const char *kNIMSysMsgKeyTime			= "msg_time";			/**< long,		时间戳,选填 */
@@ -114,6 +114,10 @@ static const char *kNIMSysMsgKeyCustomSaveFlag	= "custom_save_flag";	/**< int,		
 static const char *kNIMSysMsgKeyCustomApnsText	= "custom_apns_text";	/**< string,	自定义通知消息推送文本，不填则不推送*/
 static const char *kNIMSysMsgKeyLocalStatus		= "log_status";			/**< int,		本地定义的系统消息状态,见NIMSysMsgStatus,发送方不需要填写*/
 static const char *kNIMSysMsgKeyLocalClientMsgId= "client_msg_id";		/**< string,	本地定义的消息id,发送方必填,建议使用uuid */
+static const char *kNIMSysMsgKeyPushPayload		= "push_payload";		/**< json string, 第三方自定义的推送属性，限制json string，长度2048 */
+static const char *kNIMSysMsgKeyPushEnable		= "push_enable";		/**< int,		是否需要推送, 0:不需要,1:需要,默认1 */
+static const char *kNIMSysMsgKeyNeedBadge		= "need_badge";			/**< int,		是否要做消息计数，0:不需要，1:需要，默认1 */
+static const char *kNIMSysMsgKeyPushNeedNick	= "push_nick";			/**< int,		需要推送昵称，0：不需要，1：需要，默认0 */
 /** @}*/ //接收系统消息Json Keys，协议定义
 
 /** @enum NIMSysMsgStatus 系统消息状态 */

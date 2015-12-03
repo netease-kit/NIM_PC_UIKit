@@ -12,7 +12,7 @@ void MsgBubbleNotice::InitControl()
 	this->AttachResize(nbase::Bind(&MsgBubbleNotice::OnResize, this, std::placeholders::_1));
 }
 
-void MsgBubbleNotice::InitInfo(const nim::IMMessage &msg)
+void MsgBubbleNotice::InitInfo(const nim::IMMessage &msg, const UTF8String& session_id)
 {
 	this->SetUTF8Name(msg.client_msg_id_);
 
@@ -23,7 +23,7 @@ void MsgBubbleNotice::InitInfo(const nim::IMMessage &msg)
 	}
 	else
 	{
-		GetNotifyMsg(msg.attach_, msg.sender_accid_, msg.receiver_accid_, wstr);
+		GetNotifyMsg(msg.attach_, msg.sender_accid_, msg.receiver_accid_, wstr, session_id);
 	}
 	notice_->SetText(wstr);
 

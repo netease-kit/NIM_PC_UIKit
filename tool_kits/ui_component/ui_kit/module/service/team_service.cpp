@@ -138,11 +138,7 @@ void TeamService::InvokeChangeTeamMember(const std::string& tid, const std::stri
 	{
 		std::string new_team_card = team_card;
 		if (new_team_card.empty())
-		{
-			nim::UserNameCard user_info;
-			UserService::GetInstance()->GetUserInfo(uid, user_info);
-			new_team_card = user_info.GetName();
-		}
+			new_team_card = nbase::UTF16ToUTF8(UserService::GetInstance()->GetUserName(uid));
 
 		(*it.second)(tid + "#" + uid, new_team_card);
 	}
@@ -239,6 +235,18 @@ std::wstring TeamService::GetTeamPhoto(bool full_path)
 		return L"../public/header/head_team.png";
 }
 
+int TeamService::GetTeamType(const std::string& tid)
+{
+	assert(nbase::MessageLoop::current()->ToUIMessageLoop());
+
+	int type = -1;
+	std::map<std::string, int>::iterator it = tid_type_pair_.find(tid);
+	if (it != tid_type_pair_.end())
+		type = it->second;
+
+	return type;
+}
+
 void TeamService::QueryAllTeamInfo()
 {
 	nim::Team::QueryAllMyTeamsInfoAsync(nbase::Bind(&TeamService::QueryAllTeamInfoCb, this, std::placeholders::_1, std::placeholders::_2));
@@ -256,7 +264,17 @@ void TeamService::UIQueryAllTeamInfoCb(int team_count, const std::list<nim::Team
 
 			InvokeChangeTeamName(team_info);
 		}
+
+		tid_type_pair_[team_info.GetTeamID()] = team_info.GetType();
 	}
+}
+
+void TeamService::QueryTeamInfo(const std::string & tid, OnGetTeamInfo cb)
+{
+	nim::Team::QueryTeamInfoAsync(tid, ToWeakCallback([cb](const std::string& tid, const nim::TeamInfo& result) 
+	{
+		cb(result);
+	}));
 }
 
 void TeamService::QueryAllTeamInfoCb(int team_count, const std::list<nim::TeamInfo>& team_info_list)
@@ -280,6 +298,8 @@ void TeamService::UIGetLocalTeamInfoCb(const std::string& tid, const nim::TeamIn
 
 		InvokeChangeTeamName(result);
 	}
+
+	tid_type_pair_[tid] = result.GetType();
 }
 
 void TeamService::GetLocalTeamInfoCb(const std::string& tid, const nim::TeamInfo& result)

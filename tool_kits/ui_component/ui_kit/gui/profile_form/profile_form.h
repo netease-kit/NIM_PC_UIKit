@@ -40,27 +40,36 @@ private:
 	bool OnHeadImageClicked(ui::EventArgs* args); //自己名片的头像被点击
 	bool OnModifyOrCancelBtnClicked(ui::EventArgs* args, bool to_modify); //编辑信息或取消编辑按钮被点击
 	bool OnSaveInfoBtnClicked(ui::EventArgs* args); //保存编辑信息按钮被点击
+	bool OnAliasEditGetFocus(ui::EventArgs* args); //备注名编辑框获得焦点
+	bool OnAliasEditLoseFocus(ui::EventArgs* args); //备注名编辑框失去焦点
+	bool OnAliasEditMouseEnter(ui::EventArgs* args); //鼠标进入备注名编辑框
+	bool OnAliasEditMouseLeave(ui::EventArgs* args); //鼠标离开备注名编辑框
+	bool OnReturnOnAliasEdit(ui::EventArgs* args); //备注名编辑框回车
 
 	void InitUserInfo(const nim::UserNameCard & info); //只能使用一次，否则会多次注册回调。
 	void InitLabels(); //打开名片后，初始化各项信息
+	void SetShowName();
 	void InitEdits(); //点击编辑按钮之后，初始化各个下拉框和文本输入框
 	void InitBirthdayCombo(); //初始化生日下拉框
 	void CheckInMuteBlack(); //检查该用户是否在自己的静音列表和黑名单中
 
-	void OnFriendListChange(UserChangeType change_type, const nim::UserNameCard& info);
+	void OnFriendListChange(FriendChangeType change_type, const nim::UserNameCard& info);
 	void OnUserInfoChange(const std::list<nim::UserNameCard> &uinfos);
+	void OnMiscUInfoChange(const std::list<nim::UserNameCard> &uinfos);
 
 public:
 	static const LPCTSTR kClassName;
 
 private:
-	nim::UserNameCard		m_uinfo;
+	nim::UserNameCard	m_uinfo;
+	int				user_type; // -1：自己，0：陌生人，1：好友
 	AutoUnregister	unregister_cb;
 
 private:
 	ui::Button*		head_image_btn = NULL;
+	ui::Label*		show_name_label = NULL;
+	ui::Label*		user_id_label = NULL;
 	ui::Label*		nickname_label = NULL;
-	ui::Label*		user_id = NULL;
 	ui::CheckBox*	notify_switch = NULL;
 	ui::CheckBox*	black_switch = NULL;
 	ui::Button*		start_chat = NULL;
@@ -72,6 +81,8 @@ private:
 	ui::Button*		btn_modify_info = NULL;
 	ui::Button*		btn_cancel_modify = NULL;
 	ui::Button*		btn_save_modify = NULL;
+	ui::HBox*		alias_box = NULL;
+	ui::RichEdit*	alias_edit = NULL;
 	ui::HBox*		nickname_box = NULL;
 	ui::RichEdit*	nickname_edit = NULL;
 	ui::Label*		nickname_error_tip = NULL;

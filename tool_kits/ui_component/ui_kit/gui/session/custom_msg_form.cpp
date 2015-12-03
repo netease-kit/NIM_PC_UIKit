@@ -113,7 +113,7 @@ bool CustomMsgForm::OnClicked(ui::EventArgs* param)
 		nim::SysMessage msg;
 		msg.receiver_accid_ = session_id_;
 		msg.sender_accid_ = LoginManager::GetInstance()->GetAccount();
-		msg.support_offline_ = msg_mode_->IsSelected()?0:1;
+		msg.support_offline_ = msg_mode_->IsSelected() ? nim::BS_FALSE : nim::BS_TRUE;
 		msg.attach_ = json.toStyledString();
 		if (richedit_msg_)
 		{

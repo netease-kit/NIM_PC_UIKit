@@ -21,7 +21,7 @@ public:
 	virtual std::wstring GetWindowClassName() const override;
 	virtual std::wstring GetWindowId() const override;
 	virtual UINT GetClassStyle() const override;
-	virtual void MemberManagerForm::InitWindow() override;
+	virtual void InitWindow() override;
 	static const LPCTSTR kClassName;
 
 private:

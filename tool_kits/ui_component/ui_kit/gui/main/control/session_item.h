@@ -46,6 +46,7 @@ public:
 	* @return void	无返回值
 	*/
 	void UpdateInfo();
+	void UpdateInfoEx();
 
 	/**
 	* 更新该会话列表项的最近一条消息
@@ -53,6 +54,8 @@ public:
 	* @return void	无返回值
 	*/
 	void UpdateMsg(const nim::SessionData &msg);
+	void UpdateMsgEx(const nim::SessionData &msg);
+
 	void ClearMsg();
 	long long GetMsgTime();
 	
@@ -74,6 +77,7 @@ private:
 private:
 	void OnTeamNameChange(const nim::TeamInfo& team_info);
 private:
+	ui::ButtonBox*	head_image_;
 	ui::Label*		label_name_;
 	ui::Label*		label_msg_;
 	ui::Label*		label_time_;
@@ -81,6 +85,7 @@ private:
 	ui::Label*		label_unread_;
 
 	std::string		id_;
+	std::string		last_msg_id_;
 	nim::NIMSessionType	type_;
 	long long		msg_time_;
 	long			unread_count_;

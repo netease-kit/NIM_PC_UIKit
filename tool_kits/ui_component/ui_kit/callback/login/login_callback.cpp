@@ -133,7 +133,6 @@ void LoginCallback::OnDisconnectCallback()
 	QLOG_APP(L"OnDisconnectCallback");
 }
 
-
 void LoginCallback::DoLogin( std::string user, std::string pass )
 {
 	assert(LoginManager::GetInstance()->GetLoginStatus() == LoginStatus_NONE);

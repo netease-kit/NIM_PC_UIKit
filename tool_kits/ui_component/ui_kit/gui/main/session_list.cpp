@@ -57,24 +57,26 @@ int SessionList::AdjustMsg(const nim::SessionData &msg)
 
 SessionItem* SessionList::AddSessionItem(const nim::SessionData &item_data)
 {
-	std::string id = item_data.id_;
-	auto control = session_list_->FindSubControl(nbase::UTF8ToUTF16(id));
-	if (control)
-	{
-		session_list_->Remove(control);
-	}
-
-	SessionItem* item = new SessionItem;
-	GlobalManager::FillBoxWithCache(item, L"main/session_item.xml");
-	item->Init(item_data);
-	item->AttachAllEvents(nbase::Bind(&SessionList::OnItemNotify, this, std::placeholders::_1));
-
 	int index = AdjustMsg(item_data);
-	if (index >= 0)
-		session_list_->AddAt(item, index);
+	SessionItem* item = dynamic_cast<SessionItem*>(session_list_->FindSubControl(nbase::UTF8ToUTF16(item_data.id_)));
+	if(item && (session_list_->GetItemIndex(item) == index - 1 || session_list_->GetItemIndex(item) == index))
+		item->UpdateMsg(item_data); //应该插入自己紧靠前面或后面的位置，就不用删除，直接更新。
 	else
-		session_list_->Add(item);
+	{
+		if(item)
+			session_list_->Remove(item);
+		item = new SessionItem;
+		GlobalManager::FillBoxWithCache(item, L"main/session_item.xml");
+		index = AdjustMsg(item_data); //删掉之后重新算一次
+		if (index >= 0)
+			session_list_->AddAt(item, index);
+		else
+			session_list_->Add(item);
 
+		item->Init(item_data);
+		item->AttachAllEvents(nbase::Bind(&SessionList::OnItemNotify, this, std::placeholders::_1));
+	}
+	
 	return item;
 }
 
@@ -149,7 +151,7 @@ void SessionList::UpdateSessionInfo(const nim::UserNameCard& user_info)
 {
 	SessionItem* session_item = (SessionItem*)session_list_->FindSubControl(nbase::UTF8ToUTF16(user_info.GetAccId()));
 	if (session_item != NULL)
-		session_item->UpdateInfo();
+		session_item->UpdateInfoEx();
 }
 
 void SessionList::DeleteSessionItem(SessionItem* item)
@@ -243,6 +245,7 @@ void SessionList::OnChangeCallback(nim::NIMResCode rescode, const nim::SessionDa
 		case nim::kNIMSessionCommandMsgDeleted:
 		{
 			AddSessionItem(data);
+			
 			if (SessionManager::GetInstance()->IsSessionWndActive(data.id_))
 			{
 				ResetSessionUnread(data.id_);

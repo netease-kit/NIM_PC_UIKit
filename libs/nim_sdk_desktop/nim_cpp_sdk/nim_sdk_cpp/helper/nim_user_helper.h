@@ -3,6 +3,7 @@
 
 #include <string>
 #include <list>
+#include <assert.h>
 #include "json.h"
 
 namespace nim
@@ -159,8 +160,10 @@ public:
 
 	void Update(const UserNameCard& namecard)
 	{
-		if (!namecard.GetAccId().empty())
-			SetAccId(namecard.GetAccId());
+		assert(namecard.GetAccId() == accid_);
+		if (namecard.GetAccId() != accid_)
+			return;
+
 		if (namecard.ExistValue(kUserNameCardKeyName))
 			SetName(namecard.GetName());
 		if (namecard.ExistValue(kUserNameCardKeyIconUrl))

@@ -73,7 +73,7 @@ void FriendListItemManager::OnGetFriendList(const std::list<nim::UserNameCard> &
 	}
 }
 
-void FriendListItemManager::OnFriendListChange(UserChangeType change_type, const nim::UserNameCard& user)
+void FriendListItemManager::OnFriendListChange(FriendChangeType change_type, const nim::UserNameCard& user)
 {
 	if (change_type == kChangeTypeAdd)
 	{
@@ -98,7 +98,17 @@ void FriendListItemManager::OnUserInfoChange(const std::list<nim::UserNameCard> 
 		{
 			FriendItem* item = dynamic_cast<FriendItem*>(friend_list_->FindSubControl(nbase::UTF8ToUTF16(info.GetAccId())));
 			if (item != NULL)
-				item->Init(false, info);
+			{
+				if (info.ExistValue(nim::kUserNameCardKeyName))
+				{
+					nim::UserNameCard all_info;
+					UserService::GetInstance()->GetUserInfo(info.GetAccId(), all_info);
+					DeleteListItem(all_info);
+					AddListItem(all_info);
+				}
+				else
+					item->Init(false, info);
+			}
 		}
 	}
 }
@@ -139,9 +149,9 @@ void FriendListItemManager::AddListItem(const nim::UserNameCard& all_info)
 	if (friend_list_->FindSubControl(nbase::UTF8ToUTF16(all_info.GetAccId())) != NULL)
 		return;
 
-	wstring ws_show_name = nbase::UTF8ToUTF16(all_info.GetName());
-	string spell = PinYinHelper::GetInstance()->ConvertToFullSpell(ws_show_name);
-	wstring ws_spell = nbase::UTF8ToUTF16(spell);
+	std::wstring ws_show_name = UserService::GetInstance()->GetUserName(all_info.GetAccId());
+	std::string spell = PinYinHelper::GetInstance()->ConvertToFullSpell(ws_show_name);
+	std::wstring ws_spell = nbase::UTF8ToUTF16(spell);
 	ui::TreeNode* tree_node;
 	if (!ws_spell.empty())
 	{
@@ -194,9 +204,11 @@ void FriendListItemManager::AddListItemInGroup(const nim::UserNameCard& all_info
 
 void FriendListItemManager::DeleteListItem(const nim::UserNameCard& all_info)
 {
-	wstring ws_show_name = nbase::UTF8ToUTF16(all_info.GetName());
-	string spell = PinYinHelper::GetInstance()->ConvertToFullSpell(ws_show_name);
-	wstring ws_spell = nbase::UTF8ToUTF16(spell);
+	FriendItem* item = (FriendItem*)friend_list_->FindSubControl(nbase::UTF8ToUTF16(all_info.GetAccId()));
+	if (!item) return;
+	std::wstring ws_show_name = ((ui::Label*)item->FindSubControl(L"contact"))->GetText();
+	std::string spell = PinYinHelper::GetInstance()->ConvertToFullSpell(ws_show_name);
+	std::wstring ws_spell = nbase::UTF8ToUTF16(spell);
 	ui::TreeNode* tree_node;
 	if (!ws_spell.empty())
 	{

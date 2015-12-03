@@ -30,22 +30,20 @@ void CustomMsgBubble::InitInfo(const nim::IMMessage &msg)
 		assert(nbase::MessageLoop::current()->ToUIMessageLoop());
 		if (uinfos.empty()) return;
 
-		std::string nick = uinfos.cbegin()->GetName();
+		std::string accid = uinfos.cbegin()->GetAccId();
+		std::wstring sender = UserService::GetInstance()->GetUserName(accid);
+		if (sender.empty())
+			sender = nbase::UTF8ToUTF16(accid);
 		if (msg.session_type_ == nim::kNIMSessionTypeP2P)
 		{
-			head_->SetBkImage(UserService::GetInstance()->GetUserPhoto(uinfos.cbegin()->GetAccId()));
-			name_->SetUTF8Text(nick.empty() ? msg.sender_accid_ : nick);
+			head_->SetBkImage(UserService::GetInstance()->GetUserPhoto(accid));
+			name_->SetText(sender);
 		}
 		else
 		{
 			head_->SetBkImage(TeamService::GetInstance()->GetTeamPhoto(true));
-			std::wstring tname = TeamService::GetInstance()->GetTeamName(msg.receiver_accid_);
-			std::string name_test = nbase::UTF16ToUTF8(tname) + "->";
-			if (uinfos.cbegin()->GetName().empty())
-				name_test += msg.sender_accid_;
-			else
-				name_test += nick;
-			name_->SetUTF8Text(name_test);
+			std::wstring team_sender = TeamService::GetInstance()->GetTeamName(msg.receiver_accid_) + L"->" + sender;
+			name_->SetText(team_sender);
 		}
 	});
 	UserService::GetInstance()->GetUserInfoWithEffort(std::list<std::string>(1, msg.sender_accid_), cb1);
@@ -60,7 +58,7 @@ void CustomMsgBubble::InitInfo(const nim::IMMessage &msg)
 	time_->SetText(tm);
 
 	std::wstring msg_body;
-	if (msg.support_cloud_history_)
+	if (msg.msg_setting_.server_history_saved_)
 	{
 		//msg_body = L"【可离线通知】";
 	}
