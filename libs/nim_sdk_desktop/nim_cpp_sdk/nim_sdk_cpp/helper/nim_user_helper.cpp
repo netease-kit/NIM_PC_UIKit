@@ -1,6 +1,6 @@
-/** @file nim_user_helper.cpp
-  * @brief SDKÓÃ»§ĞÅÏ¢¸¨Öú·½·¨
-  * @copyright (c) 2015, NetEase Inc. All rights reserved
+ï»¿/** @file nim_user_helper.cpp
+  * @brief SDKç”¨æˆ·ä¿¡æ¯è¾…åŠ©æ–¹æ³•
+  * @copyright (c) 2015-2016, NetEase Inc. All rights reserved
   * @author Oleg
   * @date 2015/10/20
   */

@@ -1,6 +1,6 @@
-/** @file nim_team_helper.cpp
-  * @brief Team ¸¨Öú·½·¨ºÍÊı¾İ½á¹¹¶¨Òå
-  * @copyright (c) 2015, NetEase Inc. All rights reserved
+ï»¿/** @file nim_team_helper.cpp
+  * @brief Team è¾…åŠ©æ–¹æ³•å’Œæ•°æ®ç»“æ„å®šä¹‰
+  * @copyright (c) 2015-2016, NetEase Inc. All rights reserved
   * @author Oleg
   * @date 2015/10/14
   */
@@ -19,7 +19,7 @@ void ParseTeamEvent(int rescode, const std::string& team_id, const NIMNotificati
 	Json::Value values;
 	if (reader.parse(team_event_json, values) && values.isObject())
 	{
-		//²Ù×÷ÕßºÍ±»²Ù×÷ÕßÓÃ»§ÃûÆ¬
+		//æ“ä½œè€…å’Œè¢«æ“ä½œè€…ç”¨æˆ·åç‰‡
 		Json::Value name_cards = values[kNIMNotificationKeyData][kNIMNotificationKeyUserNameCards];
 		if (!name_cards.empty() && name_cards.isArray())
 			ParseNameCards(name_cards, team_event.namecards_);
@@ -64,21 +64,21 @@ void ParseTeamEvent(int rescode, const std::string& team_id, const NIMNotificati
 		case kNIMNotificationIdLocalUpdateOtherNick:
 		case kNIMNotificationIdLocalGetTeamList:
 			{
-				//ÎŞ
-				//ÎŞÄÚÈİĞèÒª½âÎö
+				//æ— 
+				//æ— å†…å®¹éœ€è¦è§£æ
 			}
 			break;
 		case kNIMNotificationIdTeamOwnerTransfer:
 			{
 				//id bool
-				//²»½âÎöÊÇ·ñÀë¿ªÈº×é£¬ÉÏ²ãÊÕµ½Í¨Öª°´Ğèµ÷ÓÃ½Ó¿ÚÅĞ¶ÏÊÇ·ñÒªÀë¿ª
+				//ä¸è§£ææ˜¯å¦ç¦»å¼€ç¾¤ç»„ï¼Œä¸Šå±‚æ”¶åˆ°é€šçŸ¥æŒ‰éœ€è°ƒç”¨æ¥å£åˆ¤æ–­æ˜¯å¦è¦ç¦»å¼€
 				team_event.ids_.push_back(values[kNIMNotificationKeyData][kNIMNotificationKeyDataId].asString());
 			}
 			break;
 		case kNIMNotificationIdTeamMemberChanged:
 			{
 				//team member property
-				//½âÎöid£¬ÉÏ²ãÊÕµ½Í¨Öªºóµ÷ÓÃ½Ó¿ÚÀ­È¡team member property
+				//è§£æidï¼Œä¸Šå±‚æ”¶åˆ°é€šçŸ¥åè°ƒç”¨æ¥å£æ‹‰å–team member property
 				team_event.ids_.push_back(values[kNIMNotificationKeyData][kNIMNotificationKeyTeamMember][kNIMTeamUserKeyAccID].asString());
 			}
 			break;
@@ -86,7 +86,7 @@ void ParseTeamEvent(int rescode, const std::string& team_id, const NIMNotificati
 		case kNIMNotificationIdLocalUpdateTlist:
 			{
 				//member
-				//²»½âÎö£¬ÉÏ²ãÊÕµ½Í¨Öª°´Ğèµ÷ÓÃ½Ó¿ÚÀ­È¡team_member_property
+				//ä¸è§£æï¼Œä¸Šå±‚æ”¶åˆ°é€šçŸ¥æŒ‰éœ€è°ƒç”¨æ¥å£æ‹‰å–team_member_property
 			}
 			break;
 		default:

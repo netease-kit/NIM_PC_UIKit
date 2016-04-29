@@ -1,6 +1,6 @@
-/** @file nim_sysmsg_helper.h
-  * @brief sysmsg ¸¨Öú·½·¨ºÍÊı¾İ½á¹¹¶¨Òå
-  * @copyright (c) 2015, NetEase Inc. All rights reserved
+ï»¿/** @file nim_sysmsg_helper.h
+  * @brief sysmsg è¾…åŠ©æ–¹æ³•å’Œæ•°æ®ç»“æ„å®šä¹‰
+  * @copyright (c) 2015-2016, NetEase Inc. All rights reserved
   * @author Oleg
   * @date 2015/10/20
   */
@@ -16,7 +16,7 @@
 
 /**
 * @namespace nim
-* @brief namespace nim
+* @brief IM
 */
 namespace nim
 {
@@ -25,31 +25,31 @@ namespace nim
 #include "nim_msglog_def.h"
 #include "nim_res_code_def.h"
 
-/** @struct ÏµÍ³ÏûÏ¢ºÍ×Ô¶¨ÒåÍ¨ÖªÊı¾İ */
+/** @brief ç³»ç»Ÿæ¶ˆæ¯å’Œè‡ªå®šä¹‰é€šçŸ¥æ•°æ® */
 struct SysMessage
 {
-	__int64		timetag_;			/**< Í¨ÖªÊ±¼ä´Á£¨ºÁÃë£© */
-	NIMSysMsgType	type_;			/**< Í¨ÖªÀàĞÍ */
-	std::string	receiver_accid_;	/**< ½ÓÊÕÕßID */
-	std::string sender_accid_;		/**< ·¢ËÍÕßID */
-	std::string content_;			/**< Í¨ÖªÄÚÈİ */
-	std::string	attach_;			/**< Í¨Öª¸½¼ş */
-	__int64		id_;				/**< Í¨ÖªID */
-	BoolStatus	support_offline_;	/**< ÊÇ·ñÖ§³ÖÀëÏßÏûÏ¢*/
-	std::string	apns_text_;			/**< ÍÆËÍÍ¨ÖªÄÚÈİ */
-	NIMSysMsgStatus	status_;		/**< Í¨Öª×´Ì¬ */
+	__int64		timetag_;			/**< é€šçŸ¥æ—¶é—´æˆ³ï¼ˆæ¯«ç§’ï¼‰ */
+	NIMSysMsgType	type_;			/**< é€šçŸ¥ç±»å‹ */
+	std::string	receiver_accid_;	/**< æ¥æ”¶è€…ID */
+	std::string sender_accid_;		/**< å‘é€è€…ID */
+	std::string content_;			/**< é€šçŸ¥å†…å®¹ */
+	std::string	attach_;			/**< é€šçŸ¥é™„ä»¶ */
+	__int64		id_;				/**< é€šçŸ¥ID */
+	BoolStatus	support_offline_;	/**< æ˜¯å¦æ”¯æŒç¦»çº¿æ¶ˆæ¯*/
+	std::string	apns_text_;			/**< æ¨é€é€šçŸ¥å†…å®¹ */
+	NIMSysMsgStatus	status_;		/**< é€šçŸ¥çŠ¶æ€ */
 
-	Json::Value push_payload_;		/**< µÚÈı·½×Ô¶¨ÒåµÄÍÆËÍÊôĞÔ£¬ÏŞÖÆÊı¾İÀàĞÍJson£¬³¤¶È2048 */
-	BoolStatus	push_enable_;		/**< ÊÇ·ñĞèÒªÍÆËÍ*/
-	BoolStatus	push_need_badge_;	/**< ÍÆËÍÊÇ·ñĞèÒª×öÏûÏ¢¼ÆÊı*/
-	BoolStatus	push_need_nick_;	/**< ÍÆËÍÊÇ·ñĞèÒªêÇ³Æ*/
+	Json::Value push_payload_;		/**< ç¬¬ä¸‰æ–¹è‡ªå®šä¹‰çš„æ¨é€å±æ€§ï¼Œé•¿åº¦2048 */
+	BoolStatus	push_enable_;		/**< æ˜¯å¦éœ€è¦æ¨é€*/
+	BoolStatus	push_need_badge_;	/**< æ¨é€æ˜¯å¦éœ€è¦åšæ¶ˆæ¯è®¡æ•°*/
+	BoolStatus	push_need_nick_;	/**< æ¨é€æ˜¯å¦éœ€è¦æ˜µç§°*/
 
-	NIMResCode	rescode_;			/**< Í¨Öª´íÎóÂë */
-	NIMMessageFeature	feature_;	/**< Í¨ÖªÊôĞÔ */
-	int			total_unread_count_;/**< ×Ü¼ÆµÄÍ¨ÖªÎ´¶ÁÊı */
-	std::string client_msg_id_;		/**< Í¨ÖªID£¨¿Í»§¶Ë£© */
+	NIMResCode	rescode_;			/**< é€šçŸ¥é”™è¯¯ç  */
+	NIMMessageFeature	feature_;	/**< é€šçŸ¥å±æ€§ */
+	int			total_unread_count_;/**< æ€»è®¡çš„é€šçŸ¥æœªè¯»æ•° */
+	std::string client_msg_id_;		/**< é€šçŸ¥IDï¼ˆå®¢æˆ·ç«¯ï¼‰ */
 
-	/** ¹¹Ôìº¯Êı */
+	/** æ„é€ å‡½æ•° */
 	SysMessage() : timetag_(0)
 		, id_(0)
 		, support_offline_(BS_NOT_INIT)
@@ -62,8 +62,8 @@ struct SysMessage
 		, push_need_nick_(BS_NOT_INIT) {}
 
 	/** @fn std::string ToJsonString() const
-	  * @brief ×é×°Json Value×Ö·û´®
-	  * @return string Json Value×Ö·û´® 
+	  * @brief ç»„è£…Json Valueå­—ç¬¦ä¸²
+	  * @return string Json Valueå­—ç¬¦ä¸² 
       */
 	std::string	ToJsonString() const
 	{
@@ -87,32 +87,32 @@ struct SysMessage
 		if (push_need_badge_ != BS_NOT_INIT)
 			values[kNIMSysMsgKeyNeedBadge] = push_need_badge_ == BS_TRUE ? 1 : 0;
 		if (!push_payload_.empty())
-			values[kNIMSysMsgKeyPushPayload] = push_payload_.toStyledString();
-		return values.toStyledString();
+			values[kNIMSysMsgKeyPushPayload] = GetJsonStringWithNoStyled(push_payload_);
+		return GetJsonStringWithNoStyled(values);
 	}
 };
 
 /** @fn bool ParseSysMessage(const std::string& sysmsg_json, SysMessage& msg)
-  * @brief ½âÎöÏµÍ³ÏûÏ¢»ò×Ô¶¨ÒåÍ¨Öª
-  * @param[in] sysmsg_json ÏµÍ³ÏûÏ¢»ò×Ô¶¨ÒåÍ¨Öª(Json ValueÊı¾İ×Ö·û´®)
-  * @param[out] msg ÏµÍ³ÏûÏ¢»ò×Ô¶¨ÒåÍ¨Öª
-  * @return bool ½âÎö³É¹¦»òÊ§°Ü 
+  * @brief è§£æç³»ç»Ÿæ¶ˆæ¯æˆ–è‡ªå®šä¹‰é€šçŸ¥
+  * @param[in] sysmsg_json ç³»ç»Ÿæ¶ˆæ¯æˆ–è‡ªå®šä¹‰é€šçŸ¥(Json Valueæ•°æ®å­—ç¬¦ä¸²)
+  * @param[out] msg ç³»ç»Ÿæ¶ˆæ¯æˆ–è‡ªå®šä¹‰é€šçŸ¥
+  * @return bool è§£ææˆåŠŸæˆ–å¤±è´¥ 
   */
 bool ParseSysMessage(const std::string& sysmsg_json, SysMessage& msg);
 
 /** @fn bool ParseSysMessages(const std::string& sysmsgs_json, std::list<SysMessage>& msgs, int* unread)
-  * @brief ½âÎöÏµÍ³ÏûÏ¢»ò×Ô¶¨ÒåÍ¨Öª
-  * @param[in] sysmsgs_json ÏµÍ³ÏûÏ¢»ò×Ô¶¨ÒåÍ¨Öª(Json ValueÊı¾İ×Ö·û´®)
-  * @param[out] msgs ÏµÍ³ÏûÏ¢»ò×Ô¶¨ÒåÍ¨Öª
-  * @param[out] unread µ±Ç°×Ü¼ÆµÄÎ´¶ÁÊı
-  * @return bool ½âÎö³É¹¦»òÊ§°Ü 
+  * @brief è§£æç³»ç»Ÿæ¶ˆæ¯æˆ–è‡ªå®šä¹‰é€šçŸ¥
+  * @param[in] sysmsgs_json ç³»ç»Ÿæ¶ˆæ¯æˆ–è‡ªå®šä¹‰é€šçŸ¥(Json Valueæ•°æ®å­—ç¬¦ä¸²)
+  * @param[out] msgs ç³»ç»Ÿæ¶ˆæ¯æˆ–è‡ªå®šä¹‰é€šçŸ¥
+  * @param[out] unread å½“å‰æ€»è®¡çš„æœªè¯»æ•°
+  * @return bool è§£ææˆåŠŸæˆ–å¤±è´¥ 
   */
 bool ParseSysMessages(const std::string& sysmsgs_json, std::list<SysMessage>& msgs, int* unread);
 
 /** @fn void ParseSysMessageContent(const Json::Value& content_json, SysMessage& msg)
-  * @brief ½âÎöÏµÍ³ÏûÏ¢»ò×Ô¶¨ÒåÍ¨ÖªµÄÄÚÈİ
-  * @param[in] content_json ÏµÍ³ÏûÏ¢»ò×Ô¶¨ÒåÍ¨ÖªµÄÄÚÈİ(Json ValueÊı¾İ)
-  * @param[out] msg ÏµÍ³ÏûÏ¢»ò×Ô¶¨ÒåÍ¨Öª
+  * @brief è§£æç³»ç»Ÿæ¶ˆæ¯æˆ–è‡ªå®šä¹‰é€šçŸ¥çš„å†…å®¹
+  * @param[in] content_json ç³»ç»Ÿæ¶ˆæ¯æˆ–è‡ªå®šä¹‰é€šçŸ¥çš„å†…å®¹(Json Valueæ•°æ®)
+  * @param[out] msg ç³»ç»Ÿæ¶ˆæ¯æˆ–è‡ªå®šä¹‰é€šçŸ¥
   * @return void
   */
 void ParseSysMessageContent(const Json::Value& content_json, SysMessage& msg);

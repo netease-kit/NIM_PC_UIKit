@@ -1,6 +1,6 @@
-/** @file nim_sysmsg_helper.cpp
-  * @brief sysmsg ¸¨Öú·½·¨ºÍÊı¾İ½á¹¹¶¨Òå
-  * @copyright (c) 2015, NetEase Inc. All rights reserved
+ï»¿/** @file nim_sysmsg_helper.cpp
+  * @brief sysmsg è¾…åŠ©æ–¹æ³•å’Œæ•°æ®ç»“æ„å®šä¹‰
+  * @copyright (c) 2015-2016, NetEase Inc. All rights reserved
   * @author Oleg
   * @date 2015/10/20
   */
@@ -71,9 +71,7 @@ void ParseSysMessageContent(const Json::Value& content_json, SysMessage& msg)
 	if (content_json[kNIMSysMsgKeyPushNeedNick].isUInt())
 		msg.push_need_nick_ = content_json[kNIMSysMsgKeyPushNeedNick].asInt() == 1 ? BS_TRUE : BS_FALSE;
 	Json::Reader reader;
-	std::string payload = content_json[kNIMSysMsgKeyPushPayload].asString();
-	if (!payload.empty() && (!reader.parse(payload, msg.push_payload_) || !msg.push_payload_.isObject()))
-		assert(0);
+	reader.parse(content_json[kNIMSysMsgKeyPushPayload].asString(), msg.push_payload_);
 }
 
 }

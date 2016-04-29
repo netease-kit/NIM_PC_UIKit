@@ -1,6 +1,6 @@
-/** @file nim_team_helper.h
-  * @brief Team ¸¨Öú·½·¨ºÍÊı¾İ½á¹¹¶¨Òå
-  * @copyright (c) 2015, NetEase Inc. All rights reserved
+ï»¿/** @file nim_team_helper.h
+  * @brief Team è¾…åŠ©æ–¹æ³•å’Œæ•°æ®ç»“æ„å®šä¹‰
+  * @copyright (c) 2015-2016, NetEase Inc. All rights reserved
   * @author Oleg
   * @date 2015/10/14
   */
@@ -17,7 +17,7 @@
 
 /**
 * @namespace nim
-* @brief namespace nim
+* @brief IM
 */
 namespace nim
 {
@@ -26,28 +26,28 @@ namespace nim
 #include "nim_msglog_def.h"
 #include "nim_res_code_def.h"
 
-/** @struct Èº×éĞÅÏ¢Êı¾İ±ê¼ÇKey,ÓÃÒÔ±ê¼Ç¶ÔÓ¦Êı¾İµÄÓĞĞ§ĞÔ */
+/** @brief ç¾¤ç»„ä¿¡æ¯æ•°æ®æ ‡è®°Key,ç”¨ä»¥æ ‡è®°å¯¹åº”æ•°æ®çš„æœ‰æ•ˆæ€§ */
 enum TeamInfoKey
 {
-	kTeamInfoKeyNone = 0,					/**< ÎŞÊı¾İ */	
-	kTeamInfoKeyName = 1,					/**< Èº×éÃû×Ö */
-	kTeamInfoKeyType = 1 << 1,				/**< Èº×éÀàĞÍ */
-	kTeamInfoKeyOwnerID = 1 << 2,			/**< Èº×éÓµÓĞÕßID */
-	kTeamInfoKeyLevel = 1 << 3,				/**< Èº×éµÈ¼¶ */
-	kTeamInfoKeyProperty = 1 << 4,			/**< Èº×éÊôĞÔ */
-	kTeamInfoKeyIntro = 1 << 5,				/**< Èº×é¼ò½é */
-	kTeamInfoKeyAnnouncement = 1 << 6,		/**< Èº×é¹«¸æ */
-	kTeamInfoKeyJoinMode = 1 << 7,			/**< Èº×éÑéÖ¤ÀàĞÍ */
-	kTeamInfoKeyConfigBits = 1 << 8,		/**< Èº×éÅäÖÃÏî */
-	kTeamInfoKeyCustom = 1 << 9,			/**< Èº×éÀ©Õ¹Ïî */
-	kTeamInfoKeyAll = (1 << 10) - 1			/**< ÓĞÊı¾İ */
+	kTeamInfoKeyNone = 0,					/**< æ— æ•°æ® */	
+	kTeamInfoKeyName = 1,					/**< ç¾¤ç»„åå­— */
+	kTeamInfoKeyType = 1 << 1,				/**< ç¾¤ç»„ç±»å‹ */
+	kTeamInfoKeyOwnerID = 1 << 2,			/**< ç¾¤ç»„æ‹¥æœ‰è€…ID */
+	kTeamInfoKeyLevel = 1 << 3,				/**< ç¾¤ç»„ç­‰çº§ */
+	kTeamInfoKeyProperty = 1 << 4,			/**< ç¾¤ç»„å±æ€§ */
+	kTeamInfoKeyIntro = 1 << 5,				/**< ç¾¤ç»„ç®€ä»‹ */
+	kTeamInfoKeyAnnouncement = 1 << 6,		/**< ç¾¤ç»„å…¬å‘Š */
+	kTeamInfoKeyJoinMode = 1 << 7,			/**< ç¾¤ç»„éªŒè¯ç±»å‹ */
+	kTeamInfoKeyConfigBits = 1 << 8,		/**< ç¾¤ç»„é…ç½®é¡¹ */
+	kTeamInfoKeyCustom = 1 << 9,			/**< ç¾¤ç»„æ‰©å±•é¡¹ */
+	kTeamInfoKeyAll = (1 << 10) - 1			/**< æœ‰æ•°æ® */
 };
 
-/** @struct Èº×éĞÅÏ¢ */
+/** @brief ç¾¤ç»„ä¿¡æ¯ */
 struct TeamInfo
 {
 public:
-	/** ¹¹Ôìº¯Êı£¬ÍÆ¼öÊ¹ÓÃ */
+	/** æ„é€ å‡½æ•°ï¼Œæ¨èä½¿ç”¨ */
 	TeamInfo(const std::string& team_id) : member_list_timetag_(0)
 		, create_timetag_(0)
 		, update_timetag_(0)
@@ -63,7 +63,7 @@ public:
 		id_ = team_id;
 	}
 
-	/** ¹¹Ôìº¯Êı */
+	/** æ„é€ å‡½æ•° */
 	TeamInfo() : member_list_timetag_(0)
 			, create_timetag_(0)
 			, update_timetag_(0)
@@ -77,236 +77,236 @@ public:
 			, value_available_flag_(0) {}
 
 public:
-	/** ÉèÖÃÈº×éID */
+	/** è®¾ç½®ç¾¤ç»„ID */
 	void SetTeamID(const std::string& id)
 	{
 		id_ = id;
 	}
 
-	/** »ñÈ¡Èº×éID */
+	/** è·å–ç¾¤ç»„ID */
 	std::string GetTeamID() const
 	{
 		return id_;
 	}
 
-	/** ÉèÖÃÈº×éÃû×Ö */
+	/** è®¾ç½®ç¾¤ç»„åå­— */
 	void SetName(const std::string& name)
 	{
 		name_ = name;
 		value_available_flag_ |= kTeamInfoKeyName;
 	}
 
-	/** »ñÈ¡Èº×éÃû×Ö */
+	/** è·å–ç¾¤ç»„åå­— */
 	std::string GetName() const
 	{
 		return name_;
 	}
 
-	/** ÉèÖÃÈº×éÀàĞÍ */
+	/** è®¾ç½®ç¾¤ç»„ç±»å‹ */
 	void SetType(nim::NIMTeamType type)
 	{
 		type_ = type;
 		value_available_flag_ |= kTeamInfoKeyType;
 	}
 
-	/** »ñÈ¡Èº×éÀàĞÍ */
+	/** è·å–ç¾¤ç»„ç±»å‹ */
 	nim::NIMTeamType GetType() const
 	{
 		return type_;
 	}
 
-	/** ÉèÖÃÈº×éÓµÓĞÕßID */
+	/** è®¾ç½®ç¾¤ç»„æ‹¥æœ‰è€…ID */
 	void SetOwnerID(const std::string& id)
 	{
 		owner_id_ = id;
 		value_available_flag_ |= kTeamInfoKeyOwnerID;
 	}
 
-	/** »ñÈ¡Èº×éÓµÓĞÕßID */
+	/** è·å–ç¾¤ç»„æ‹¥æœ‰è€…ID */
 	std::string GetOwnerID() const
 	{
 		return owner_id_;
 	}
 
-	/** ÉèÖÃÈº×éµÈ¼¶ */
+	/** è®¾ç½®ç¾¤ç»„ç­‰çº§ */
 	void SetLevel(int level)
 	{
 		level_ = level;
 		value_available_flag_ |= kTeamInfoKeyLevel;
 	}
 
-	/** »ñÈ¡Èº×éµÈ¼¶ */
+	/** è·å–ç¾¤ç»„ç­‰çº§ */
 	int GetLevel() const
 	{
 		return level_;
 	}
 
-	/** ÉèÖÃÈº×éÊôĞÔ */
+	/** è®¾ç½®ç¾¤ç»„å±æ€§ */
 	void SetProperty(const std::string& prop)
 	{
 		property_ = prop;
 		value_available_flag_ |= kTeamInfoKeyProperty;
 	}
 
-	/** »ñÈ¡Èº×éÊôĞÔ */
+	/** è·å–ç¾¤ç»„å±æ€§ */
 	std::string GetProperty() const
 	{
 		return property_;
 	}
 
-	/** ÉèÖÃÈº×éÓĞĞ§ĞÔ */
+	/** è®¾ç½®ç¾¤ç»„æœ‰æ•ˆæ€§ */
 	void SetValid(bool valid)
 	{
 		valid_ = valid;
 	}
 
-	/** »ñÈ¡Èº×éÓĞĞ§ĞÔ */
+	/** è·å–ç¾¤ç»„æœ‰æ•ˆæ€§ */
 	bool IsValid() const
 	{
 		return valid_;
 	}
 
-	/** ÉèÖÃÈº×é³ÉÔ±ÊıÁ¿ */
+	/** è®¾ç½®ç¾¤ç»„æˆå‘˜æ•°é‡ */
 	void SetMemberCount(int count)
 	{
 		member_count_ = count;
 	}
 
-	/** »ñÈ¡Èº×é³ÉÔ±ÊıÁ¿ */
+	/** è·å–ç¾¤ç»„æˆå‘˜æ•°é‡ */
 	int GetMemberCount() const
 	{
 		return member_count_;
 	}
 
-	/** ÉèÖÃÈº×é³ÉÔ±µµ°¸Ê±¼ä´Á(ºÁÃë) */
+	/** è®¾ç½®ç¾¤ç»„æˆå‘˜æ¡£æ¡ˆæ—¶é—´æˆ³(æ¯«ç§’) */
 	void SetMemberListTimetag(__int64 timetag)
 	{
 		member_list_timetag_ = timetag;
 	}
 
-	/** »ñÈ¡Èº×é³ÉÔ±µµ°¸Ê±¼ä´Á(ºÁÃë) */
+	/** è·å–ç¾¤ç»„æˆå‘˜æ¡£æ¡ˆæ—¶é—´æˆ³(æ¯«ç§’) */
 	__int64 GetMemberListTimetag() const
 	{
 		return member_list_timetag_;
 	}
 
-	/** ÉèÖÃÈº×é´´½¨Ê±¼ä´Á(ºÁÃë) */
+	/** è®¾ç½®ç¾¤ç»„åˆ›å»ºæ—¶é—´æˆ³(æ¯«ç§’) */
 	void SetCreateTimetag(__int64 timetag)
 	{
 		create_timetag_ = timetag;
 	}
 
-	/** »ñÈ¡Èº×é´´½¨Ê±¼ä´Á(ºÁÃë) */
+	/** è·å–ç¾¤ç»„åˆ›å»ºæ—¶é—´æˆ³(æ¯«ç§’) */
 	__int64 GetCreateTimetag() const
 	{
 		return create_timetag_;
 	}
 
-	/** ÉèÖÃÈº×é¸üĞÂÊ±¼ä´Á(ºÁÃë) */
+	/** è®¾ç½®ç¾¤ç»„æ›´æ–°æ—¶é—´æˆ³(æ¯«ç§’) */
 	void SetUpdateTimetag(__int64 timetag)
 	{
 		update_timetag_ = timetag;
 	}
 
-	/** »ñÈ¡Èº×é¸üĞÂÊ±¼ä´Á(ºÁÃë) */
+	/** è·å–ç¾¤ç»„æ›´æ–°æ—¶é—´æˆ³(æ¯«ç§’) */
 	__int64 GetUpdateTimetag() const
 	{
 		return update_timetag_;
 	}
 
-	/** ÉèÖÃÈº×é³ÉÔ±ÓĞĞ§ĞÔ */
+	/** è®¾ç½®ç¾¤ç»„æˆå‘˜æœ‰æ•ˆæ€§ */
 	void SetMemberValid(bool valid)
 	{
 		member_valid_ = valid;
 	}
 
-	/** »ñÈ¡Èº×é³ÉÔ±ÓĞĞ§ĞÔ */
+	/** è·å–ç¾¤ç»„æˆå‘˜æœ‰æ•ˆæ€§ */
 	bool IsMemberValid() const
 	{
 		return member_valid_;
 	}
 
-	/** ÉèÖÃÈº×é¼ò½é */
+	/** è®¾ç½®ç¾¤ç»„ç®€ä»‹ */
 	void SetIntro(const std::string& intro)
 	{
 		intro_ = intro;
 		value_available_flag_ |= kTeamInfoKeyIntro;
 	}
 
-	/** »ñÈ¡Èº×é¼ò½é */
+	/** è·å–ç¾¤ç»„ç®€ä»‹ */
 	std::string GetIntro() const
 	{
 		return intro_;
 	}
 
-	/** ÉèÖÃÈº×é¹«¸æ */
+	/** è®¾ç½®ç¾¤ç»„å…¬å‘Š */
 	void SetAnnouncement(const std::string& announcement)
 	{
 		announcement_ = announcement;
 		value_available_flag_ |= kTeamInfoKeyAnnouncement;
 	}
 
-	/** »ñÈ¡Èº×é¹«¸æ */
+	/** è·å–ç¾¤ç»„å…¬å‘Š */
 	std::string GetAnnouncement() const
 	{
 		return announcement_;
 	}
 
-	/** ÉèÖÃÈº×éÑéÖ¤Ä£Ê½ */
+	/** è®¾ç½®ç¾¤ç»„éªŒè¯æ¨¡å¼ */
 	void SetJoinMode(nim::NIMTeamJoinMode mode)
 	{
 		join_mode_ = mode;
 		value_available_flag_ |= kTeamInfoKeyJoinMode;
 	}
 
-	/** »ñÈ¡Èº×éÑéÖ¤Ä£Ê½ */
+	/** è·å–ç¾¤ç»„éªŒè¯æ¨¡å¼ */
 	nim::NIMTeamJoinMode GetJoinMode() const
 	{
 		return join_mode_;
 	}
 
-	/** ÉèÖÃÈº×éÅäÖÃÏî */
+	/** è®¾ç½®ç¾¤ç»„é…ç½®é¡¹ */
 	void SetConfigBits(__int64 bit)
 	{
 		config_bits_ = bit;
 		value_available_flag_ |= kTeamInfoKeyConfigBits;
 	}
 
-	/** »ñÈ¡Èº×éÅäÖÃÏî */
+	/** è·å–ç¾¤ç»„é…ç½®é¡¹ */
 	__int64 GetConfigBits() const
 	{
 		return config_bits_;
 	}
 
-	/** ÉèÖÃÈº×é¿Í»§¶ËÀ©Õ¹ÄÚÈİ */
+	/** è®¾ç½®ç¾¤ç»„å®¢æˆ·ç«¯æ‰©å±•å†…å®¹ */
 	void SetCustom(const std::string& custom)
 	{
 		custom_ = custom;
 		value_available_flag_ |= kTeamInfoKeyCustom;
 	}
 
-	/** »ñÈ¡Èº×é¿Í»§¶ËÀ©Õ¹ÄÚÈİ */
+	/** è·å–ç¾¤ç»„å®¢æˆ·ç«¯æ‰©å±•å†…å®¹ */
 	std::string GetCustom() const
 	{
 		return custom_;
 	}
 
-	/** ÉèÖÃÈº×é·şÎñÆ÷¶ËÀ©Õ¹ÄÚÈİ */
+	/** è®¾ç½®ç¾¤ç»„æœåŠ¡å™¨ç«¯æ‰©å±•å†…å®¹ */
 	void SetServerCustom(const std::string& custom)
 	{
 		server_custom_ = custom;
 	}
 
-	/** »ñÈ¡Èº×é·şÎñÆ÷¶ËÀ©Õ¹ÄÚÈİ */
+	/** è·å–ç¾¤ç»„æœåŠ¡å™¨ç«¯æ‰©å±•å†…å®¹ */
 	std::string GetServerCustom() const
 	{
 		return server_custom_;
 	}
 
 	/** @fn bool ExistValue(TeamInfoKey value_key) const
-	  * @brief Èº×éĞÅÏ¢Êı¾İ±ê¼ÇKey¶ÔÓ¦µÄÊı¾İÊÇ·ñÓĞĞ§£¨´æÔÚ£¬·Ç³õÊ¼Öµ×´Ì¬£©
-	  * @param[in] value_key Èº×éĞÅÏ¢Êı¾İ±ê¼ÇKey
-	  * @return bool ÓĞĞ§ĞÔ 
+	  * @brief ç¾¤ç»„ä¿¡æ¯æ•°æ®æ ‡è®°Keyå¯¹åº”çš„æ•°æ®æ˜¯å¦æœ‰æ•ˆï¼ˆå­˜åœ¨ï¼Œéåˆå§‹å€¼çŠ¶æ€ï¼‰
+	  * @param[in] value_key ç¾¤ç»„ä¿¡æ¯æ•°æ®æ ‡è®°Key
+	  * @return bool æœ‰æ•ˆæ€§ 
 	  */
 	bool ExistValue(TeamInfoKey value_key) const
 	{
@@ -314,8 +314,8 @@ public:
 	}
 
 	/** @fn std::string ToJsonString() const
-	  * @brief ×é×°Json Value×Ö·û´®
-	  * @return string Json Value×Ö·û´® 
+	  * @brief ç»„è£…Json Valueå­—ç¬¦ä¸²
+	  * @return string Json Valueå­—ç¬¦ä¸² 
       */
 	std::string ToJsonString() const
 	{
@@ -353,7 +353,7 @@ public:
 			json[nim::kNIMTeamInfoKeyCustom] = custom_;
 		json[nim::kNIMTeamInfoKeyServerCustom] = server_custom_;
 
-		return json.toStyledString();
+		return GetJsonStringWithNoStyled(json);
 	}
 
 private:
@@ -381,136 +381,136 @@ private:
 	unsigned int	value_available_flag_;
 };
 
-/** @struct Èº³ÉÔ±ĞÅÏ¢Êı¾İ±ê¼ÇKey,ÓÃÒÔ±ê¼Ç¶ÔÓ¦Êı¾İµÄÓĞĞ§ĞÔ */
+/** @brief ç¾¤æˆå‘˜ä¿¡æ¯æ•°æ®æ ‡è®°Key,ç”¨ä»¥æ ‡è®°å¯¹åº”æ•°æ®çš„æœ‰æ•ˆæ€§ */
 enum TeamMemberValueKey
 {
-	kTeamMemberPropertyKeyNone = 0,				/**< ÎŞÊı¾İ */
-	kTeamMemberPropertyKeyUserType = 1,			/**< Èº³ÉÔ±ÀàĞÍ */
-	kTeamMemberPropertyKeyNickName = 1 << 1,	/**< Èº³ÉÔ±êÇ³Æ */
-	kTeamMemberPropertyKeyBits = 1 << 2,		/**< Èº³ÉÔ±ÅäÖÃÏî */
-	kTeamMemberPropertyKeyValid = 1 << 3,		/**< Èº³ÉÔ±ÓĞĞ§ĞÔ */
-	kTeamMemberPropertyKeyAll = (1 << 4) - 1	/**< ÓĞÊı¾İ */
+	kTeamMemberPropertyKeyNone = 0,				/**< æ— æ•°æ® */
+	kTeamMemberPropertyKeyUserType = 1,			/**< ç¾¤æˆå‘˜ç±»å‹ */
+	kTeamMemberPropertyKeyNickName = 1 << 1,	/**< ç¾¤æˆå‘˜æ˜µç§° */
+	kTeamMemberPropertyKeyBits = 1 << 2,		/**< ç¾¤æˆå‘˜é…ç½®é¡¹ */
+	kTeamMemberPropertyKeyValid = 1 << 3,		/**< ç¾¤æˆå‘˜æœ‰æ•ˆæ€§ */
+	kTeamMemberPropertyKeyAll = (1 << 4) - 1	/**< æœ‰æ•°æ® */
 };
 
-/** @struct Èº×é³ÉÔ±ĞÅÏ¢ */
+/** @brief ç¾¤ç»„æˆå‘˜ä¿¡æ¯ */
 struct TeamMemberProperty
 {
 public:
-	/** ¹¹Ôìº¯Êı£¬ÍÆ¼öÊ¹ÓÃ */
+	/** æ„é€ å‡½æ•°ï¼Œæ¨èä½¿ç”¨ */
 	TeamMemberProperty(const std::string& team_id, const std::string& accid) : type_(kNIMTeamUserTypeNomal), valid_(false), bits_(0), create_timetag_(0), update_timetag_(0), value_available_flag_(0)
 	{
 		team_id_ = team_id;
 		account_id_ = accid;
 	}
 
-	/** ¹¹Ôìº¯Êı */
+	/** æ„é€ å‡½æ•° */
 	TeamMemberProperty() : type_(kNIMTeamUserTypeNomal), valid_(false), bits_(0), create_timetag_(0), update_timetag_(0), value_available_flag_(0) {}
 
 public:
-	/** ÉèÖÃÈº×éID */
+	/** è®¾ç½®ç¾¤ç»„ID */
 	void SetTeamID(const std::string& id)
 	{
 		team_id_ = id;
 	}
 
-	/** »ñÈ¡Èº×éID */
+	/** è·å–ç¾¤ç»„ID */
 	std::string GetTeamID() const
 	{
 		return team_id_;
 	}
 
-	/** ÉèÖÃÈº³ÉÔ±ID */
+	/** è®¾ç½®ç¾¤æˆå‘˜ID */
 	void SetAccountID(const std::string& id)
 	{
 		account_id_ = id;
 	}
 
-	/** »ñÈ¡Èº³ÉÔ±ID */
+	/** è·å–ç¾¤æˆå‘˜ID */
 	std::string GetAccountID() const
 	{
 		return account_id_;
 	}
 
-	/** ÉèÖÃÈº³ÉÔ±ÀàĞÍ */
+	/** è®¾ç½®ç¾¤æˆå‘˜ç±»å‹ */
 	void SetUserType(nim::NIMTeamUserType type)
 	{
 		type_ = type;
 		value_available_flag_ |= kTeamMemberPropertyKeyUserType;
 	}
 
-	/** »ñÈ¡Èº³ÉÔ±ÀàĞÍ */
+	/** è·å–ç¾¤æˆå‘˜ç±»å‹ */
 	nim::NIMTeamUserType GetUserType() const
 	{
 		return type_;
 	}
 
-	/** ÉèÖÃÈº³ÉÔ±êÇ³Æ */
+	/** è®¾ç½®ç¾¤æˆå‘˜æ˜µç§° */
 	void SetNick(const std::string& nick)
 	{
 		nick_ = nick;
 		value_available_flag_ |= kTeamMemberPropertyKeyNickName;
 	}
 
-	/** »ñÈ¡Èº³ÉÔ±êÇ³Æ */
+	/** è·å–ç¾¤æˆå‘˜æ˜µç§° */
 	std::string GetNick() const
 	{
 		return nick_;
 	}
 
-	/** ÉèÖÃÈº³ÉÔ±ÅäÖÃÏî */
+	/** è®¾ç½®ç¾¤æˆå‘˜é…ç½®é¡¹ */
 	void SetBits(__int64 bit)
 	{
 		bits_ = bit;
 		value_available_flag_ |= kTeamMemberPropertyKeyBits;
 	}
 
-	/** »ñÈ¡Èº³ÉÔ±ÅäÖÃÏî */
+	/** è·å–ç¾¤æˆå‘˜é…ç½®é¡¹ */
 	__int64 GetBits() const
 	{
 		return bits_;
 	}
 
-	/** ÉèÖÃÈº³ÉÔ±ÓĞĞ§ĞÔ */
+	/** è®¾ç½®ç¾¤æˆå‘˜æœ‰æ•ˆæ€§ */
 	void SetValid_(bool valid)
 	{
 		valid_ = valid;
 		value_available_flag_ |= kTeamMemberPropertyKeyValid;
 	}
 
-	/** »ñÈ¡Èº³ÉÔ±ÓĞĞ§ĞÔ */
+	/** è·å–ç¾¤æˆå‘˜æœ‰æ•ˆæ€§ */
 	bool IsValid() const
 	{
 		return valid_;
 	}
 
-	/** ÉèÖÃÈº³ÉÔ±´´½¨Ê±¼ä´Á(ºÁÃë) */
+	/** è®¾ç½®ç¾¤æˆå‘˜åˆ›å»ºæ—¶é—´æˆ³(æ¯«ç§’) */
 	void SetCreateTimetag(__int64 timetag)
 	{
 		create_timetag_ = timetag;
 	}
 
-	/** »ñÈ¡Èº³ÉÔ±´´½¨Ê±¼ä´Á(ºÁÃë) */
+	/** è·å–ç¾¤æˆå‘˜åˆ›å»ºæ—¶é—´æˆ³(æ¯«ç§’) */
 	__int64 GetCreateTimetag() const
 	{
 		return create_timetag_;
 	}
 
-	/** ÉèÖÃÈº³ÉÔ±¸üĞÂÊ±¼ä´Á(ºÁÃë) */
+	/** è®¾ç½®ç¾¤æˆå‘˜æ›´æ–°æ—¶é—´æˆ³(æ¯«ç§’) */
 	void SetUpdateTimetag(__int64 timetag)
 	{
 		update_timetag_ = timetag;
 	}
 
-	/** »ñÈ¡Èº³ÉÔ±¸üĞÂÊ±¼ä´Á(ºÁÃë) */
+	/** è·å–ç¾¤æˆå‘˜æ›´æ–°æ—¶é—´æˆ³(æ¯«ç§’) */
 	__int64 GetUpdateTimetag() const
 	{
 		return update_timetag_;
 	}
 
 	/** @fn bool ExistValue(TeamMemberValueKey value_key) const
-	  * @brief Èº³ÉÔ±ĞÅÏ¢ĞÅÏ¢Êı¾İ±ê¼ÇKey¶ÔÓ¦µÄÊı¾İÊÇ·ñÓĞĞ§£¨´æÔÚ£¬·Ç³õÊ¼Öµ×´Ì¬£©
-	  * @param[in] value_key Èº³ÉÔ±ĞÅÏ¢Êı¾İ±ê¼ÇKey
-	  * @return bool ÓĞĞ§ĞÔ 
+	  * @brief ç¾¤æˆå‘˜ä¿¡æ¯ä¿¡æ¯æ•°æ®æ ‡è®°Keyå¯¹åº”çš„æ•°æ®æ˜¯å¦æœ‰æ•ˆï¼ˆå­˜åœ¨ï¼Œéåˆå§‹å€¼çŠ¶æ€ï¼‰
+	  * @param[in] value_key ç¾¤æˆå‘˜ä¿¡æ¯æ•°æ®æ ‡è®°Key
+	  * @return bool æœ‰æ•ˆæ€§ 
 	  */
 	bool ExistValue(TeamMemberValueKey value_key) const
 	{
@@ -518,8 +518,8 @@ public:
 	}
 
 	/** @fn std::string ToJsonString() const
-	  * @brief ×é×°Json Value×Ö·û´®
-	  * @return string Json Value×Ö·û´® 
+	  * @brief ç»„è£…Json Valueå­—ç¬¦ä¸²
+	  * @return string Json Valueå­—ç¬¦ä¸² 
       */
 	std::string ToJsonString() const
 	{
@@ -539,7 +539,7 @@ public:
 		if (update_timetag_ > 0)
 			json[nim::kNIMTeamUserKeyUpdateTime] = update_timetag_;
 
-		return json.toStyledString();
+		return GetJsonStringWithNoStyled(json);
 	}
 
 private:
@@ -557,74 +557,74 @@ private:
 	unsigned int	value_available_flag_;
 };
 
-/** @struct Èº×éÊÂ¼şÍ¨Öª */
+/** @brief ç¾¤ç»„äº‹ä»¶é€šçŸ¥ */
 struct TeamEvent
 {
-	NIMResCode res_code_;					/**< ´íÎóÂë */
-	NIMNotificationId notification_id_;		/**< Í¨ÖªÀàĞÍID */
-	std::string team_id_;					/**< Èº×éID */
-	std::list<std::string> ids_;			/**< Í¨Öª¿ÉÄÜÉæ¼°µ½µÄÈº³ÉÔ±ID */
-	std::list<UserNameCard> namecards_;		/**< Í¨Öª¿ÉÄÜÉæ¼°µ½µÄÈº³ÉÔ±µÄÓÃ»§ÃûÆ¬ */
-	TeamInfo	team_info_;					/**< Í¨Öª¿ÉÄÜÉæ¼°µ½µÄÈºĞÅÏ¢ */
+	NIMResCode res_code_;					/**< é”™è¯¯ç  */
+	NIMNotificationId notification_id_;		/**< é€šçŸ¥ç±»å‹ID */
+	std::string team_id_;					/**< ç¾¤ç»„ID */
+	std::list<std::string> ids_;			/**< é€šçŸ¥å¯èƒ½æ¶‰åŠåˆ°çš„ç¾¤æˆå‘˜ID */
+	std::list<UserNameCard> namecards_;		/**< é€šçŸ¥å¯èƒ½æ¶‰åŠåˆ°çš„ç¾¤æˆå‘˜çš„ç”¨æˆ·åç‰‡ */
+	TeamInfo	team_info_;					/**< é€šçŸ¥å¯èƒ½æ¶‰åŠåˆ°çš„ç¾¤ä¿¡æ¯ */
 };
 
 /** @fn void ParseTeamEvent(int rescode, const std::string& team_id, const NIMNotificationId notification_id, const std::string& team_event_json, TeamEvent& team_event)
-  * @brief ½âÎöÈº×éÊÂ¼şÍ¨Öª
-  * @param[in] rescode ´íÎóÂë
-  * @param[in] team_id Èº×éID
-  * @param[in] notification_id Í¨ÖªÀàĞÍID
-  * @param[in] team_event_json Í¨ÖªÄÚÈİ£¨Json ValueÊı¾İ£©
-  * @param[out] team_event Èº×éÊÂ¼şÍ¨Öª
+  * @brief è§£æç¾¤ç»„äº‹ä»¶é€šçŸ¥
+  * @param[in] rescode é”™è¯¯ç 
+  * @param[in] team_id ç¾¤ç»„ID
+  * @param[in] notification_id é€šçŸ¥ç±»å‹ID
+  * @param[in] team_event_json é€šçŸ¥å†…å®¹ï¼ˆJson Valueæ•°æ®ï¼‰
+  * @param[out] team_event ç¾¤ç»„äº‹ä»¶é€šçŸ¥
   * @return void 
   */
 void ParseTeamEvent(int rescode, const std::string& team_id, const NIMNotificationId notification_id, const std::string& team_event_json, TeamEvent& team_event);
 
 /** @fn ParseTeamInfoJson(const Json::Value& team_info_json, TeamInfo& team_info)
-  * @brief ½âÎöÈº×éĞÅÏ¢
-  * @param[in] team_info_json Èº×éĞÅÏ¢£¨Json ValueÊı¾İ£©
-  * @param[out] team_info Èº×éĞÅÏ¢
+  * @brief è§£æç¾¤ç»„ä¿¡æ¯
+  * @param[in] team_info_json ç¾¤ç»„ä¿¡æ¯ï¼ˆJson Valueæ•°æ®ï¼‰
+  * @param[out] team_info ç¾¤ç»„ä¿¡æ¯
   * @return void 
   */
 void ParseTeamInfoJson(const Json::Value& team_info_json, TeamInfo& team_info);
 
 /** @fn ParseTeamInfoJson(const std::string& team_info_json, TeamInfo& team_info)
-  * @brief ½âÎöÈº×éĞÅÏ¢
-  * @param[in] team_info_json Èº×éĞÅÏ¢£¨Json ValueÊı¾İ×Ö·û´®£©
-  * @param[out] team_info Èº×éĞÅÏ¢
-  * @return bool ½âÎö³É¹¦»òÊ§°Ü 
+  * @brief è§£æç¾¤ç»„ä¿¡æ¯
+  * @param[in] team_info_json ç¾¤ç»„ä¿¡æ¯ï¼ˆJson Valueæ•°æ®å­—ç¬¦ä¸²ï¼‰
+  * @param[out] team_info ç¾¤ç»„ä¿¡æ¯
+  * @return bool è§£ææˆåŠŸæˆ–å¤±è´¥ 
   */
 bool ParseTeamInfoJson(const std::string& team_info_json, TeamInfo& team_info);
 
 /** @fn const std::string& team_infos_json, bool include_invalid_team, std::list<TeamInfo>& team_infos
-  * @brief ½âÎöÈº×éĞÅÏ¢
-  * @param[in] team_info_json Èº×éĞÅÏ¢£¨Json ValueÊı¾İ×Ö·û´®£©
-  * @param[in] include_invalid_team ÊÇ·ñ°üº¬ÎŞĞ§Èº×é£¨ÒÑÍËÈº£©
-  * @param[out] team_infos Èº×éĞÅÏ¢
-  * @return bool ½âÎö³É¹¦»òÊ§°Ü 
+  * @brief è§£æç¾¤ç»„ä¿¡æ¯
+  * @param[in] team_info_json ç¾¤ç»„ä¿¡æ¯ï¼ˆJson Valueæ•°æ®å­—ç¬¦ä¸²ï¼‰
+  * @param[in] include_invalid_team æ˜¯å¦åŒ…å«æ— æ•ˆç¾¤ç»„ï¼ˆå·²é€€ç¾¤ï¼‰
+  * @param[out] team_infos ç¾¤ç»„ä¿¡æ¯
+  * @return bool è§£ææˆåŠŸæˆ–å¤±è´¥ 
   */
 bool ParseTeamInfosJson(const std::string& team_infos_json, bool include_invalid_team, std::list<TeamInfo>& team_infos);
 
 /** @fn void ParseTeamMemberPropertyJson(const Json::Value& team_member_prop_json, TeamMemberProperty& team_member_property)
-  * @brief ½âÎöÈº³ÉÔ±ĞÅÏ¢
-  * @param[in] team_member_prop_json Èº³ÉÔ±ĞÅÏ¢£¨Json ValueÊı¾İ£©
-  * @param[out] team_member_property Èº³ÉÔ±ĞÅÏ¢
+  * @brief è§£æç¾¤æˆå‘˜ä¿¡æ¯
+  * @param[in] team_member_prop_json ç¾¤æˆå‘˜ä¿¡æ¯ï¼ˆJson Valueæ•°æ®ï¼‰
+  * @param[out] team_member_property ç¾¤æˆå‘˜ä¿¡æ¯
   * @return void 
   */
 void ParseTeamMemberPropertyJson(const Json::Value& team_member_prop_json, TeamMemberProperty& team_member_property);
 
 /** @fn bool ParseTeamMemberPropertyJson(const std::string& team_member_prop_json, TeamMemberProperty& team_member_property)
-  * @brief ½âÎöÈº³ÉÔ±ĞÅÏ¢
-  * @param[in] team_member_prop_json Èº³ÉÔ±ĞÅÏ¢£¨Json ValueÊı¾İ×Ö·û´®£©
-  * @param[out] team_member_property Èº³ÉÔ±ĞÅÏ¢
-  * @return bool ½âÎö³É¹¦»òÊ§°Ü 
+  * @brief è§£æç¾¤æˆå‘˜ä¿¡æ¯
+  * @param[in] team_member_prop_json ç¾¤æˆå‘˜ä¿¡æ¯ï¼ˆJson Valueæ•°æ®å­—ç¬¦ä¸²ï¼‰
+  * @param[out] team_member_property ç¾¤æˆå‘˜ä¿¡æ¯
+  * @return bool è§£ææˆåŠŸæˆ–å¤±è´¥ 
   */
 bool ParseTeamMemberPropertyJson(const std::string& team_member_prop_json, TeamMemberProperty& team_member_property);
 
 /** @fn bool ParseTeamMemberPropertysJson(const std::string& team_member_props_json, std::list<TeamMemberProperty>& team_member_propertys)
-  * @brief ½âÎöÈº³ÉÔ±ĞÅÏ¢
-  * @param[in] team_member_props_json Èº³ÉÔ±ĞÅÏ¢£¨Json ValueÊı¾İ×Ö·û´®£©
-  * @param[out] team_member_propertys Èº³ÉÔ±ĞÅÏ¢
-  * @return bool ½âÎö³É¹¦»òÊ§°Ü 
+  * @brief è§£æç¾¤æˆå‘˜ä¿¡æ¯
+  * @param[in] team_member_props_json ç¾¤æˆå‘˜ä¿¡æ¯ï¼ˆJson Valueæ•°æ®å­—ç¬¦ä¸²ï¼‰
+  * @param[out] team_member_propertys ç¾¤æˆå‘˜ä¿¡æ¯
+  * @return bool è§£ææˆåŠŸæˆ–å¤±è´¥ 
   */
 bool ParseTeamMemberPropertysJson(const std::string& team_member_props_json, std::list<TeamMemberProperty>& team_member_propertys);
 }//namespace nim

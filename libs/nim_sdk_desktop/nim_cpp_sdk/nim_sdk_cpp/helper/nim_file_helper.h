@@ -1,3 +1,10 @@
+ï»¿/** @file nim_file_helper.h
+  * @brief SDKæ–‡ä»¶æ“ä½œè¾…åŠ©æ–¹æ³•
+  * @copyright (c) 2015-2016, NetEase Inc. All rights reserved
+  * @author Oleg
+  * @date 2015/09/08
+  */
+
 #ifndef _NIM_SDK_CPP_FILE_HELPER_H_
 #define _NIM_SDK_CPP_FILE_HELPER_H_
 
@@ -5,14 +12,17 @@
 #include "assert.h"
 #include "wtypes.h"
 
+/**
+* @namespace nim
+* @brief IM
+*/
 namespace nim
 {
-/** @brief SDKÎÄ¼ş²Ù×÷¸¨Öú·½·¨
-  * @copyright (c) 2015, NetEase Inc. All rights reserved
-  * @author Oleg
-  * @date 2015/09/08
-  */
 
+/** @fn std::wstring GetCurrentModuleDirectory()
+  * @brief è·å–å½“å‰SDKæ¨¡å—æ‰€åœ¨è·¯å¾„
+  * @return è·¯å¾„
+  */
 std::wstring GetCurrentModuleDirectory();
 
 }

@@ -1,6 +1,6 @@
-/** @file nim_talk_helper.h
-  * @brief Talk ¸¨Öú·½·¨ºÍÊı¾İ½á¹¹¶¨Òå
-  * @copyright (c) 2015, NetEase Inc. All rights reserved
+ï»¿/** @file nim_talk_helper.h
+  * @brief Talk è¾…åŠ©æ–¹æ³•å’Œæ•°æ®ç»“æ„å®šä¹‰
+  * @copyright (c) 2015-2016, NetEase Inc. All rights reserved
   * @author Oleg
   * @date 2015/10/16
   */
@@ -16,7 +16,7 @@
 
 /**
 * @namespace nim
-* @brief namespace nim
+* @brief IM
 */
 namespace nim
 {
@@ -26,52 +26,64 @@ namespace nim
 #include "nim_msglog_def.h"
 #include "nim_res_code_def.h"
 
-/** @struct ÏûÏ¢ÊôĞÔÉèÖÃ */
+/** @brief æ¶ˆæ¯å±æ€§è®¾ç½® */
 struct MessageSetting
 {
-	BoolStatus server_history_saved_;	/**< ¸ÃÏûÏ¢ÊÇ·ñ´æ´¢ÔÆ¶ËÀúÊ· */
-	BoolStatus roaming_;				/**< ¸ÃÏûÏ¢ÊÇ·ñÖ§³ÖÂşÓÎ */
-	BoolStatus self_sync_;				/**< ¸ÃÏûÏ¢ÊÇ·ñÖ§³Ö·¢ËÍÕß¶à¶ËÍ¬²½ */
-	BoolStatus persist_enable_;			/**< ÏûÏ¢ÊÇ·ñÒª´æÀëÏß */
-	BoolStatus be_muted_;				/**< ¸ÃÏûÏ¢ÊÇ·ñÔÚ½ÓÊÕ·½±»¾²Òô´¦Àí */
-	BoolStatus need_push_; 				/**< ÊÇ·ñĞèÒªÍÆËÍ */
-	BoolStatus push_need_badge_;		/**< ÊÇ·ñÒª×öÏûÏ¢¼ÆÊı */
-	BoolStatus push_need_nick_;			/**< ĞèÒªÍÆËÍêÇ³Æ */
+	BoolStatus resend_flag_;			/**< è¯¥æ¶ˆæ¯æ˜¯å¦ä¸ºé‡å‘çŠ¶æ€ */
+	BoolStatus server_history_saved_;	/**< è¯¥æ¶ˆæ¯æ˜¯å¦å­˜å‚¨äº‘ç«¯å†å² */
+	BoolStatus roaming_;				/**< è¯¥æ¶ˆæ¯æ˜¯å¦æ”¯æŒæ¼«æ¸¸ */
+	BoolStatus self_sync_;				/**< è¯¥æ¶ˆæ¯æ˜¯å¦æ”¯æŒå‘é€è€…å¤šç«¯åŒæ­¥ */
+	BoolStatus need_push_; 				/**< æ˜¯å¦éœ€è¦æ¨é€ */
+	BoolStatus push_need_badge_;		/**< æ˜¯å¦è¦åšæ¶ˆæ¯è®¡æ•° */
+	BoolStatus push_need_nick_;			/**< éœ€è¦æ¨é€æ˜µç§° */
+	Json::Value push_payload_;
+	std::string push_content_;
+	Json::Value server_ext_;
+	std::string local_ext_;
 
-	/** ¹¹Ôìº¯Êı */
+	/** æ„é€ å‡½æ•° */
 	MessageSetting() : server_history_saved_(BS_NOT_INIT)
 		, roaming_(BS_NOT_INIT)
 		, self_sync_(BS_NOT_INIT)
-		, persist_enable_(BS_NOT_INIT)
-		, be_muted_(BS_NOT_INIT)
 		, need_push_(BS_NOT_INIT)
 		, push_need_badge_(BS_NOT_INIT)
-		, push_need_nick_(BS_NOT_INIT) {}
+		, push_need_nick_(BS_NOT_INIT)
+		, resend_flag_(BS_NOT_INIT){}
 
 	/** @fn void ToJsonValue(Json::Value& message) const
-	  * @brief ×é×°Json Value×Ö·û´®
-	  * @param[out] message ÏûÏ¢Json
+	  * @brief ç»„è£…Json Valueå­—ç¬¦ä¸²
+	  * @param[out] message æ¶ˆæ¯Json
 	  * @return void
       */
 	void ToJsonValue(Json::Value& message) const
 	{
 		if (server_history_saved_ != BS_NOT_INIT)
-			message[kNIMMsgKeyHistorySave] = server_history_saved_== BS_TRUE;
+			message[kNIMMsgKeyHistorySave] = server_history_saved_;
 		if (roaming_ != BS_NOT_INIT)
-			message[kNIMMsgKeyMsgRoaming] = roaming_== BS_TRUE;
+			message[kNIMMsgKeyMsgRoaming] = roaming_;
 		if (self_sync_ != BS_NOT_INIT)
-			message[kNIMMsgKeyMsgSync] = self_sync_== BS_TRUE;
+			message[kNIMMsgKeyMsgSync] = self_sync_;
 		if (push_need_badge_ != BS_NOT_INIT)
-			message[kNIMMsgKeyNeedBadge] = push_need_badge_== BS_TRUE;
+			message[kNIMMsgKeyNeedBadge] = push_need_badge_;
 		if (need_push_ != BS_NOT_INIT)
-			message[kNIMMsgKeyPushEnable] = need_push_== BS_TRUE;
+			message[kNIMMsgKeyPushEnable] = need_push_;
 		if (push_need_nick_ != BS_NOT_INIT)
-			message[kNIMMsgKeyNeedPushNick] = push_need_nick_== BS_TRUE;
+			message[kNIMMsgKeyNeedPushNick] = push_need_nick_;
+		if (resend_flag_ != BS_NOT_INIT)
+			message[kNIMMsgKeyResendFlag] = resend_flag_;
+		if (!push_payload_.empty())
+			message[kNIMMsgKeyPushPayload] = GetJsonStringWithNoStyled(push_payload_);
+		if (!push_content_.empty())
+			message[kNIMMsgKeyPushContent] = push_content_;
+		if (!server_ext_.empty())
+			message[kNIMMsgKeyServerExt] = GetJsonStringWithNoStyled(server_ext_);
+		if (!local_ext_.empty())
+			message[kNIMMsgKeyLocalExt] = local_ext_;
 	}
 
 	/** @fn void ParseMessageSetting(const Json::Value& message)
-	  * @brief ´ÓJson Value½âÎö³öÏûÏ¢ÊôĞÔÉèÖÃ
-	  * @param[in] message ÏûÏ¢Json
+	  * @brief ä»Json Valueè§£æå‡ºæ¶ˆæ¯å±æ€§è®¾ç½®
+	  * @param[in] message æ¶ˆæ¯Json
 	  * @return void
       */
 	void ParseMessageSetting(const Json::Value& message)
@@ -88,46 +100,52 @@ struct MessageSetting
 			need_push_ = (BoolStatus)message[kNIMMsgKeyPushEnable].asInt() == 1 ? BS_TRUE : BS_FALSE;
 		if (message.isMember(kNIMMsgKeyNeedPushNick))
 			push_need_nick_ = (BoolStatus)message[kNIMMsgKeyNeedPushNick].asInt() == 1 ? BS_TRUE : BS_FALSE;
+		if (message.isMember(kNIMMsgKeyResendFlag))
+			resend_flag_ = (BoolStatus)message[kNIMMsgKeyResendFlag].asInt() == 1 ? BS_TRUE : BS_FALSE;
+
+		Json::Reader reader;
+		if (!reader.parse(message[kNIMMsgKeyServerExt].asString(), server_ext_) || !server_ext_.isObject())
+			//assert(0);
+		if (!reader.parse(message[kNIMMsgKeyPushPayload].asString(), push_payload_) || !push_payload_.isObject())
+			//assert(0);
+		local_ext_ = message[kNIMMsgKeyLocalExt].asString();
+		push_content_ = message[kNIMMsgKeyPushContent].asString();
 	}
 };
 
-/** @struct P2PºÍÈº×éÏûÏ¢ */
+/** @brief P2På’Œç¾¤ç»„æ¶ˆæ¯ */
 struct IMMessage
 {
 public:
-	NIMResCode	rescode_;						/**< ´íÎóÂë */
-	NIMMessageFeature	feature_;				/**< ÏûÏ¢ÊôĞÔ */
+	NIMResCode	rescode_;						/**< é”™è¯¯ç  */
+	NIMMessageFeature	feature_;				/**< æ¶ˆæ¯å±æ€§ */
 
 public:
-	NIMSessionType	session_type_;				/**< »á»°ÀàĞÍ */
-	std::string		receiver_accid_;			/**< ½ÓÊÕÕßID */
-	std::string		sender_accid_;				/**< ·¢ËÍÕßID */
-	__int64			timetag_;					/**< ÏûÏ¢Ê±¼ä´Á£¨ºÁÃë£© */
-	std::string		content_;					/**< ÏûÏ¢ÄÚÈİ */
-	NIMMessageType	type_;						/**< ÏûÏ¢ÀàĞÍ */
-	std::string		attach_;					/**< ÏûÏ¢¸½¼ş */
-	std::string		client_msg_id_;				/**< ÏûÏ¢ID£¨¿Í»§¶Ë£© */
-	bool			resend_flag_;				/**< ÖØ·¢±ê¼Ç */
-	Json::Value		push_payload_;				/**< µÚÈı·½×Ô¶¨ÒåµÄÍÆËÍÊôĞÔ£¬Êı¾İ¸ñÊ½ÏŞÖÆÎªJson String£¬³¤¶È2048 */
-	std::string		push_content_;				/**< ×Ô¶¨ÒåÍÆËÍÎÄ°¸£¬³¤¶ÈÏŞÖÆ200×Ö½Ú */
-	Json::Value		server_ext_;				/**< µÚÈı·½À©Õ¹×Ö¶Î, Êı¾İ¸ñÊ½ÏŞÖÆÎªJson String£¬³¤¶ÈÏŞÖÆ1024 */
-	std::string		local_ext_;					/**< ±¾µØÀ©Õ¹×Ö¶Î, ¸ñÊ½²»ÏŞ */
-	MessageSetting	msg_setting_;				/**< ÏûÏ¢ÊôĞÔÉèÖÃ */
+	NIMSessionType	session_type_;				/**< ä¼šè¯ç±»å‹ */
+	std::string		receiver_accid_;			/**< æ¥æ”¶è€…ID */
+	std::string		sender_accid_;				/**< å‘é€è€…ID */
+	__int64			timetag_;					/**< æ¶ˆæ¯æ—¶é—´æˆ³ï¼ˆæ¯«ç§’ï¼‰ */
+	std::string		content_;					/**< æ¶ˆæ¯å†…å®¹ */
+	NIMMessageType	type_;						/**< æ¶ˆæ¯ç±»å‹ */
+	std::string		attach_;					/**< æ¶ˆæ¯é™„ä»¶ */
+	std::string		client_msg_id_;				/**< æ¶ˆæ¯IDï¼ˆå®¢æˆ·ç«¯ï¼‰ */
+	bool			resend_flag_;				/**< é‡å‘æ ‡è®° */
+	MessageSetting	msg_setting_;				/**< æ¶ˆæ¯å±æ€§è®¾ç½® */
 
 public:
-	std::string	   local_res_path_;				/**< Ã½ÌåÎÄ¼ş±¾µØ¾ø¶ÔÂ·¾¶£¨¿Í»§¶Ë£© */
-	std::string	   local_talk_id_;				/**< »á»°ID£¨¿Í»§¶Ë£© */
-	std::string	   local_res_id_;				/**< Ã½ÌåÎÄ¼şID£¨¿Í»§¶Ë£© */
-	NIMMsgLogStatus	status_;					/**< ÏûÏ¢×´Ì¬£¨¿Í»§¶Ë£© */
-	NIMMsgLogSubStatus	sub_status_;			/**< ÏûÏ¢×Ó×´Ì¬£¨¿Í»§¶Ë£© */
+	std::string	   local_res_path_;				/**< åª’ä½“æ–‡ä»¶æœ¬åœ°ç»å¯¹è·¯å¾„ï¼ˆå®¢æˆ·ç«¯ï¼‰ */
+	std::string	   local_talk_id_;				/**< ä¼šè¯IDï¼ˆå®¢æˆ·ç«¯ï¼‰ */
+	std::string	   local_res_id_;				/**< åª’ä½“æ–‡ä»¶IDï¼ˆå®¢æˆ·ç«¯ï¼‰ */
+	NIMMsgLogStatus	status_;					/**< æ¶ˆæ¯çŠ¶æ€ï¼ˆå®¢æˆ·ç«¯ï¼‰ */
+	NIMMsgLogSubStatus	sub_status_;			/**< æ¶ˆæ¯å­çŠ¶æ€ï¼ˆå®¢æˆ·ç«¯ï¼‰ */
 
 public:
-	int			   readonly_sender_client_type_;	/**< ·¢ËÍÕß¿Í»§¶ËÀàĞÍ£¨Ö»¶Á£© */
-	std::string	   readonly_sender_device_id_;		/**< ·¢ËÍÕß¿Í»§¶ËÉè±¸ID£¨Ö»¶Á£© */
-	std::string	   readonly_sender_nickname_;		/**< ·¢ËÍÕßêÇ³Æ£¨Ö»¶Á£© */
-	__int64		   readonly_server_id_;				/**< ÏûÏ¢ID£¨·şÎñÆ÷£¬Ö»¶Á£© */
+	int			   readonly_sender_client_type_;	/**< å‘é€è€…å®¢æˆ·ç«¯ç±»å‹ï¼ˆåªè¯»ï¼‰ */
+	std::string	   readonly_sender_device_id_;		/**< å‘é€è€…å®¢æˆ·ç«¯è®¾å¤‡IDï¼ˆåªè¯»ï¼‰ */
+	std::string	   readonly_sender_nickname_;		/**< å‘é€è€…æ˜µç§°ï¼ˆåªè¯»ï¼‰ */
+	__int64		   readonly_server_id_;				/**< æ¶ˆæ¯IDï¼ˆæœåŠ¡å™¨ï¼Œåªè¯»ï¼‰ */
 
-	/** ¹¹Ôìº¯Êı */
+	/** æ„é€ å‡½æ•° */
 	IMMessage() : resend_flag_(false)
 				, readonly_sender_client_type_(0) 
 				, readonly_server_id_(0)
@@ -137,7 +155,7 @@ public:
 				, status_(nim::kNIMMsgLogStatusNone)
 				, sub_status_(nim::kNIMMsgLogSubStatusNone) {}
 
-	/** ¹¹Ôìº¯Êı */
+	/** æ„é€ å‡½æ•° */
 	IMMessage(const std::string &json_msg) : resend_flag_(false)
 		, readonly_sender_client_type_(0) 
 		, readonly_server_id_(0)
@@ -172,20 +190,13 @@ public:
 			status_ = (NIMMsgLogStatus)values[kNIMMsgKeyLocalLogStatus].asUInt();
 			sub_status_ = (NIMMsgLogSubStatus)values[kNIMMsgKeyLocalLogSubStatus].asUInt();
 
-			if (!reader.parse(values[kNIMMsgKeyLocalExt].asString(), server_ext_) || !server_ext_.isObject())
-				assert(0);
-			if (!reader.parse(values[kNIMMsgKeyPushPayload].asString(), push_payload_) || !push_payload_.isObject())
-				assert(0);
-			local_ext_ = values[kNIMMsgKeyLocalExt].asString();
-			push_content_ = values[kNIMMsgKeyPushContent].asString();
-
 			msg_setting_.ParseMessageSetting(values);
 		}
 	}
 
 	/** @fn std::string ToJsonString() const
-	  * @brief ×é×°Json Value×Ö·û´®
-	  * @return string Json Value×Ö·û´® 
+	  * @brief ç»„è£…Json Valueå­—ç¬¦ä¸²
+	  * @return string Json Valueå­—ç¬¦ä¸² 
       */
 	std::string		ToJsonString(bool use_to_send) const
 	{
@@ -204,12 +215,6 @@ public:
 		values[kNIMMsgKeyLocalResId] = local_res_id_;
 		values[kNIMMsgKeyLocalLogStatus] = status_;
 		values[kNIMMsgKeyLocalLogSubStatus] = sub_status_;
-		values[kNIMMsgKeyLocalExt] = local_ext_;
-		if (!server_ext_.empty())
-			values[kNIMMsgKeyServerExt] = server_ext_.toStyledString();
-		values[kNIMMsgKeyPushContent] = push_content_;
-		if (!push_payload_.empty())
-			values[kNIMMsgKeyPushPayload] = push_payload_.toStyledString();
 
 		msg_setting_.ToJsonValue(values);
 
@@ -220,30 +225,30 @@ public:
 			values[kNIMMsgKeyFromNick] = readonly_sender_nickname_;
 			values[kNIMMsgKeyServerMsgid] = readonly_server_id_;
 		}
-		return values.toStyledString();
+		return GetJsonStringWithNoStyled(values);
 	}
 };
 
-/** @struct ÎÄ¼şÏûÏ¢¸½¼ş */
+/** @brief æ–‡ä»¶æ¶ˆæ¯é™„ä»¶ */
 struct IMFile
 {
-	std::string	md5_;				/**< ÎÄ¼şÄÚÈİMD5 */
-	__int64		size_;				/**< ÎÄ¼ş´óĞ¡ */
-	std::string url_;				/**< ÉÏ´«ÔÆ¶ËºóµÃµ½µÄÎÄ¼şÏÂÔØµØÖ· */
-	std::string display_name_;		/**< ÓÃÓÚÏÔÊ¾µÄÎÄ¼şÃû³Æ */
-	std::string file_extension_;	/**< ÎÄ¼şÀ©Õ¹Ãû */
+	std::string	md5_;				/**< æ–‡ä»¶å†…å®¹MD5 */
+	__int64		size_;				/**< æ–‡ä»¶å¤§å° */
+	std::string url_;				/**< ä¸Šä¼ äº‘ç«¯åå¾—åˆ°çš„æ–‡ä»¶ä¸‹è½½åœ°å€ */
+	std::string display_name_;		/**< ç”¨äºæ˜¾ç¤ºçš„æ–‡ä»¶åç§° */
+	std::string file_extension_;	/**< æ–‡ä»¶æ‰©å±•å */
 
-	/** ¹¹Ôìº¯Êı */
+	/** æ„é€ å‡½æ•° */
 	IMFile() : size_(0) {}
 
 	/** @fn std::string ToJsonString(Json::Value &attach) const
-	  * @brief ×é×°Json Value×Ö·û´®
-	  * @param[in] attach Json Value×Ö·û´®
-	  * @return string Json Value×Ö·û´® 
+	  * @brief ç»„è£…Json Valueå­—ç¬¦ä¸²
+	  * @param[in] attach Json Valueå­—ç¬¦ä¸²
+	  * @return string Json Valueå­—ç¬¦ä¸² 
       */
 	std::string ToJsonString(Json::Value &attach) const
 	{
-		//ÒÔÏÂ¿Í»§¶Ë¿ÉÒÔÑ¡Ìî
+		//ä»¥ä¸‹å®¢æˆ·ç«¯å¯ä»¥é€‰å¡«
 		if (!display_name_.empty())
 			attach[kNIMFileMsgKeyDisplayName] = display_name_;
 		if (!file_extension_.empty())
@@ -252,13 +257,15 @@ struct IMFile
 			attach[kNIMFileMsgKeyMd5] = md5_;
 		if (size_ > 0)
 			attach[kNIMFileMsgKeySize] = size_;
+		if (!url_.empty())
+			attach[kNIMMsgAttachKeyUrl] = url_;
 
-		return attach.toStyledString();
+		return GetJsonStringWithNoStyled(attach);
 	}
 
 	/** @fn std::string ToJsonString() const
-	  * @brief ×é×°Json Value×Ö·û´®
-	  * @return string Json Value×Ö·û´® 
+	  * @brief ç»„è£…Json Valueå­—ç¬¦ä¸²
+	  * @return string Json Valueå­—ç¬¦ä¸² 
       */
 	std::string ToJsonString() const
 	{
@@ -269,18 +276,18 @@ struct IMFile
 	}
 };
 
-/** @struct Í¼Æ¬ÏûÏ¢¸½¼ş */
+/** @brief å›¾ç‰‡æ¶ˆæ¯é™„ä»¶ */
 struct IMImage : IMFile
 {
-	int			width_;			/**< Í¼Æ¬¿í¶È */
-	int			height_;		/**< Í¼Æ¬¸ß¶È */
+	int			width_;			/**< å›¾ç‰‡å®½åº¦ */
+	int			height_;		/**< å›¾ç‰‡é«˜åº¦ */
 
-	/** ¹¹Ôìº¯Êı */
+	/** æ„é€ å‡½æ•° */
 	IMImage() : width_(0), height_(0) {}
 
 	/** @fn std::string ToJsonString() const
-	  * @brief ×é×°Json Value×Ö·û´®
-	  * @return string Json Value×Ö·û´® 
+	  * @brief ç»„è£…Json Valueå­—ç¬¦ä¸²
+	  * @return string Json Valueå­—ç¬¦ä¸² 
       */
 	std::string ToJsonString() const
 	{
@@ -293,19 +300,19 @@ struct IMImage : IMFile
 	}
 };
 
-/** @struct Î»ÖÃÏûÏ¢¸½¼ş */
+/** @brief ä½ç½®æ¶ˆæ¯é™„ä»¶ */
 struct IMLocation
 {
-	std::string	description_;		/**< Î»ÖÃÃèÊöÄÚÈİ */
-	double		latitude_;			/**< Î»ÖÃÎ³¶È */
-	double		longitude_;			/**< Î»ÖÃ¾­¶È */
+	std::string	description_;		/**< ä½ç½®æè¿°å†…å®¹ */
+	double		latitude_;			/**< ä½ç½®çº¬åº¦ */
+	double		longitude_;			/**< ä½ç½®ç»åº¦ */
 
-	/** ¹¹Ôìº¯Êı */
+	/** æ„é€ å‡½æ•° */
 	IMLocation() : latitude_(0), longitude_(0) {}
 
 	/** @fn std::string ToJsonString() const
-	  * @brief ×é×°Json Value×Ö·û´®
-	  * @return string Json Value×Ö·û´® 
+	  * @brief ç»„è£…Json Valueå­—ç¬¦ä¸²
+	  * @return string Json Valueå­—ç¬¦ä¸² 
       */
 	std::string ToJsonString() const
 	{
@@ -314,21 +321,21 @@ struct IMLocation
 		attach[kNIMLocationMsgKeyLatitude] = latitude_;
 		attach[kNIMLocationMsgKeyLongitude] = longitude_;
 
-		return attach.toStyledString();
+		return GetJsonStringWithNoStyled(attach);
 	}
 };
 
-/** @struct ÓïÒôÏûÏ¢¸½¼ş */
+/** @brief è¯­éŸ³æ¶ˆæ¯é™„ä»¶ */
 struct IMAudio : IMFile
 {
-	int			duration_;			/**< ÓïÒôÊ±³¤ */
+	int			duration_;			/**< è¯­éŸ³æ—¶é•¿ */
 
-	/** ¹¹Ôìº¯Êı */
+	/** æ„é€ å‡½æ•° */
 	IMAudio() : duration_(0) {}
 
 	/** @fn std::string ToJsonString() const
-	  * @brief ×é×°Json Value×Ö·û´®
-	  * @return string Json Value×Ö·û´® 
+	  * @brief ç»„è£…Json Valueå­—ç¬¦ä¸²
+	  * @return string Json Valueå­—ç¬¦ä¸² 
       */
 	std::string ToJsonString() const
 	{
@@ -339,19 +346,19 @@ struct IMAudio : IMFile
 	}
 };
 
-/** @struct Ğ¡ÊÓÆµÏûÏ¢¸½¼ş */
+/** @brief å°è§†é¢‘æ¶ˆæ¯é™„ä»¶ */
 struct IMVideo : IMFile
 {
-	int			duration_;			/**< ÊÓÆµÊ±³¤ */
-	int			width_;				/**< ÊÓÆµ»­Ãæ¿í¶È */
-	int			height_;			/**< ÊÓÆµ»­Ãæ¸ß¶È */
+	int			duration_;			/**< è§†é¢‘æ—¶é•¿ */
+	int			width_;				/**< è§†é¢‘ç”»é¢å®½åº¦ */
+	int			height_;			/**< è§†é¢‘ç”»é¢é«˜åº¦ */
 
-	/** ¹¹Ôìº¯Êı */
+	/** æ„é€ å‡½æ•° */
 	IMVideo() : duration_(0), width_(0), height_(0) {}
 
 	/** @fn std::string ToJsonString() const
-	  * @brief ×é×°Json Value×Ö·û´®
-	  * @return string Json Value×Ö·û´® 
+	  * @brief ç»„è£…Json Valueå­—ç¬¦ä¸²
+	  * @return string Json Valueå­—ç¬¦ä¸² 
       */
 	std::string ToJsonString() const
 	{
@@ -365,25 +372,33 @@ struct IMVideo : IMFile
 };
 
 /** @fn bool ParseMessage(const std::string& msg_json, IMMessage& message)
-  * @brief ½âÎöÏûÏ¢
-  * @param[in] msg_json ÏûÏ¢(Json ValueÊı¾İ×Ö·û´®)
-  * @param[out] message ÏûÏ¢
-  * @return bool ½âÎö³É¹¦»òÊ§°Ü 
+  * @brief è§£ææ¶ˆæ¯
+  * @param[in] msg_json æ¶ˆæ¯(Json Valueæ•°æ®å­—ç¬¦ä¸²)
+  * @param[out] message æ¶ˆæ¯
+  * @return bool è§£ææˆåŠŸæˆ–å¤±è´¥ 
   */
 bool ParseMessage(const std::string& msg_json, IMMessage& message);
 
 /** @fn bool ParseReceiveMessage(const std::string& msg_json, IMMessage& message)
-  * @brief ½âÎöÏûÏ¢
-  * @param[in] msg_json ÏûÏ¢(Json ValueÊı¾İ×Ö·û´®)
-  * @param[out] message ÏûÏ¢
-  * @return bool ½âÎö³É¹¦»òÊ§°Ü 
+  * @brief è§£ææ¶ˆæ¯
+  * @param[in] msg_json æ¶ˆæ¯(Json Valueæ•°æ®å­—ç¬¦ä¸²)
+  * @param[out] message æ¶ˆæ¯
+  * @return bool è§£ææˆåŠŸæˆ–å¤±è´¥ 
   */
 bool ParseReceiveMessage(const std::string& msg_json, IMMessage& message);
 
+/** @fn void ParseReceiveMessage(const Json::Value& msg_json_value, IMMessage& message)
+  * @brief è§£ææ¶ˆæ¯
+  * @param[in] msg_json_value æ¶ˆæ¯
+  * @param[out] message æ¶ˆæ¯
+  * @return bool è§£ææˆåŠŸæˆ–å¤±è´¥ 
+  */
+void ParseReceiveMessage(const Json::Value& msg_json_value, IMMessage& message);
+
 /** @fn void ParseReceiveMessage(const Json::Value& msg_json, IMMessage& message)
-  * @brief ½âÎöÏûÏ¢
-  * @param[in] msg_json ÏûÏ¢(Json ValueÊı¾İ)
-  * @param[out] message ÏûÏ¢
+  * @brief è§£ææ¶ˆæ¯
+  * @param[in] msg_json æ¶ˆæ¯(Json Valueæ•°æ®)
+  * @param[out] message æ¶ˆæ¯
   * @return void 
   */
 void ParseMessage(const Json::Value& msg_json, IMMessage& message);

@@ -1,3 +1,10 @@
+﻿/** @file nim_file_helper.cpp
+  * @brief SDK文件操作辅助方法
+  * @copyright (c) 2015-2016, NetEase Inc. All rights reserved
+  * @author Oleg
+  * @date 2015/09/08
+  */
+
 #include "nim_file_helper.h"
 
 namespace nim
@@ -43,7 +50,7 @@ bool IsFilePathSeparator(const wchar_t separator)
 	if (separator == kEndChar)
 		return false;
 
-	size_t len = sizeof(kFilePathSeparators)/sizeof(char);
+	size_t len = sizeof(kFilePathSeparators) / sizeof(wchar_t);
 	for (size_t i = 0; i < len; i++)
 	{
 		if (separator == kFilePathSeparators[i])

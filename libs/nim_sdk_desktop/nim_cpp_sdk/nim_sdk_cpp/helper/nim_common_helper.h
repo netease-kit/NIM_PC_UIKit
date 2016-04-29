@@ -1,6 +1,6 @@
-/** @file nim_common_helper.h
-  * @brief SDK¸¨Öú·½·¨
-  * @copyright (c) 2015, NetEase Inc. All rights reserved
+ï»¿/** @file nim_common_helper.h
+  * @brief SDKè¾…åŠ©æ–¹æ³•
+  * @copyright (c) 2015-2016, NetEase Inc. All rights reserved
   * @author Oleg
   * @date 2015/09/08
   */
@@ -15,40 +15,53 @@
 
 /**
 * @namespace nim
-* @brief namespace nim
+* @brief IM
 */
 namespace nim
 {
-/** @enum ×Ô¶¨ÒåµÄ²¼¶ûÖµÀàĞÍÊı¾İµÄÌæ´úÊı¾İÀàĞÍ */
+/** @enum è‡ªå®šä¹‰çš„å¸ƒå°”å€¼ç±»å‹æ•°æ®çš„æ›¿ä»£æ•°æ®ç±»å‹ */
 enum BoolStatus
 {
-	BS_NOT_INIT = -1,	/**< Î´³õÊ¼»¯ */
+	BS_NOT_INIT = -1,	/**< æœªåˆå§‹åŒ– */
 	BS_FALSE	= 0,	/**< false */
 	BS_TRUE		= 1		/**< true */
 };
 
 /** @fn bool StrListToJsonString(const std::list<std::string>& list, std::string& out)
-  * @brief ½«Ò»¸östringÀàĞÍµÄlist×é×°³ÉÒ»¸öJson Array
-  * @param[in] list stringÀàĞÍµÄlist
+  * @brief å°†ä¸€ä¸ªstringç±»å‹çš„listç»„è£…æˆä¸€ä¸ªJson Array
+  * @param[in] list stringç±»å‹çš„list
   * @param[out] out Json Array
-  * @return bool ³É¹¦ »òÊ§°Ü
+  * @return bool æˆåŠŸ æˆ–å¤±è´¥
   */
 bool StrListToJsonString(const std::list<std::string>& list, std::string& out);
 
 /** @fn bool JsonStrArrayToList(const Json::Value& array_str, std::list<std::string>& out)
-  * @brief ½«Ò»¸östringÀàĞÍµÄJson Array½âÎö³ÉÒ»¸östringÀàĞÍµÄlist
-  * @param[in] array_str stringÀàĞÍµÄJson Array
-  * @param[out] out stringÀàĞÍµÄlist
-  * @return bool ½âÎö³É¹¦ »òÊ§°Ü
+  * @brief å°†ä¸€ä¸ªstringç±»å‹çš„Json Arrayè§£ææˆä¸€ä¸ªstringç±»å‹çš„list
+  * @param[in] array_str stringç±»å‹çš„Json Array
+  * @param[out] out stringç±»å‹çš„list
+  * @return bool è§£ææˆåŠŸ æˆ–å¤±è´¥
   */
 bool JsonStrArrayToList(const Json::Value& array_str, std::list<std::string>& out);
 
 /** @fn std::string PCharToString(const char* str)
-  * @brief ×Ö·ûÖ¸Õë×ªÎª×Ö·û´®£¬½Ó¿ÚÄÚ²¿»á¶Ônullpty½øĞĞÅĞ¶Ï
-  * @param[in] str ×Ö·ûÖ¸Õë
-  * @return string ×Ö·û´®
+  * @brief å­—ç¬¦æŒ‡é’ˆè½¬ä¸ºå­—ç¬¦ä¸²ï¼Œæ¥å£å†…éƒ¨ä¼šå¯¹nullptyè¿›è¡Œåˆ¤æ–­
+  * @param[in] str å­—ç¬¦æŒ‡é’ˆ
+  * @return string å­—ç¬¦ä¸²
   */
 std::string PCharToString(const char* str);
+
+/** @fn std::string GetJsonStringWithNoStyled(const Json::Value& values);
+  * @brief è·å¾—éæ ¼å¼åŒ–çš„Json string,ä¼ å…¥SDKçš„json stringæ ¼å¼è¦æ±‚ä¸ºéæ ¼å¼åŒ–çš„ï¼Œå¦‚æœæ˜¯æ ¼å¼åŒ–çš„json stringå¯èƒ½ä¼šå½±å“åŠŸèƒ½
+  * @param[in] values Json Value
+  * @return std::string éæ ¼å¼åŒ–çš„json string
+  */
+std::string GetJsonStringWithNoStyled(const Json::Value& values);
+
+/** @fn Json::Value GetJsonValueFromJsonString(const std::string& json_string);
+  * @brief è§£æJsonString
+  * @return JsonValue
+  */
+Json::Value GetJsonValueFromJsonString(const std::string& json_string);
 
 }
 

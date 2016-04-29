@@ -1,3 +1,10 @@
+﻿/** @file nim_sdk_helper.cpp
+  * @brief SDK库辅助方法
+  * @copyright (c) 2015-2016, NetEase Inc. All rights reserved
+  * @author towik, Oleg
+  * @date 2015/09/08
+  */
+
 #include "nim_sdk_helper.h"
 #include "nim_file_helper.h"
 
@@ -12,11 +19,11 @@ std::map<std::string, void*> SDKFunction::function_map;
 bool SDKFunction::LoadSdkDll()
 {
 	std::wstring dir = GetCurrentModuleDirectory();
-#ifdef _DEBUG
-	dir.append(kSdkNimDll_d);
-#else
+//#ifdef _DEBUG
+//	dir.append(kSdkNimDll_d);
+//#else
 	dir.append(kSdkNimDll);
-#endif
+//#endif
 	instance_nim_ = ::LoadLibraryW(dir.c_str());
 	if (instance_nim_ == NULL)
 	{

@@ -1,6 +1,6 @@
-/** @file nim_talk_helper.cpp
-  * @brief Talk ∏®÷˙∑Ω∑®∫Õ ˝æ›Ω·ππ∂®“Â
-  * @copyright (c) 2015, NetEase Inc. All rights reserved
+Ôªø/** @file nim_talk_helper.cpp
+  * @brief Talk ËæÖÂä©ÊñπÊ≥ïÂíåÊï∞ÊçÆÁªìÊûÑÂÆö‰πâ
+  * @copyright (c) 2015-2016, NetEase Inc. All rights reserved
   * @author Oleg
   * @date 2015/10/16
   */
@@ -28,14 +28,19 @@ bool ParseReceiveMessage(const std::string& msg_json, IMMessage& message)
 	Json::Reader reader;
 	if (reader.parse(msg_json, values) && values.isObject())
 	{
-		message.rescode_ = (NIMResCode)values[kNIMMsgKeyLocalRescode].asUInt();
-		message.feature_ = (NIMMessageFeature)values[kNIMMsgKeyLocalMsgFeature].asUInt();
-
-		ParseMessage(values[kNIMMsgKeyLocalReceiveMsgContent], message);
+		ParseReceiveMessage(values, message);
 		return true;
 	}
 	
 	return false;
+}
+
+void ParseReceiveMessage(const Json::Value& msg_json_value, IMMessage& message)
+{
+	message.rescode_ = (NIMResCode)msg_json_value[kNIMMsgKeyLocalRescode].asUInt();
+	message.feature_ = (NIMMessageFeature)msg_json_value[kNIMMsgKeyLocalMsgFeature].asUInt();
+
+	ParseMessage(msg_json_value[kNIMMsgKeyLocalReceiveMsgContent], message);
 }
 
 void ParseMessage(const Json::Value& msg_json, IMMessage& message)
@@ -60,14 +65,6 @@ void ParseMessage(const Json::Value& msg_json, IMMessage& message)
 	message.local_res_id_ = msg_json[kNIMMsgKeyLocalResId].asString();
 	message.status_ = (NIMMsgLogStatus)msg_json[kNIMMsgKeyLocalLogStatus].asUInt();
 	message.sub_status_ = (NIMMsgLogSubStatus)msg_json[kNIMMsgKeyLocalLogSubStatus].asUInt();
-
-	std::string local_ext = msg_json[kNIMMsgKeyLocalExt].asString();
-	Json::Reader reader;
-	reader.parse(msg_json[kNIMMsgKeyServerExt].asString(), message.server_ext_);
-	reader.parse(msg_json[kNIMMsgKeyPushPayload].asString(), message.push_payload_);
-
-	message.local_ext_ = msg_json[kNIMMsgKeyLocalExt].asString();
-	message.push_content_ = msg_json[kNIMMsgKeyPushContent].asString();
 
 	message.msg_setting_.ParseMessageSetting(msg_json);
 }

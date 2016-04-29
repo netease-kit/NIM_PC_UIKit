@@ -1,3 +1,10 @@
+﻿/** @file nim_friend_helper.cpp
+  * @brief SDK好友辅助方法
+  * @copyright (c) 2015-2016, NetEase Inc. All rights reserved
+  * @author Oleg
+  * @date 2015/10/20
+  */
+
 #include "nim_friend_helper.h"
 
 namespace nim

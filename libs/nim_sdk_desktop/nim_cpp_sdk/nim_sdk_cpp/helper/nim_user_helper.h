@@ -1,6 +1,6 @@
-/** @file nim_user_helper.h
-  * @brief SDKÓÃ»§ĞÅÏ¢¸¨Öú·½·¨
-  * @copyright (c) 2015, NetEase Inc. All rights reserved
+ï»¿/** @file nim_user_helper.h
+  * @brief SDKç”¨æˆ·ä¿¡æ¯è¾…åŠ©æ–¹æ³•
+  * @copyright (c) 2015-2016, NetEase Inc. All rights reserved
   * @author Oleg
   * @date 2015/10/20
   */
@@ -12,187 +12,188 @@
 #include <list>
 #include <assert.h>
 #include "json.h"
+#include "nim_common_helper.h"
 
 /**
 * @namespace nim
-* @brief namespace nim
+* @brief IM
 */
 namespace nim
 {
 
 #include "nim_user_def.h"
 
-/** @enum ÔÆĞÅÓÃ»§ÃûÆ¬Êı¾İ±ê¼ÇKey,ÓÃÒÔ±ê¼Ç¶ÔÓ¦Êı¾İµÄÓĞĞ§ĞÔ */
+/** @enum äº‘ä¿¡ç”¨æˆ·åç‰‡æ•°æ®æ ‡è®°Key,ç”¨ä»¥æ ‡è®°å¯¹åº”æ•°æ®çš„æœ‰æ•ˆæ€§ */
 enum UserNameCardValueKey
 {
-	kUserNameCardKeyNone		= 0,			/**< ÎŞÄÚÈİ */
-	kUserNameCardKeyName		= 1,			/**< êÇ³Æ */
-	kUserNameCardKeyIconUrl	= 1 << 1,			/**< Í·ÏñÏÂÔØµØÖ· */
-	kUserNameCardKeyGender		= 1 << 2,		/**< ĞÔ±ğ */
-	kUserNameCardKeyBirthday	= 1 << 3,		/**< ÉúÈÕ */
-	kUserNameCardKeyMobile		= 1 << 4,		/**< µç»° */
-	kUserNameCardKeyEmail		= 1 << 5,		/**< µç×ÓÓÊ¼ş */
-	kUserNameCardKeySignature	= 1 << 6,		/**< Ç©Ãû */
-	kUserNameCardKeyEx			= 1 << 7,		/**< À©Õ¹ */
-	kUserNameCardKeyAll		= (1 << 8) - 1		/**< È«²¿ÄÚÈİ¶¼ÓĞ */
+	kUserNameCardKeyNone		= 0,			/**< æ— å†…å®¹ */
+	kUserNameCardKeyName		= 1,			/**< æ˜µç§° */
+	kUserNameCardKeyIconUrl	= 1 << 1,			/**< å¤´åƒä¸‹è½½åœ°å€ */
+	kUserNameCardKeyGender		= 1 << 2,		/**< æ€§åˆ« */
+	kUserNameCardKeyBirthday	= 1 << 3,		/**< ç”Ÿæ—¥ */
+	kUserNameCardKeyMobile		= 1 << 4,		/**< ç”µè¯ */
+	kUserNameCardKeyEmail		= 1 << 5,		/**< ç”µå­é‚®ä»¶ */
+	kUserNameCardKeySignature	= 1 << 6,		/**< ç­¾å */
+	kUserNameCardKeyEx			= 1 << 7,		/**< æ‰©å±• */
+	kUserNameCardKeyAll		= (1 << 8) - 1		/**< å…¨éƒ¨å†…å®¹éƒ½æœ‰ */
 };
 
-/** @struct ÔÆĞÅÓÃ»§ÃûÆ¬ */
+/** @brief äº‘ä¿¡ç”¨æˆ·åç‰‡ */
 struct UserNameCard
 {
-	/** ¹¹Ôìº¯Êı£¬ÍÆ¼öÊ¹ÓÃ */
+	/** æ„é€ å‡½æ•°ï¼Œæ¨èä½¿ç”¨ */
 	UserNameCard(const std::string& accid) : value_available_flag_(0), create_timetag_(0), update_timetag_(0), gender_(0)
 	{
 		accid_ = accid;
 	}
 
-	/** ¹¹Ôìº¯Êı */
+	/** æ„é€ å‡½æ•° */
 	UserNameCard() : value_available_flag_(0), create_timetag_(0), update_timetag_(0), gender_(0) {}
 
 public:
-	/** ÉèÖÃÓÃ»§ID */
+	/** è®¾ç½®ç”¨æˆ·ID */
 	void SetAccId(const std::string& id)
 	{
 		accid_ = id;
 	}
 
-	/** »ñµÃÓÃ»§ID */
+	/** è·å¾—ç”¨æˆ·ID */
 	std::string GetAccId() const
 	{
 		return accid_;
 	}
 
-	/** ÉèÖÃÓÃ»§Ãû×Ö */
+	/** è®¾ç½®ç”¨æˆ·åå­— */
 	void SetName(const std::string& name)
 	{
 		nickname_ = name;
 		value_available_flag_ |= kUserNameCardKeyName;
 	}
 
-	/** »ñµÃÓÃ»§Ãû×Ö */
+	/** è·å¾—ç”¨æˆ·åå­— */
 	std::string GetName() const
 	{
 		return nickname_;
 	}
 
-	/** ÉèÖÃÓÃ»§Í·ÏñÏÂÔØµØÖ· */
+	/** è®¾ç½®ç”¨æˆ·å¤´åƒä¸‹è½½åœ°å€ */
 	void SetIconUrl(const std::string& url)
 	{
 		icon_url_ = url;
 		value_available_flag_ |= kUserNameCardKeyIconUrl;
 	}
 
-	/** »ñµÃÓÃ»§Í·ÏñÏÂÔØµØÖ· */
+	/** è·å¾—ç”¨æˆ·å¤´åƒä¸‹è½½åœ°å€ */
 	std::string GetIconUrl() const
 	{
 		return icon_url_;
 	}
 
-	/** ÉèÖÃÓÃ»§Ç©Ãû */
+	/** è®¾ç½®ç”¨æˆ·ç­¾å */
 	void SetSignature(const std::string& sign)
 	{
 		signature_ = sign;
 		value_available_flag_ |= kUserNameCardKeySignature;
 	}
 
-	/** »ñµÃÓÃ»§Ç©Ãû */
+	/** è·å¾—ç”¨æˆ·ç­¾å */
 	std::string GetSignature() const
 	{
 		return signature_;
 	}
 
-	/** ÉèÖÃÓÃ»§ĞÔ±ğ */
+	/** è®¾ç½®ç”¨æˆ·æ€§åˆ« */
 	void SetGender(int gender)
 	{
 		gender_ = gender;
 		value_available_flag_ |= kUserNameCardKeyGender;
 	}
 
-	/** »ñµÃÓÃ»§ĞÔ±ğ */
+	/** è·å¾—ç”¨æˆ·æ€§åˆ« */
 	int GetGender() const
 	{
 		return gender_;
 	}
 
-	/** ÉèÖÃÓÃ»§ÓÊÏä */
+	/** è®¾ç½®ç”¨æˆ·é‚®ç®± */
 	void SetEmail(const std::string& email)
 	{
 		email_ = email;
 		value_available_flag_ |= kUserNameCardKeyEmail;
 	}
 
-	/** »ñµÃÓÃ»§ÓÊÏä */
+	/** è·å¾—ç”¨æˆ·é‚®ç®± */
 	std::string GetEmail() const
 	{
 		return email_;
 	}
 
-	/** ÉèÖÃÓÃ»§ÉúÈÕ */
+	/** è®¾ç½®ç”¨æˆ·ç”Ÿæ—¥ */
 	void SetBirth(const std::string& birth)
 	{
 		birth_ = birth;
 		value_available_flag_ |= kUserNameCardKeyBirthday;
 	}
 
-	/** »ñµÃÓÃ»§ÉúÈÕ */
+	/** è·å¾—ç”¨æˆ·ç”Ÿæ—¥ */
 	std::string GetBirth() const
 	{
 		return birth_;
 	}
 
-	/** ÉèÖÃÓÃ»§µç»° */
+	/** è®¾ç½®ç”¨æˆ·ç”µè¯ */
 	void SetMobile(const std::string& mobile)
 	{
 		mobile_ = mobile;
 		value_available_flag_ |= kUserNameCardKeyMobile;
 	}
 
-	/** »ñµÃÓÃ»§µç»° */
+	/** è·å¾—ç”¨æˆ·ç”µè¯ */
 	std::string GetMobile() const
 	{
 		return mobile_;
 	}
 
-	/** ÉèÖÃÓÃ»§À©Õ¹Êı¾İ */
-	void SetExpand(const std::string& expand)
+	/** è®¾ç½®ç”¨æˆ·æ‰©å±•æ•°æ® */
+	void SetExpand(const Json::Value& expand)
 	{
 		expand_ = expand;
 		value_available_flag_ |= kUserNameCardKeyEx;
 	}
 
-	/** »ñµÃÓÃ»§À©Õ¹Êı¾İ */
-	std::string GetExpand() const
+	/** è·å¾—ç”¨æˆ·æ‰©å±•æ•°æ® */
+	Json::Value GetExpand() const
 	{
 		return expand_;
 	}
 
-	/** ÉèÖÃÓÃ»§µµ°¸´´½¨Ê±¼ä´Á(ºÁÃë) */
+	/** è®¾ç½®ç”¨æˆ·æ¡£æ¡ˆåˆ›å»ºæ—¶é—´æˆ³(æ¯«ç§’) */
 	void SetCreateTimetag(__int64 timetag)
 	{
 		create_timetag_ = timetag;
 	}
 
-	/** »ñµÃÓÃ»§µµ°¸´´½¨Ê±¼ä´Á(ºÁÃë) */
+	/** è·å¾—ç”¨æˆ·æ¡£æ¡ˆåˆ›å»ºæ—¶é—´æˆ³(æ¯«ç§’) */
 	__int64 GetCreateTimetag() const
 	{
 		return create_timetag_;
 	}
 
-	/** ÉèÖÃÓÃ»§µµ°¸¸üĞÂÊ±¼ä´Á(ºÁÃë) */
+	/** è®¾ç½®ç”¨æˆ·æ¡£æ¡ˆæ›´æ–°æ—¶é—´æˆ³(æ¯«ç§’) */
 	void SetUpdateTimetag(__int64 timetag)
 	{
 		update_timetag_ = timetag;
 	}
 
-	/** »ñµÃÓÃ»§µµ°¸¸üĞÂÊ±¼ä´Á(ºÁÃë) */
+	/** è·å¾—ç”¨æˆ·æ¡£æ¡ˆæ›´æ–°æ—¶é—´æˆ³(æ¯«ç§’) */
 	__int64 GetUpdateTimetag() const
 	{
 		return update_timetag_;
 	}
 
 	/** @fn void Update(const UserNameCard& namecard)
-	  * @brief ¸üĞÂÓÃ»§ÃûÆ¬
-	  * @param[in] namecard ĞÂµÄÓÃ»§ÃûÆ¬
+	  * @brief æ›´æ–°ç”¨æˆ·åç‰‡
+	  * @param[in] namecard æ–°çš„ç”¨æˆ·åç‰‡
 	  * @return void 
 	  */
 	void Update(const UserNameCard& namecard)
@@ -224,9 +225,9 @@ public:
 	}
 
 	/** @fn bool ExistValue(UserNameCardValueKey value_key) const
-	  * @brief ÓÃ»§ÃûÆ¬Êı¾İ±ê¼ÇKey¶ÔÓ¦µÄÊı¾İÊÇ·ñÓĞĞ§£¨´æÔÚ£¬·Ç³õÊ¼Öµ×´Ì¬£©
-	  * @param[in] value_key ÓÃ»§ÃûÆ¬Êı¾İ±ê¼ÇKey
-	  * @return bool ÓĞĞ§ĞÔ 
+	  * @brief ç”¨æˆ·åç‰‡æ•°æ®æ ‡è®°Keyå¯¹åº”çš„æ•°æ®æ˜¯å¦æœ‰æ•ˆï¼ˆå­˜åœ¨ï¼Œéåˆå§‹å€¼çŠ¶æ€ï¼‰
+	  * @param[in] value_key ç”¨æˆ·åç‰‡æ•°æ®æ ‡è®°Key
+	  * @return bool æœ‰æ•ˆæ€§ 
 	  */
 	bool ExistValue(UserNameCardValueKey value_key) const
 	{
@@ -234,8 +235,8 @@ public:
 	}
 
 	/** @fn std::string ToJsonString() const
-	  * @brief ×é×°Json Value×Ö·û´®
-	  * @return string Json Value×Ö·û´® 
+	  * @brief ç»„è£…Json Valueå­—ç¬¦ä¸²
+	  * @return string Json Valueå­—ç¬¦ä¸² 
 	  */
 	std::string ToJsonString() const
 	{
@@ -256,94 +257,94 @@ public:
 		if (ExistValue(kUserNameCardKeyMobile))
 			values[kNIMNameCardKeyMobile] = GetMobile();
 		if (ExistValue(kUserNameCardKeyEx))
-			values[kNIMNameCardKeyEx] = GetExpand();
+			values[kNIMNameCardKeyEx] = GetJsonStringWithNoStyled(GetExpand());
 
-		return values.toStyledString();
+		return GetJsonStringWithNoStyled(values);
 	}
 
 private:
-	std::string		accid_;				/**< ÓÃ»§ID */
-	std::string		nickname_;			/**< ÓÃ»§êÇ³Æ */
-	std::string		icon_url_;			/**< ÓÃ»§Í·ÏñÏÂÔØµØÖ· */
-	std::string		signature_;			/**< ÓÃ»§Ç©Ãû */
-	int				gender_;			/**< ÓÃ»§ĞÔ±ğ */
-	std::string		email_;				/**< ÓÃ»§ÓÊÏä */
-	std::string		birth_;				/**< ÓÃ»§ÉúÈÕ */
-	std::string		mobile_;			/**< ÓÃ»§µç»° */
-	std::string		expand_;			/**< ÓÃ»§À©Õ¹Êı¾İ */
-	__int64			create_timetag_;	/**< ÓÃ»§µµ°¸´´½¨Ê±¼ä´Á(ºÁÃë) */
-	__int64			update_timetag_;	/**< ÓÃ»§µµ°¸¸üĞÂÊ±¼ä´Á(ºÁÃë) */
+	std::string		accid_;				/**< ç”¨æˆ·ID */
+	std::string		nickname_;			/**< ç”¨æˆ·æ˜µç§° */
+	std::string		icon_url_;			/**< ç”¨æˆ·å¤´åƒä¸‹è½½åœ°å€ */
+	std::string		signature_;			/**< ç”¨æˆ·ç­¾å */
+	int				gender_;			/**< ç”¨æˆ·æ€§åˆ« */
+	std::string		email_;				/**< ç”¨æˆ·é‚®ç®± */
+	std::string		birth_;				/**< ç”¨æˆ·ç”Ÿæ—¥ */
+	std::string		mobile_;			/**< ç”¨æˆ·ç”µè¯ */
+	Json::Value		expand_;			/**< ç”¨æˆ·æ‰©å±•æ•°æ® */
+	__int64			create_timetag_;	/**< ç”¨æˆ·æ¡£æ¡ˆåˆ›å»ºæ—¶é—´æˆ³(æ¯«ç§’) */
+	__int64			update_timetag_;	/**< ç”¨æˆ·æ¡£æ¡ˆæ›´æ–°æ—¶é—´æˆ³(æ¯«ç§’) */
 
 	unsigned int	value_available_flag_;
 };
 
-/** @struct ºÚÃûµ¥ĞÅÏ¢ */
+/** @brief é»‘åå•ä¿¡æ¯ */
 struct BlackListInfo
 {
-	std::string		accid_;				/**< ÓÃ»§ID */
-	bool			set_black_;			/**< ÊÇ·ñºÚÃûµ¥ */
-	__int64			create_timetag_;	/**< µµ°¸´´½¨Ê±¼ä£¨ºÁÃë£© */
-	__int64			update_timetag_;	/**< µµ°¸¸üĞÂÊ±¼ä£¨ºÁÃë£© */
+	std::string		accid_;				/**< ç”¨æˆ·ID */
+	bool			set_black_;			/**< æ˜¯å¦é»‘åå• */
+	__int64			create_timetag_;	/**< æ¡£æ¡ˆåˆ›å»ºæ—¶é—´ï¼ˆæ¯«ç§’ï¼‰ */
+	__int64			update_timetag_;	/**< æ¡£æ¡ˆæ›´æ–°æ—¶é—´ï¼ˆæ¯«ç§’ï¼‰ */
 
 	BlackListInfo() : set_black_(true), create_timetag_(0), update_timetag_(0){}
 };
 
-/** @struct ¾²ÒôÃûµ¥ĞÅÏ¢ */
+/** @brief é™éŸ³åå•ä¿¡æ¯ */
 struct MuteListInfo
 {
-	std::string		accid_;				/**< ÓÃ»§ID */
-	bool			set_mute_;			/**< ÊÇ·ñ±»¾²Òô */
-	__int64			create_timetag_;	/**< µµ°¸´´½¨Ê±¼ä£¨ºÁÃë£© */
-	__int64			update_timetag_;	/**< µµ°¸¸üĞÂÊ±¼ä£¨ºÁÃë£© */
+	std::string		accid_;				/**< ç”¨æˆ·ID */
+	bool			set_mute_;			/**< æ˜¯å¦è¢«é™éŸ³ */
+	__int64			create_timetag_;	/**< æ¡£æ¡ˆåˆ›å»ºæ—¶é—´ï¼ˆæ¯«ç§’ï¼‰ */
+	__int64			update_timetag_;	/**< æ¡£æ¡ˆæ›´æ–°æ—¶é—´ï¼ˆæ¯«ç§’ï¼‰ */
 
 	MuteListInfo() : set_mute_(true), create_timetag_(0), update_timetag_(0) {}
 };
 
-/** @struct ºÚÃûµ¥ºÍ¾²ÒôÃûµ¥±ä¸üÍ¨Öª */
+/** @brief é»‘åå•å’Œé™éŸ³åå•å˜æ›´é€šçŸ¥ */
 struct SpecialRelationshipChangeEvent
 {
-	NIMUserSpecialRelationshipChangeType type_;		/**< ºÚÃûµ¥/¾²ÒôÃûµ¥¸üĞÂÊÂ¼şÀàĞÍ */
-	std::string							 content_;	/**< ºÚÃûµ¥/¾²ÒôÃûµ¥¸üĞÂÊÂ¼şÄÚÈİ£¬¸ù¾İÊÂ¼şÀàĞÍµ÷ÓÃParseXXXChange½Ó¿Ú£¨nim_cpp_user.h£©½âÎö¸ÃÄÚÈİ */
+	NIMUserSpecialRelationshipChangeType type_;		/**< é»‘åå•/é™éŸ³åå•æ›´æ–°äº‹ä»¶ç±»å‹ */
+	std::string							 content_;	/**< é»‘åå•/é™éŸ³åå•æ›´æ–°äº‹ä»¶å†…å®¹ï¼Œæ ¹æ®äº‹ä»¶ç±»å‹è°ƒç”¨ParseXXXChangeæ¥å£ï¼ˆnim_cpp_user.hï¼‰è§£æè¯¥å†…å®¹ */
 };
 
 /** @fn bool ParseNameCards(const std::string& namecards_json, std::list<UserNameCard>& namecards)
-  * @brief ½âÎöÓÃ»§ÃûÆ¬
-  * @param[in] namecards_json ÓÃ»§ÃûÆ¬£¨Json ValueÊı¾İ×Ö·û´®£©
-  * @param[out] namecards ÓÃ»§ÃûÆ¬
-  * @return bool ½âÎö³É¹¦»òÊ§°Ü 
+  * @brief è§£æç”¨æˆ·åç‰‡
+  * @param[in] namecards_json ç”¨æˆ·åç‰‡ï¼ˆJson Valueæ•°æ®å­—ç¬¦ä¸²ï¼‰
+  * @param[out] namecards ç”¨æˆ·åç‰‡
+  * @return bool è§£ææˆåŠŸæˆ–å¤±è´¥ 
   */
 bool ParseNameCards(const std::string& namecards_json, std::list<UserNameCard>& namecards);
 
 /** @fn bool ParseNameCards(const Json::Value& namecards_json, std::list<UserNameCard>& namecards)
-  * @brief ½âÎöÓÃ»§ÃûÆ¬
-  * @param[in] namecards_json ÓÃ»§ÃûÆ¬£¨json array£©
-  * @param[out] namecards ÓÃ»§ÃûÆ¬
-  * @return bool ½âÎö³É¹¦»òÊ§°Ü
+  * @brief è§£æç”¨æˆ·åç‰‡
+  * @param[in] namecards_json ç”¨æˆ·åç‰‡ï¼ˆjson arrayï¼‰
+  * @param[out] namecards ç”¨æˆ·åç‰‡
+  * @return bool è§£ææˆåŠŸæˆ–å¤±è´¥
   */
 bool ParseNameCards(const Json::Value& namecards_json, std::list<UserNameCard>& namecards);
 
 /** @fn bool ParseNameCard(const std::string& namecard_json, UserNameCard& namecard)
-  * @brief ½âÎöÓÃ»§ÃûÆ¬
-  * @param[in] namecard_json ÓÃ»§ÃûÆ¬£¨Json ValueÊı¾İ×Ö·û´®£©
-  * @param[out] namecard ÓÃ»§ÃûÆ¬
-  * @return bool ½âÎö³É¹¦»òÊ§°Ü 
+  * @brief è§£æç”¨æˆ·åç‰‡
+  * @param[in] namecard_json ç”¨æˆ·åç‰‡ï¼ˆJson Valueæ•°æ®å­—ç¬¦ä¸²ï¼‰
+  * @param[out] namecard ç”¨æˆ·åç‰‡
+  * @return bool è§£ææˆåŠŸæˆ–å¤±è´¥ 
   */
 bool ParseNameCard(const std::string& namecard_json, UserNameCard& namecard);
 
 /** @fn bool ParseNameCard(const std::string& namecard_json, UserNameCard& namecard)
-  * @brief ½âÎöÓÃ»§ÃûÆ¬
-  * @param[in] namecard_json ÓÃ»§ÃûÆ¬£¨Json ValueÊı¾İ£©
-  * @param[out] namecard ÓÃ»§ÃûÆ¬
-  * @return bool ½âÎö³É¹¦»òÊ§°Ü 
+  * @brief è§£æç”¨æˆ·åç‰‡
+  * @param[in] namecard_json ç”¨æˆ·åç‰‡ï¼ˆJson Valueæ•°æ®ï¼‰
+  * @param[out] namecard ç”¨æˆ·åç‰‡
+  * @return bool è§£ææˆåŠŸæˆ–å¤±è´¥ 
   */
 void ParseNameCard(const Json::Value& namecard_json, UserNameCard& namecard);
 
 /** @fn bool ParseSpecialListInfo(const std::string& list_json, std::list<BlackListInfo>& black_list, std::list<MuteListInfo>& mute_list)
-  * @brief ½âÎöºÚÃûµ¥/¾²ÒôÁĞ±í
-  * @param[in] list_json ºÚÃûµ¥/¾²ÒôÁĞ±í£¨Json ValueÊı¾İ×Ö·û´®£©
-  * @param[out] black_list ºÚÃûµ¥
-  * @param[out] mute_list ¾²ÒôÁĞ±í
-  * @return bool ½âÎö³É¹¦»òÊ§°Ü 
+  * @brief è§£æé»‘åå•/é™éŸ³åˆ—è¡¨
+  * @param[in] list_json é»‘åå•/é™éŸ³åˆ—è¡¨ï¼ˆJson Valueæ•°æ®å­—ç¬¦ä¸²ï¼‰
+  * @param[out] black_list é»‘åå•
+  * @param[out] mute_list é™éŸ³åˆ—è¡¨
+  * @return bool è§£ææˆåŠŸæˆ–å¤±è´¥ 
   */
 bool ParseSpecialListInfo(const std::string& list_json, std::list<BlackListInfo>& black_list, std::list<MuteListInfo>& mute_list);
 }
