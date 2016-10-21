@@ -1,16 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Window>
     <VListBox class="menu">
-        <MenuElement class="MenuElement" name="copy" width="138">
+        <MenuElement class="MenuElement" name="copy" width="170">
             <Label class="menu_text" text="复制"/>
         </MenuElement>
 
-        <MenuElement class="MenuElement" name="delete" width="138">
+        <MenuElement class="MenuElement" name="delete" width="170">
             <Label class="menu_text" text="删除"/>
         </MenuElement>
 
-        <MenuElement class="MenuElement" name="transform" width="138">
+        <MenuElement class="MenuElement" name="transform" width="170">
             <Label class="menu_text" text="转文字"/>
+        </MenuElement>
+		
+        <MenuElement class="MenuElement" name="recall" width="170">
+            <Label class="menu_text" text="撤回"/>
+        </MenuElement>
+		
+        <MenuElement class="MenuElement" name="retweet" width="170">
+            <Label class="menu_text" text="转发"/>
         </MenuElement>
     </VListBox>
 </Window>

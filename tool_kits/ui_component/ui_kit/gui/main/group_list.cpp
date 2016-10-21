@@ -10,17 +10,17 @@ namespace nim_comp
 GroupList::GroupList(ui::TreeView* group_list) :
 	group_list_(group_list)
 {
-	auto query_cb = nbase::Bind(&GroupList::QueryAllMyTeamsInfoAsync, this, std::placeholders::_1, std::placeholders::_2);
-	nim::DataSync::RegCompleteCb(query_cb);
-	nim::Team::QueryAllMyTeamsInfoAsync(nbase::Bind(&GroupList::OnQueryAllMyTeams, this, std::placeholders::_1, std::placeholders::_2));
-
 	auto add_team_cb = nbase::Bind(&GroupList::OnAddTeam, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
 	unregister_cb.Add(TeamService::GetInstance()->RegAddTeam(add_team_cb));
 	auto remove_team_cb = nbase::Bind(&GroupList::OnRemoveTeam, this, std::placeholders::_1);
 	unregister_cb.Add(TeamService::GetInstance()->RegRemoveTeam(remove_team_cb));
 	auto change_team_name_cb = nbase::Bind(&GroupList::OnTeamNameChanged, this, std::placeholders::_1);
 	unregister_cb.Add(TeamService::GetInstance()->RegChangeTeamName(change_team_name_cb));
-	
+	auto photo_ready_cb = nbase::Bind(&GroupList::OnUserPhotoReady, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
+	unregister_cb.Add(PhotoService::GetInstance()->RegPhotoReady(photo_ready_cb));
+
+	nim::Team::QueryAllMyTeamsInfoAsync(nbase::Bind(&GroupList::OnQueryAllMyTeams, this, std::placeholders::_1, std::placeholders::_2));
+
 	//添加创建和搜索群的listitem，位于列表最开头位置
 	ui::TreeNode* create_group_item = (ui::TreeNode*)ui::GlobalManager::CreateBox(L"main/main_create_normal_group_list_item.xml");
 	group_list_->GetRootNode()->AddChildNodeAt(create_group_item, 0);
@@ -44,13 +44,19 @@ GroupList::GroupList(ui::TreeView* group_list) :
 	tree_node_ver_.push_back(tree_node);
 	tree_node->SetVisible(false);
 	tree_node->SetEnabled(false);
+
 }
 
-void GroupList::QueryAllMyTeamsInfoAsync(nim::NIMDataSyncType sync_type, nim::NIMDataSyncStatus status)
+void GroupList::OnUserPhotoReady(PhotoType type, const std::string& accid, const std::wstring &photo_path)
 {
-	if (sync_type == nim::kNIMDataSyncTypeTeamInfo)
+	if (type == kTeam)
 	{
-		nim::Team::QueryAllMyTeamsInfoAsync(nbase::Bind(&GroupList::OnQueryAllMyTeams, this, std::placeholders::_1, std::placeholders::_2));
+		FriendItem* friend_item = (FriendItem*)group_list_->FindSubControl(nbase::UTF8ToUTF16(accid));
+		if (friend_item)
+		{
+			if (friend_item->GetId() == accid)
+				friend_item->FindSubControl(L"head_image")->SetBkImage(photo_path);
+		}
 	}
 }
 
@@ -67,10 +73,10 @@ GroupList::~GroupList()
 
 }
 
-void GroupList::AddListItem(const nim::TeamInfo& all_info)
+void GroupList::AddListItem(const nim::TeamInfo& team_info)
 {
 	ui::TreeNode* tree_node;
-	if (all_info.GetType() == nim::kNIMTeamTypeAdvanced)
+	if (team_info.GetType() == nim::kNIMTeamTypeAdvanced)
 	{
 		tree_node = tree_node_ver_[0];
 	}
@@ -78,10 +84,10 @@ void GroupList::AddListItem(const nim::TeamInfo& all_info)
 	{
 		tree_node = tree_node_ver_[1];
 	}
-	AddListItemInGroup(all_info, tree_node);
+	AddListItemInGroup(team_info, tree_node);
 }
 
-void GroupList::AddListItemInGroup(const nim::TeamInfo& all_info, ui::TreeNode* tree_node)
+void GroupList::AddListItemInGroup(const nim::TeamInfo& team_info, ui::TreeNode* tree_node)
 {
 	if (tree_node->GetChildNodeCount() == 0)
 	{
@@ -90,7 +96,7 @@ void GroupList::AddListItemInGroup(const nim::TeamInfo& all_info, ui::TreeNode* 
 
 	FriendItem* item = new FriendItem;
 	ui::GlobalManager::FillBoxWithCache( item, L"main/friend_item.xml" );
-	item->Init(true, all_info.GetTeamID());
+	item->Init(true, team_info.GetTeamID());
 	FriendItem* container_element = item;
 	std::size_t index = 0;
 	for (index = 0; index < tree_node->GetChildNodeCount(); index++)
@@ -113,7 +119,7 @@ void GroupList::AddListItemInGroup(const nim::TeamInfo& all_info, ui::TreeNode* 
 	{
 		tree_node->AddChildNodeAt(container_element, index);
 	}
-	SessionManager::GetInstance()->QueryMyTList(all_info.GetTeamID());
+	SessionManager::GetInstance()->QueryMyTeamInfo(team_info.GetTeamID());
 }
 
 void GroupList::OnAddTeam(const std::string& tid, const std::string& tname, nim::NIMTeamType type)

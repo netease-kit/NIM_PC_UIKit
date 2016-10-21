@@ -7,28 +7,24 @@
 #include "callback/team/team_callback.h"
 #include "callback/vchat/vchat_callback.h"
 #include "callback/rts/rts_callback.h"
+#include "callback/login/data_sync_callback.h"
+#include "callback/multiport/multiport_push_callback.h"
 #include "module/service/user_service.h"
 #include "shared/modal_wnd/async_do_modal.h"
 
 namespace nim_ui
 {
-
-InitManager::InitManager()
-{
-
-}
-
-InitManager::~InitManager()
-{
-
-}
-
 void InitManager::InitUiKit()
 {
-	bool ret = nim::VChat::Init(""); // 初始化云信音视频
+	// 初始化云信音视频
+	bool ret = nim::VChat::Init("");
 	assert(ret);
 
-	nim_http::Init(); // 初始化云信http
+	// 初始化云信http
+	nim_http::Init();
+
+	//注册数据同步结果的回调
+	nim::DataSync::RegCompleteCb(nbase::Bind(&nim_comp::DataSyncCallback::SyncCallback, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 
 	/* 以下注册的回调函数，都是在收到服务器推送的消息或事件时执行的。因此需要在程序开始时就注册好。 */
 	//注册重连、被踢、掉线、多点登录、把移动端踢下线的回调
@@ -37,10 +33,12 @@ void InitManager::InitUiKit()
 	nim::Client::RegDisconnectCb(&nim_comp::LoginCallback::OnDisconnectCallback);
 	nim::Client::RegMultispotLoginCb(&nim_comp::LoginCallback::OnMultispotLoginCallback);
 	nim::Client::RegKickOtherClientCb(&nim_comp::LoginCallback::OnKickoutOtherClientCallback);
+	nim::Client::RegSyncMultiportPushConfigCb(&nim_comp::MultiportPushCallback::OnMultiportPushConfigChange);
 
 	//注册返回发送消息结果的回调，和收到消息的回调。
 	nim::Talk::RegSendMsgCb(nbase::Bind(&nim_comp::TalkCallback::OnSendMsgCallback, std::placeholders::_1));
 	nim::Talk::RegReceiveCb(nbase::Bind(&nim_comp::TalkCallback::OnReceiveMsgCallback, std::placeholders::_1));
+	nim::Talk::RegRecallMsgsCallback(nbase::Bind(&nim_comp::TalkCallback::OnReceiveRecallMsgCallback, std::placeholders::_1, std::placeholders::_2));
 	nim::Talk::RegReceiveMessagesCb(nbase::Bind(&nim_comp::TalkCallback::OnReceiveMsgsCallback, std::placeholders::_1));
 	//nim::SystemMsg::RegSendCustomSysmsgCb(nbase::Bind(&nim_comp::TalkCallback::OnSendCustomSysmsgCallback, std::placeholders::_1));
 	nim::MsgLog::RegMessageStatusChangedCb(nbase::Bind(&nim_comp::TalkCallback::OnMsgStatusChangedCallback, std::placeholders::_1));
@@ -70,7 +68,10 @@ void InitManager::InitUiKit()
 	nim::Rts::SetControlNotifyCb(nbase::Bind(&nim_comp::RtsCallback::ControlNotifyCallback, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 	nim::Rts::SetRecDataCb(nbase::Bind(&nim_comp::RtsCallback::RecDataCallback, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
 
+	//加载聊天表情
 	nim_comp::emoji::LoadEmoji();
+
+	//语音组件回调函数在登录后注册
 }
 
 void InitManager::CleanupUiKit()

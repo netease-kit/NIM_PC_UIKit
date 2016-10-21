@@ -1,7 +1,8 @@
 ﻿#include "team_search.h"
 #include "module/emoji/richedit_util.h"
-#include "gui/session/control/session_util.h"
+#include "module/session/session_util.h"
 #include "callback/team/team_callback.h"
+#include "export/nim_ui_photo_manager.h"
 
 using namespace ui;
 
@@ -27,16 +28,6 @@ std::wstring TeamSearchForm::GetSkinFolder()
 std::wstring TeamSearchForm::GetSkinFile()
 {
 	return L"team_search.xml";
-}
-
-ui::UILIB_RESOURCETYPE TeamSearchForm::GetResourceType() const
-{
-	return ui::UILIB_FILE;
-}
-
-std::wstring TeamSearchForm::GetZIPFileName() const
-{
-	return L"team_search.zip";
 }
 
 std::wstring TeamSearchForm::GetWindowClassName() const
@@ -116,6 +107,9 @@ void TeamSearchForm::InitWindow()
 	re_apply_ = (RichEdit*) FindControl(L"re_apply");
 
 	GotoPage(TSP_SEARCH);
+
+	OnPhotoReadyCallback cb2 = nbase::Bind(&TeamSearchForm::OnUserPhotoReady, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
+	unregister_cb.Add(nim_ui::PhotoManager::GetInstance()->RegPhotoReady(cb2));
 }
 
 void TeamSearchForm::GotoPage( TeamSearchPage page )
@@ -135,9 +129,19 @@ void TeamSearchForm::GotoPage( TeamSearchPage page )
 	}
 }
 
+void TeamSearchForm::OnUserPhotoReady(PhotoType type, const std::string& tid, const std::wstring &photo_path)
+{
+	if (type == kTeam && tid == tid_)
+	{
+		team_icon_->SetBkImage(photo_path);
+	}
+}
 void TeamSearchForm::ShowTeamInfo(const nim::TeamEvent& team_event)
 {
-	team_icon_->SetBkImage( TeamService::GetInstance()->GetTeamPhoto(false) );
+	if (!team_event.team_info_.GetIcon().empty())
+		PhotoService::GetInstance()->DownloadTeamIcon(team_event.team_info_);
+
+	team_icon_->SetBkImage( PhotoService::GetInstance()->GetTeamPhoto(team_event.team_id_, false) );
 
 	team_id_->SetUTF8Text(team_event.team_id_);
 

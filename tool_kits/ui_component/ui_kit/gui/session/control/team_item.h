@@ -1,5 +1,4 @@
 ﻿#pragma once
-#include "bubble_item.h"
 #include "module/service/team_service.h"
 
 namespace nim_comp
@@ -35,6 +34,13 @@ public:
 	void SetAdmin(bool admin);
 
 	/**
+	* 设置禁言
+	* @param[in] mute 设置/取消 禁言
+	* @return void 无返回值
+	*/
+	void SetMute(bool mute);
+
+	/**
 	* 设置本成员为管理员
 	* @param[in] admin 设置/取消 为管理员
 	* @return void 无返回值
@@ -60,12 +66,39 @@ public:
 	* @return void 无返回值
 	*/
 	void SetMemberName(const std::string& team_card);
+
+private:
+	/**
+	* 处理控件的菜单消息
+	* @param[in] msg 消息的相关信息
+	* @return bool true 继续传递控件消息，false 停止传递控件消息
+	*/
+	bool OnItemMenu(ui::EventArgs* msg);
+
+	/**
+	* 弹出菜单
+	* @param[in] point 弹出坐标
+	* @return void	无返回值
+	*/
+	void PopupItemMenu(POINT point);
+
+	/**
+	* 处理菜单项被单击的消息
+	* @param[in] msg 消息的相关信息
+	* @return bool true 继续传递控件消息，false 停止传递控件消息
+	*/
+	bool TeamItemMenuItemClick(ui::EventArgs* msg);
+
 private:
 	ui::Button*		member_icon_;
 	ui::Label*		member_name_;
 	ui::Control*	icon_admin_;
+	ui::Control*	icon_mute_;
 	std::string		team_card_;
+	std::string		team_id_;
+	std::string		uid_;
 	nim::NIMTeamUserType team_user_type_;
+	bool			is_mute_ = false;
 	AutoUnregister	unregister_cb;
 };
 }

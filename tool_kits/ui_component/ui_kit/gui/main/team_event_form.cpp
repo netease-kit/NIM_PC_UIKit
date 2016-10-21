@@ -36,16 +36,6 @@ std::wstring TeamEventForm::GetSkinFile()
 	return L"event.xml";
 }
 
-ui::UILIB_RESOURCETYPE TeamEventForm::GetResourceType() const
-{
-	return ui::UILIB_FILE;
-}
-
-std::wstring TeamEventForm::GetZIPFileName() const
-{
-	return L"event.zip";
-}
-
 std::wstring TeamEventForm::GetWindowClassName() const 
 {
 	return kClassName;
@@ -63,9 +53,9 @@ UINT TeamEventForm::GetClassStyle() const
 
 void TeamEventForm::InitWindow()
 {
-	if (nim_ui::UserConfig::GetInstance()->GetIcon() > 0)
+	if (nim_ui::UserConfig::GetInstance()->GetDefaultIcon() > 0)
 	{
-		SetIcon(nim_ui::UserConfig::GetInstance()->GetIcon());
+		SetIcon(nim_ui::UserConfig::GetInstance()->GetDefaultIcon());
 	}
 
 	SetTaskbarTitle(L"消息中心");
@@ -79,7 +69,7 @@ void TeamEventForm::InitWindow()
 	custom_list_ = (ListBox*)FindControl(L"custom_list");
 
 	unregister_cb.Add(UserService::GetInstance()->RegUserInfoChange(nbase::Bind(&TeamEventForm::OnUserInfoChange, this, std::placeholders::_1)));
-	unregister_cb.Add(UserService::GetInstance()->RegUserPhotoReady(nbase::Bind(&TeamEventForm::OnUserPhotoReady, this, std::placeholders::_1, std::placeholders::_2)));
+	unregister_cb.Add(PhotoService::GetInstance()->RegPhotoReady(nbase::Bind(&TeamEventForm::OnUserPhotoReady, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
 	unregister_cb.Add(TeamService::GetInstance()->RegChangeTeamName(nbase::Bind(&TeamEventForm::OnTeamNameChange, this, std::placeholders::_1)));
 
 	GetMoreCustomMsg();
@@ -109,7 +99,7 @@ bool TeamEventForm::Notify( ui::EventArgs* msg )
 				is_loading_ = true;
 				btn_recycle_->SetEnabled(false);
 
-				OpEventTip(true);
+				ShowLoadingTip(true);
 				event_list_->EndDown(true, false);
 
 				nbase::ThreadManager::PostDelayedTask(kThreadUI,
@@ -179,7 +169,7 @@ void TeamEventForm::LoadEventsCb(int count, int unread, const std::list<nim::Sys
 
 	is_loading_ = false;
 	btn_recycle_->SetEnabled(true);
-	OpEventTip(false);
+	ShowLoadingTip(false);
 
 	UpdateSysmsgUnread(unread);
 	for (auto& content : result)
@@ -228,7 +218,7 @@ void TeamEventForm::AddEvent(const nim::SysMessage &sys_msg, bool first)
 	}
 }
 
-void TeamEventForm::OpEventTip( bool add )
+void TeamEventForm::ShowLoadingTip( bool add )
 {
 	static const std::wstring kLoadingName = L"EventLoading";
 
@@ -254,9 +244,14 @@ void TeamEventForm::OnTeamEventCb(__int64 msg_id, nim::NIMSysMsgStatus status)
 		it->second->OnTeamEventCb(status);
 	}
 }
-void TeamEventForm::OnOneTeamEvent(const nim::SysMessage &json)
+void TeamEventForm::OnOneTeamEvent(const nim::SysMessage &msg)
 {
-	AddEvent(json, true);
+	AddEvent(msg, true);
+}
+
+void TeamEventForm::OnOneCustomMsg(const nim::SysMessage& msg)
+{
+	AddCustomMsg(msg, true);
 }
 
 void TeamEventForm::DeleteAllCb(nim::NIMResCode res_code, int unread)
@@ -291,20 +286,23 @@ void TeamEventForm::OnUserInfoChange(const std::list<nim::UserNameCard> &uinfos)
 	}
 }
 
-void TeamEventForm::OnUserPhotoReady(const std::string& account, const std::wstring& photo_path)
+void TeamEventForm::OnUserPhotoReady(PhotoType type, const std::string& account, const std::wstring& photo_path)
 {
-	for (int i = 0; i < event_list_->GetCount(); i++)
+	if (type == kUser || type == kTeam)
 	{
-		TeamEventItem* event_item = dynamic_cast<TeamEventItem*>(event_list_->GetItemAt(i));
-		if (event_item)
-			event_item->OnUserPhotoReady(account, photo_path);
-	}
+		for (int i = 0; i < event_list_->GetCount(); i++)
+		{
+			TeamEventItem* event_item = dynamic_cast<TeamEventItem*>(event_list_->GetItemAt(i));
+			if (event_item)
+				event_item->OnUserPhotoReady(account, photo_path);
+		}
 
-	for (int i = 0; i < custom_list_->GetCount(); i++)
-	{
-		CustomMsgBubble* custom_item = dynamic_cast<CustomMsgBubble*>(custom_list_->GetItemAt(i));
-		if (custom_item)
-			custom_item->OnUserPhotoReady(account, photo_path);
+		for (int i = 0; i < custom_list_->GetCount(); i++)
+		{
+			CustomMsgBubble* custom_item = dynamic_cast<CustomMsgBubble*>(custom_list_->GetItemAt(i));
+			if (custom_item)
+				custom_item->OnUserPhotoReady(account, photo_path);
+		}
 	}
 }
 

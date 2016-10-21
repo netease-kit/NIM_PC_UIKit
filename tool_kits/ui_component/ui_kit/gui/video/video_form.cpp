@@ -4,6 +4,9 @@
 #include "util/windows_manager.h"
 #include "base/time/time.h"
 #include "module/video/video_manager.h"
+#include "./helper/smooth.h"
+#include "./helper/yuv_image.h"
+#include "./helper/colorbalance.h"
 
 namespace nim_comp
 {
@@ -123,9 +126,10 @@ void VideoForm::FreeAudio()
 
 void VideoForm::StartChat()
 {
-	bool ret = VideoManager::GetInstance()->StartChat((current_video_mode_ ? nim::kNIMVideoChatModeVideo : nim::kNIMVideoChatModeAudio), "", "", session_id_);
+	bool ret = VideoManager::GetInstance()->StartChat((current_video_mode_ ? nim::kNIMVideoChatModeVideo : nim::kNIMVideoChatModeAudio), "", "", session_id_, session_id_);
 	if (ret)
 	{
+		//VideoManager::GetInstance()->SetAudioMuted(false);
 		is_start_ = true;
 		StartDialWaitingTimer();
 	}
@@ -491,8 +495,8 @@ void VideoForm::OnLogin( bool success )
 		//	EnterEndCallPage( END_CALL_BAD_MICROPHONE );
 		//}
 		paint_video_timer_.Cancel();
-		auto task = nbase::Bind(&VideoForm::PaintVideo, this);
-		nbase::ThreadManager::PostRepeatedTask(kThreadUI, task, nbase::TimeDelta::FromMilliseconds(70));
+		StdClosure task = nbase::Bind(&VideoForm::PaintVideo, this);
+		nbase::ThreadManager::PostRepeatedTask(kThreadUI, paint_video_timer_.ToWeakCallback(task), nbase::TimeDelta::FromMilliseconds(70));
 	}
 	else
 	{
@@ -688,15 +692,25 @@ void VideoForm::PaintVideo()
 	{
 		bool show_screen = false;
 		bool show_preview = false;
+		video_ctrl_screen_->SetVideoFrameMng(&nim_comp::VideoManager::GetInstance()->video_frame_mng_);
+		video_ctrl_preview_->SetVideoFrameMng(&nim_comp::VideoManager::GetInstance()->video_frame_mng_);
 		if (screen_is_other_)
 		{
 			show_screen = camera_is_open_other_;
 			show_preview = camera_is_open_;
+			if (custom_video_mode_)
+			{
+				video_ctrl_preview_->SetVideoFrameMng(&video_frame_mng_);
+			}
 		}
 		else
 		{
 			show_screen = camera_is_open_;
 			show_preview = camera_is_open_other_;
+			if (custom_video_mode_)
+			{
+				video_ctrl_screen_->SetVideoFrameMng(&video_frame_mng_);
+			}
 		}
 		if (show_screen && video_ctrl_screen_->Refresh(this, !screen_is_other_, !screen_is_other_))
 		{
@@ -715,6 +729,66 @@ void VideoForm::PaintVideo()
 				camera_open_label_->SetVisible(false);
 				camera_closed_label_->SetVisible(false);
 			}
+		}
+	}
+}
+void VideoForm::SetCustomVideoMode(bool open)
+{
+	QLOG_APP(L"SetCustomVideoMode Start");
+	send_custom_video_.Cancel();
+	custom_video_mode_ = open;
+	if (custom_video_mode_)
+	{
+		QLOG_APP(L"CustomVideoMode Task Start");
+		StdClosure task = nbase::Bind(&VideoForm::SendCustomVideo, this);
+		nbase::ThreadManager::PostRepeatedTask(kThreadScreenCapture, send_custom_video_.ToWeakCallback(task), nbase::TimeDelta::FromMilliseconds(60));
+	}
+	nim::VChat::SetCustomData(false, custom_video_mode_);
+	face_open_btn_->SetVisible(!custom_video_mode_ && current_video_mode_);
+	face_close_btn_->SetVisible(custom_video_mode_ && current_video_mode_);
+}
+void VideoForm::SendCustomVideo()
+{
+	nbase::NAutoLock auto_lock(&capture_lock_);
+	if (current_video_mode_ && custom_video_mode_)
+	{
+		QLOG_APP(L"CustomVideoData Start");
+		static int64_t timestamp = 0;
+		std::string data;
+		data.resize(1280 * 720 * 4);
+		int32_t w, h;
+		w = 0;
+		h = 0;
+		bool ret = nim_comp::VideoManager::GetInstance()->video_frame_mng_.GetVideoFrame("", timestamp, (char*)data.c_str(), w, h, false, false);
+		QLOG_APP(L"CustomVideoData GetFrame End");
+		if (ret)
+		{
+			QLOG_APP(L"CustomVideoData Start");
+			int32_t width = w;
+			int32_t height = h;
+			int32_t wxh = width*height;
+			int32_t data_size = wxh * 3 / 2;
+
+			//均方差滤波
+			std::string beauty_src_data;
+			beauty_src_data.resize(wxh * 4);
+			nim_comp::YUV420ToARGB((char*)data.c_str(), (char*)beauty_src_data.c_str(), width, height);
+
+			//采用色彩平衡算法进行美白
+			nim_comp::colorbalance_rgb_u8((unsigned char*)beauty_src_data.c_str(), wxh, (size_t)(wxh * 2 / 100), (size_t)(wxh * 8 / 100), 4);
+
+			nim_comp::ARGBToYUV420((char*)beauty_src_data.c_str(), (char*)data.c_str(), width, height);
+
+			//采用均方差滤波进行磨皮
+			nim_comp::smooth_process((uint8_t*)data.c_str(), width, height, 10, 0, 200);
+			QLOG_APP(L"colorbalance_rgb_u8 End");
+
+			//保存用于预览
+			std::string json;
+			video_frame_mng_.AddVideoFrame(true, 0, data.c_str(), data_size, w, h, json, nim_comp::VideoFrameMng::Ft_I420);
+			//发送
+			nim::VChat::CustomVideoData(0, data.c_str(), data_size, w, h, nullptr);
+			QLOG_APP(L"CustomVideoData End") ;
 		}
 	}
 }

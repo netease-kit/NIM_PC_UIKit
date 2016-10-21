@@ -15,14 +15,15 @@ UnregisterCallback TeamService::RegAddTeam(OnTeamAdd add)
 	return unregister;
 }
 
-void TeamService::InvokeAddTeam(const std::string& tid, const std::string& tname, nim::NIMTeamType type)
+void TeamService::InvokeAddTeam(const std::string & tid, const nim::TeamInfo & tinfo)
 {
 	assert(nbase::MessageLoop::current()->ToUIMessageLoop());
 
-	QLOG_APP(L"InvokeAddTeam: tid={0} ") <<tid;
-	for(auto& it : add_team_cb_)
+	QLOG_APP(L"InvokeAddTeam: tid={0} ") << tid;
+	cached_tinfo_[tid] = tinfo;
+	for (auto& it : add_team_cb_)
 	{
-		(*it.second)(tid, tname, type);
+		(*it.second)(tid, tinfo.GetName(), tinfo.GetType());
 	}
 }
 
@@ -38,6 +39,20 @@ UnregisterCallback TeamService::RegRemoveTeam(OnTeamRemove remove)
 	return unregister;
 }
 
+void TeamService::InvokeRemoveTeam(const std::string& tid)
+{
+	assert(nbase::MessageLoop::current()->ToUIMessageLoop());
+
+	QLOG_APP(L"InvokeRemoveTeam: tid={0} ") <<tid;
+
+	cached_tinfo_.erase(tid);
+
+	for(auto& it : remove_team_cb_)
+	{
+		(*it.second)(tid);
+	}
+}
+
 UnregisterCallback TeamService::RegChangeTeamName(OnTeamNameChange change)
 {
 	assert(nbase::MessageLoop::current()->ToUIMessageLoop());
@@ -50,17 +65,13 @@ UnregisterCallback TeamService::RegChangeTeamName(OnTeamNameChange change)
 	return unregister;
 }
 
-void TeamService::InvokeRemoveTeam(const std::string& tid)
+void TeamService::InvokeChangeTeamName(const nim::TeamInfo& team_info)
 {
 	assert(nbase::MessageLoop::current()->ToUIMessageLoop());
 
-	QLOG_APP(L"InvokeRemoveTeam: tid={0} ") <<tid;
-
-	tid_tname_pair_.erase(tid);
-
-	for(auto& it : remove_team_cb_)
+	for (auto& it : change_team_name_cb_)
 	{
-		(*it.second)(tid);
+		(*it.second)(team_info);
 	}
 }
 
@@ -99,7 +110,24 @@ UnregisterCallback TeamService::RegRemoveTeamMember( OnTeamMemberRemove remove )
 	return unregister;
 }
 
-UnregisterCallback TeamService::RegChangeTeamMember( OnTeamMemberChange change )
+void TeamService::InvokeRemoveTeamMember( const std::string& tid, const std::string& uid )
+{
+	assert(nbase::MessageLoop::current()->ToUIMessageLoop());
+
+	QLOG_APP(L"invoke remove: tid={0} uid={1}") <<tid <<uid;
+
+	if (LoginManager::GetInstance()->IsEqual(uid))
+	{
+		cached_tinfo_.erase(tid);
+	}
+
+	for(auto& it : remove_team_member_cb_)
+	{
+		(*it.second)(tid, uid);
+	}
+}
+
+UnregisterCallback TeamService::RegChangeTeamMember(OnTeamMemberChange change)
 {
 	assert(nbase::MessageLoop::current()->ToUIMessageLoop());
 	OnTeamMemberChange* new_cb = new OnTeamMemberChange(change);
@@ -109,23 +137,6 @@ UnregisterCallback TeamService::RegChangeTeamMember( OnTeamMemberChange change )
 		change_team_member_cb_.erase(cb_id);
 	});
 	return unregister;
-}
-
-void TeamService::InvokeRemoveTeamMember( const std::string& tid, const std::string& uid )
-{
-	assert(nbase::MessageLoop::current()->ToUIMessageLoop());
-
-	QLOG_APP(L"invoke remove: tid={0} uid={1}") <<tid <<uid;
-
-	if (LoginManager::GetInstance()->IsEqual(uid))
-	{
-		tid_tname_pair_.erase(tid);
-	}
-
-	for(auto& it : remove_team_member_cb_)
-	{
-		(*it.second)(tid, uid);
-	}
 }
 
 void TeamService::InvokeChangeTeamMember(const std::string& tid, const std::string& uid, const std::string& team_card)
@@ -144,16 +155,6 @@ void TeamService::InvokeChangeTeamMember(const std::string& tid, const std::stri
 	}
 }
 
-void TeamService::InvokeChangeTeamName(const nim::TeamInfo& team_info)
-{
-	assert(nbase::MessageLoop::current()->ToUIMessageLoop());
-
-	for (auto& it : change_team_name_cb_)
-	{
-		(*it.second)(team_info);
-	}
-}
-
 UnregisterCallback TeamService::RegSetTeamAdmin( OnTeamAdminSet admin )
 {
 	assert(nbase::MessageLoop::current()->ToUIMessageLoop());
@@ -164,6 +165,17 @@ UnregisterCallback TeamService::RegSetTeamAdmin( OnTeamAdminSet admin )
 		change_team_admin_cb_.erase(cb_id);
 	});
 	return unregister;
+}
+
+void TeamService::InvokeChangeTeamAdmin(const std::string& tid, const std::string& uid, bool admin)
+{
+	assert(nbase::MessageLoop::current()->ToUIMessageLoop());
+
+	QLOG_APP(L"invoke admin: tid={0} uid={1} admin={2}") << tid << uid << admin;
+	for (auto& it : change_team_admin_cb_)
+	{
+		(*it.second)(tid, uid, admin);
+	}
 }
 
 UnregisterCallback TeamService::RegChangeTeamOwner(OnTeamOwnerChange set_team_owner)
@@ -178,26 +190,62 @@ UnregisterCallback TeamService::RegChangeTeamOwner(OnTeamOwnerChange set_team_ow
 	return unregister;
 }
 
-void TeamService::InvokeChangeTeamAdmin( const std::string& tid, const std::string& uid, bool admin )
-{
-	assert(nbase::MessageLoop::current()->ToUIMessageLoop());
-
-	QLOG_APP(L"invoke admin: tid={0} uid={1} admin={2}") <<tid <<uid <<admin;
-	for(auto& it : change_team_admin_cb_)
-	{
-		(*it.second)(tid, uid, admin);
-	}
-}
-
 void TeamService::InvokeSetTeamOwner(const std::string& tid, const std::string& uid)
 {
 	assert(nbase::MessageLoop::current()->ToUIMessageLoop());
 
-	QLOG_APP(L"invoke admin: tid={0} uid={1} admin={2}") << tid << uid;
+	QLOG_APP(L"invoke set team owner: tid={0} uid={1}") << tid << uid;
 	for (auto& it : set_team_owner_cb_)
 	{
 		(*it.second)(tid, uid);
 	}
+}
+
+UnregisterCallback TeamService::RegMuteMember(OnMuteMember mute)
+{
+	assert(nbase::MessageLoop::current()->ToUIMessageLoop());
+	OnMuteMember* new_cb = new OnMuteMember(mute);
+	int cb_id = (int)new_cb;
+	mute_member_cb_[cb_id].reset(new_cb);
+	auto unregister = ToWeakCallback([this, cb_id]() {
+		mute_member_cb_.erase(cb_id);
+	});
+	return unregister;
+}
+
+void TeamService::InvokeMuteMember(const std::string& tid, const std::string& uid, bool set_mute)
+{
+	assert(nbase::MessageLoop::current()->ToUIMessageLoop());
+
+	QLOG_APP(L"invoke mute member: tid={0} uid={1} set_mute={2}") << tid << uid << set_mute;
+
+	for (auto& it : mute_member_cb_)
+	{
+		(*it.second)(tid, uid, set_mute);
+	}
+}
+
+void TeamService::OnTeamDataSyncCallback(nim::NIMDataSyncType sync_type, nim::NIMDataSyncStatus status, const std::string &data_sync_info)
+{
+	if (sync_type == nim::kNIMDataSyncTypeTeamInfo)
+	{
+		std::list<nim::TeamInfo> tinfos;
+		ParseTeamInfosJson(data_sync_info, tinfos);
+		for (auto& tinfo : tinfos)
+		{
+			UIGetLocalTeamInfoCb(tinfo.GetTeamID(), tinfo);
+		}
+	}
+}
+
+std::list<nim::TeamInfo> TeamService::GetCachedTeamsInfo()
+{
+	std::list<nim::TeamInfo> tinfos;
+	for (auto& tinfo : cached_tinfo_)
+	{
+		tinfos.push_back(tinfo.second);
+	}
+	return tinfos;
 }
 
 std::wstring TeamService::GetTeamName( const std::string& tid )
@@ -206,33 +254,38 @@ std::wstring TeamService::GetTeamName( const std::string& tid )
 
 	std::wstring tname;
 
-	std::map<std::string,std::string>::iterator it = tid_tname_pair_.find(tid);
-	if(it == tid_tname_pair_.end())
+	auto it = cached_tinfo_.find(tid);
+	if (it == cached_tinfo_.end())
 	{
 		tname = nbase::UTF8ToUTF16(tid);
-
 		GetTeamInfo(tid);
 	}
 	else
 	{
-		tname = nbase::UTF8ToUTF16(it->second);
+		tname = nbase::UTF8ToUTF16(it->second.GetName());
 	}
+
+	if (tname.empty())
+		tname = nbase::UTF8ToUTF16(tid);
 
 	return tname;
 }
 
-std::wstring TeamService::GetTeamPhoto(bool full_path)
+bool TeamService::GetTeamIcon(const std::string& tid, std::string& icon)
 {
 	assert(nbase::MessageLoop::current()->ToUIMessageLoop());
-
-	if(full_path)
+	auto it = cached_tinfo_.find(tid);
+	if (it == cached_tinfo_.end())
 	{
-		std::wstring dir = QPath::GetAppPath();
-		dir.append(L"themes\\default\\public\\header\\head_team.png");
-		return dir;
+		GetTeamInfo(tid);
+		return false;
 	}
 	else
-		return L"../public/header/head_team.png";
+	{
+		icon = it->second.GetIcon();
+	}
+
+	return true;
 }
 
 int TeamService::GetTeamType(const std::string& tid)
@@ -240,16 +293,30 @@ int TeamService::GetTeamType(const std::string& tid)
 	assert(nbase::MessageLoop::current()->ToUIMessageLoop());
 
 	int type = -1;
-	std::map<std::string, int>::iterator it = tid_type_pair_.find(tid);
-	if (it != tid_type_pair_.end())
-		type = it->second;
+	auto it = cached_tinfo_.find(tid);
+	if (it != cached_tinfo_.end())
+		type = it->second.GetType();
 
 	return type;
+}
+
+void TeamService::QueryTeamInfo(const std::string & tid, OnGetTeamInfo cb)
+{
+	nim::Team::QueryTeamInfoAsync(tid, ToWeakCallback([cb](const std::string& tid, const nim::TeamInfo& result)
+	{
+		cb(result);
+	}));
 }
 
 void TeamService::QueryAllTeamInfo()
 {
 	nim::Team::QueryAllMyTeamsInfoAsync(nbase::Bind(&TeamService::QueryAllTeamInfoCb, this, std::placeholders::_1, std::placeholders::_2));
+}
+
+void TeamService::QueryAllTeamInfoCb(int team_count, const std::list<nim::TeamInfo>& team_info_list)
+{
+	auto task = nbase::Bind(&TeamService::UIQueryAllTeamInfoCb, this, team_count, team_info_list);
+	Post2UI(task);
 }
 
 void TeamService::UIQueryAllTeamInfoCb(int team_count, const std::list<nim::TeamInfo>& team_info_list)
@@ -258,29 +325,13 @@ void TeamService::UIQueryAllTeamInfoCb(int team_count, const std::list<nim::Team
 
 	for (auto& team_info : team_info_list)
 	{
+		cached_tinfo_[team_info.GetTeamID()] = team_info;
+
 		if (!team_info.GetName().empty())
-		{
-			tid_tname_pair_[team_info.GetTeamID()] = team_info.GetName();
-
 			InvokeChangeTeamName(team_info);
-		}
-
-		tid_type_pair_[team_info.GetTeamID()] = team_info.GetType();
+		if (!team_info.GetIcon().empty())
+			PhotoService::GetInstance()->DownloadTeamIcon(team_info);
 	}
-}
-
-void TeamService::QueryTeamInfo(const std::string & tid, OnGetTeamInfo cb)
-{
-	nim::Team::QueryTeamInfoAsync(tid, ToWeakCallback([cb](const std::string& tid, const nim::TeamInfo& result) 
-	{
-		cb(result);
-	}));
-}
-
-void TeamService::QueryAllTeamInfoCb(int team_count, const std::list<nim::TeamInfo>& team_info_list)
-{
-	auto task = nbase::Bind(&TeamService::UIQueryAllTeamInfoCb, this, team_count, team_info_list);
-	Post2UI(task);
 }
 
 void TeamService::GetTeamInfo(const std::string& tid)
@@ -292,20 +343,12 @@ void TeamService::GetTeamInfo(const std::string& tid)
 	nim::Team::QueryTeamInfoOnlineAsync(tid, nbase::Bind(&TeamService::GetTeamInfoCb, this, std::placeholders::_1));
 }
 
-void TeamService::UIGetLocalTeamInfoCb(const std::string& tid, const nim::TeamInfo& result)
+void TeamService::GetTeamInfoCb(const nim::TeamEvent& team_event)
 {
-	assert(nbase::MessageLoop::current()->ToUIMessageLoop());
-
-	if (!result.GetName().empty())
+	if (team_event.res_code_ == nim::kNIMResSuccess)
 	{
-		tid_tname_pair_[tid] = result.GetName();
-
-		InvokeChangeTeamName(result);
+		nim::Team::QueryTeamInfoAsync(team_event.team_id_, nbase::Bind(&TeamService::GetLocalTeamInfoCb, this, std::placeholders::_1, std::placeholders::_2));
 	}
-
-	tid_type_pair_[tid] = result.GetType();
-
-	on_query_tids_.erase(tid); //已经查到，从post_tids_中删除
 }
 
 void TeamService::GetLocalTeamInfoCb(const std::string& tid, const nim::TeamInfo& result)
@@ -314,11 +357,21 @@ void TeamService::GetLocalTeamInfoCb(const std::string& tid, const nim::TeamInfo
 	Post2UI(task);
 }
 
-void TeamService::GetTeamInfoCb(const nim::TeamEvent& team_event)
+void TeamService::UIGetLocalTeamInfoCb(const std::string& tid, const nim::TeamInfo& result)
 {
-	if (team_event.res_code_ == nim::kNIMResSuccess)
+	assert(nbase::MessageLoop::current()->ToUIMessageLoop());
+
+	if (cached_tinfo_.find(tid) == cached_tinfo_.end())
+		InvokeAddTeam(tid, result);
+	else
 	{
-		nim::Team::QueryTeamInfoAsync(team_event.team_id_, nbase::Bind(&TeamService::GetLocalTeamInfoCb, this, std::placeholders::_1, std::placeholders::_2));
+		if (!result.GetName().empty())
+			InvokeChangeTeamName(result);
+		if (!result.GetIcon().empty())
+			PhotoService::GetInstance()->DownloadTeamIcon(result);
 	}
+	cached_tinfo_[tid] = result;
+	on_query_tids_.erase(tid); //已经查到，从post_tids_中删除
 }
+
 }

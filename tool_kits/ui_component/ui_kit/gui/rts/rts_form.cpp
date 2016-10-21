@@ -30,16 +30,6 @@ RtsForm::~RtsForm()
 {
 }
 
-ui::UILIB_RESOURCETYPE RtsForm::GetResourceType() const
-{
-	return ui::UILIB_FILE; 
-}
-
-std::wstring RtsForm::GetZIPFileName() const
-{
-	return (L"rts.zip");
-}
-
 std::wstring RtsForm::GetSkinFolder()
 {
 	return L"rts";
@@ -371,7 +361,7 @@ void RtsForm::ShowStartUI(bool creater)
 	if (creater)
 	{
 		nim::Rts::StartChannelCallback cb = nbase::Bind(&RtsForm::OnStartRtsCb, this, session_id_, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4);
-		nim::Rts::StartChannel(type_, uid_, "rts", "rts test", cb);
+		nim::Rts::StartChannel(type_, uid_, nbase::UTF16ToUTF8(L"白板通话邀请test"), "rts custom info", cb);
 	}
 	auto closure = nbase::Bind(&RtsForm::NoActiveTimer, this);
 	nbase::ThreadManager::PostDelayedTask(kThreadUI, closure, nbase::TimeDelta::FromSeconds(40));
@@ -409,7 +399,7 @@ void RtsForm::ShowHeader()
 	Label* title = (Label*)FindControl(L"title");
 	title->SetText(title_text);
 
-	std::wstring photo = UserService::GetInstance()->GetUserPhoto(uid_);
+	std::wstring photo = PhotoService::GetInstance()->GetUserPhoto(uid_);
 	Button* headicon = (Button*)FindControl(L"headicon");
 	headicon->SetBkImage(photo);
 }
@@ -563,7 +553,7 @@ void RtsForm::SendCreateMsg()
 	msg.attach_ = writer.write(json);
 
 	nim::Talk::SendMsg(msg.ToJsonString(true));
-	SessionForm* session = SessionManager::GetInstance()->Find(uid_);
+	SessionBox* session = SessionManager::GetInstance()->FindSessionBox(uid_);
 	if (session)
 	{
 		session->AddNewMsg(msg, false);
@@ -589,8 +579,8 @@ void RtsForm::ShowEndMsg()
 	msg.content_ = nbase::UTF16ToUTF8(L"白板");
 	msg.attach_ = writer.write(json);
 
-	nim::MsgLog::WriteMsglogOnlyAsync(uid_, msg.session_type_, msg.client_msg_id_, msg, nim::MsgLog::WriteMsglogCallback());
-	SessionForm* session = SessionManager::GetInstance()->Find(uid_);
+	nim::MsgLog::WriteMsglogToLocalAsync(uid_, msg, false, nim::MsgLog::WriteMsglogCallback());
+	SessionBox* session = SessionManager::GetInstance()->FindSessionBox(uid_);
 	if (session)
 	{
 		session->AddNewMsg(msg, false);

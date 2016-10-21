@@ -35,22 +35,34 @@ void FriendItem::Init(bool is_team, const std::string &accid)
 
 	auto head_ctrl = FindSubControl(L"head_image");
 	if(is_team)
-		head_ctrl->SetBkImage(TeamService::GetInstance()->GetTeamPhoto(false));
+		head_ctrl->SetBkImage(PhotoService::GetInstance()->GetTeamPhoto(id_, false));
 	else
-		head_ctrl->SetBkImage(UserService::GetInstance()->GetUserPhoto(accid));
+		head_ctrl->SetBkImage(PhotoService::GetInstance()->GetUserPhoto(accid));
 
 	nick_name_ = nbase::MakeLowerString(nick_name_);
 	nick_name_full_spell_ = nbase::MakeLowerString(PinYinHelper::GetInstance()->ConvertToFullSpell(nick_name_));
 	nick_name_simple_spell_ = nbase::MakeLowerString(PinYinHelper::GetInstance()->ConvertToSimpleSpell(nick_name_));
 
-	if(is_team_)
+	if (is_team_)
+	{
 		unregister_cb.Add(TeamService::GetInstance()->RegChangeTeamName(nbase::Bind(&FriendItem::OnTeamNameChange, this, std::placeholders::_1)));
+		unregister_cb.Add(PhotoService::GetInstance()->RegPhotoReady(nbase::Bind(&FriendItem::OnUserPhotoReady, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
+	}
 }
 
 bool FriendItem::OnDbClicked(ui::EventArgs* arg)
 {
-	SessionManager::GetInstance()->OpenSessionForm(id_, is_team_ ? nim::kNIMSessionTypeTeam : nim::kNIMSessionTypeP2P);
+	SessionManager::GetInstance()->OpenSessionBox(id_, is_team_ ? nim::kNIMSessionTypeTeam : nim::kNIMSessionTypeP2P);
 	return true;
+}
+
+void FriendItem::OnUserPhotoReady(PhotoType type, const std::string& accid, const std::wstring &photo_path)
+{
+	if (type == kTeam && accid == id_)
+	{
+		auto head_ctrl = FindSubControl(L"head_image");
+		head_ctrl->SetBkImage(photo_path);
+	}
 }
 
 void FriendItem::OnTeamNameChange(const nim::TeamInfo& user_info)

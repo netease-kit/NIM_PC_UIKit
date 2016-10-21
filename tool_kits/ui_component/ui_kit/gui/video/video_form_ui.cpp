@@ -24,6 +24,7 @@ VideoForm::VideoForm(std::string session_id) : session_id_(session_id)
 	channel_id_		 = 0;
 	screen_is_other_ = true;
 	current_video_mode_ = false;
+	custom_video_mode_ = false;
 	is_self_ = true;
 
 	end_call_ = END_CALL_NONE;
@@ -43,16 +44,8 @@ VideoForm::VideoForm(std::string session_id) : session_id_(session_id)
 
 VideoForm::~VideoForm()
 {
-}
-
-::ui::UILIB_RESOURCETYPE VideoForm::GetResourceType() const
-{
-	return ui::UILIB_FILE; 
-}
-
-std::wstring VideoForm::GetZIPFileName() const
-{
-	return (L"videoform.zip");
+	nbase::NAutoLock auto_lock(&capture_lock_);
+	custom_video_mode_ = false;
 }
 
 std::wstring VideoForm::GetSkinFolder()
@@ -69,7 +62,7 @@ ui::Control* VideoForm::CreateControl(const std::wstring& pstrClass)
 {
 	if (pstrClass == _T("BitmapControl"))
 	{
-		return new ui::CBitmapControl();
+		return new ui::BitmapControl(&nim_comp::VideoManager::GetInstance()->video_frame_mng_);
 	}
 	return NULL;
 }
@@ -130,9 +123,11 @@ void VideoForm::InitWindow()
 	friend_label_   = (Label*) FindControl(L"friend_name");
 	status_label_   = (Label*) FindControl(L"chat_status");
 
-	video_ctrl_screen_  = (CBitmapControl*) FindControl(L"photo_screen");
-	video_ctrl_preview_ = (CBitmapControl*)FindControl(L"photo_preview");
+	video_ctrl_screen_  = (BitmapControl*) FindControl(L"photo_screen");
+	video_ctrl_screen_->SetAccount(session_id_);
+	video_ctrl_preview_ = (BitmapControl*)FindControl(L"photo_preview");
 	video_ctrl_preview_->SetAutoSize(true);
+	video_ctrl_preview_->SetAccount(session_id_);
 
 	time_tick_label_ = (Label*) FindControl( L"time_tick" );
 	camera_open_label_ = (Label*) FindControl( L"camera_opening" );
@@ -158,6 +153,8 @@ void VideoForm::InitWindow()
 	camera_checkbox_ = (CheckBox*) FindControl(L"camera");
 	start_record_btn_ = (Button*)FindControl(L"record_start");
 	stop_record_btn_ = (Button*)FindControl(L"record_stop");
+	face_open_btn_ = (Button*)FindControl(L"face_open");
+	face_close_btn_ = (Button*)FindControl(L"face_close");
 
 	input_volumn_slider_ = (Slider*) FindControl( L"input_volumn" );
 	vbox_of_input_ = (VBox*) FindControl( L"vbox_of_input_volumn" );
@@ -208,9 +205,9 @@ void VideoForm::OnFinalMessage(HWND hWnd)
 
 	FreeVideo();
 	FreeAudio();
-	if (is_start_)
+	//if (is_start_)
 	{
-		VideoManager::GetInstance()->EndChat();
+		VideoManager::GetInstance()->EndChat(session_id_);
 	}
 
 	__super::OnFinalMessage(hWnd);
@@ -563,7 +560,7 @@ bool VideoForm::OnClicked( ui::EventArgs* arg )
 		ShowStatusPage(SP_DIAL);
 		SwitchStatus(STATUS_CONNECTING);
 
-		bool ret = VideoManager::GetInstance()->VChatCalleeAck(channel_id_, true);
+		bool ret = VideoManager::GetInstance()->VChatCalleeAck(channel_id_, true, session_id_);
 		if (ret)
 		{
 			is_start_ = true;
@@ -603,6 +600,18 @@ bool VideoForm::OnClicked( ui::EventArgs* arg )
 	else if (name == L"record_stop")
 	{
 		nim::VChat::StopRecord(std::bind(&VideoForm::StopRecordCb, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
+	}
+	else if (name == L"rotate")
+	{
+		nim::VChat::SetRotateRemoteVideo(!nim::VChat::IsRotateRemoteVideo());
+	}
+	else if (name == L"face_open")
+	{
+		SetCustomVideoMode(true);
+	}
+	else if (name == L"face_close")
+	{
+		SetCustomVideoMode(false);
 	}
 	return false;
 }
@@ -754,23 +763,6 @@ void VideoForm::OnVideoInDeviceChange(uint32_t status)
 	}
 }
 
-//void VideoForm::ShowPosition( WindowEx* session )
-//{
-//	if( IsIconic( session->GetHWND() ) )
-//	{
-//		this->CenterWindow();
-//	}
-//	else
-//	{
-//		POINT pt = { 0, 0 };
-//		pt = GetBestPosition( session, this );
-//
-//		UiRect rect( pt.x, pt.y, 0, 0 );
-//		this->SetPos( rect, SWP_NOSIZE );
-//	}
-//	ToTopMost(m_hWnd, false);
-//}
-
 void VideoForm::StartCalling( bool video_mode )
 {
 	current_video_mode_ = video_mode;
@@ -817,7 +809,7 @@ void VideoForm::PrepareQuit()
 		{
 			if( status_ == STATUS_INVITING )
 			{
-				VideoManager::GetInstance()->VChatCalleeAck(channel_id_, false);
+				VideoManager::GetInstance()->VChatCalleeAck(channel_id_, false, session_id_);
 			}
 		}
 	}
@@ -976,41 +968,13 @@ void VideoForm::CheckHeadIcon()
 {
 	nim::UserNameCard info;
 	UserService::GetInstance()->GetUserInfo(session_id_, info);
-	std::wstring photo = UserService::GetInstance()->GetUserPhoto(info.GetAccId());
+	std::wstring photo = PhotoService::GetInstance()->GetUserPhoto(info.GetAccId());
 	headicon_btn_->SetBkImage(photo);
 }
 
 void VideoForm::CheckFriendName()
 {
 	friend_label_->SetText(UserService::GetInstance()->GetUserName(session_id_));
-}
-
-bool VideoForm::CheckAudioInputDevice()
-{
-	//VideoManager* vm = VideoManager::GetInstance();
-
-	//std::wstring device;
-	//int no = 0;
-	//bool has_microphone = vm->GetDefaultAudioInput( no, device );
-
-	//bool open = vm->GetAudioOpenInput();
-
-	//return has_microphone && open;
-	return true;
-}
-
-bool VideoForm::CheckAudioOutputDevice()
-{
-	//VideoManager* vm = VideoManager::GetInstance();
-
-	//std::wstring device;
-	//int no = 0;
-	//bool has_speaker = vm->GetDefaultAudioOutput(no, device);
-
-	//bool open = vm->GetAudioOpenOutput();
-
-	//return has_speaker && open;
-	return true;
 }
 
 int VideoForm::CheckVideoInputDevice()
@@ -1055,10 +1019,15 @@ void VideoForm::InitSetting()
 				camera_checkbox_->SetEnabled(true);
 		}
 		camera_checkbox_->SetVisible(true);
+		//美颜功能按钮
+		face_open_btn_->SetVisible(!custom_video_mode_);
+		face_close_btn_->SetVisible(custom_video_mode_);
 	}
 	else
 	{
 		camera_checkbox_->SetVisible(false);
+		face_open_btn_->SetVisible(false);
+		face_close_btn_->SetVisible(false);
 	}
 }
 
@@ -1089,7 +1058,7 @@ void VideoForm::InitVolumnSetting()
 
 void VideoForm::ClearBitmapControl( bool mine )
 {
-	CBitmapControl* view = NULL;
+	BitmapControl* view = NULL;
 	Control*		tip  = NULL;
 	if( mine )
 	{
@@ -1121,23 +1090,23 @@ void VideoForm::ClearBitmapControl( bool mine )
 	tip->SetVisible( true );
 }
 
+// void VideoForm::StartTalking( /*const nbiz::VideoChatStartCallbackParam& msg*/ )
+// {
+// 	current_video_mode_ = true;/*(msg.type_ == nbiz::kTagChatTypeVideo)*/;
+// 	is_self_ = false;
+// 
+// 	channel_id_;// = msg.channel_id_;
+// 
+// 	if( current_video_mode_ )
+// 		need_change_form_size_ = true;
+// 
+// 	AdjustWindowSize( current_video_mode_ );
+// 
+// 	CheckTitle();
+// 	ShowStatusPage(SP_DIAL);
+// 	SwitchStatus(STATUS_CONNECTING);
+// }
 
-void VideoForm::StartTalking( /*const nbiz::VideoChatStartCallbackParam& msg*/ )
-{
-	current_video_mode_ = true;/*(msg.type_ == nbiz::kTagChatTypeVideo)*/;
-	is_self_ = false;
-
-	channel_id_;// = msg.channel_id_;
-
-	if( current_video_mode_ )
-		need_change_form_size_ = true;
-
-	AdjustWindowSize( current_video_mode_ );
-
-	CheckTitle();
-	ShowStatusPage(SP_DIAL);
-	SwitchStatus(STATUS_CONNECTING);
-}
 void VideoForm::ShowRecordTip(std::wstring tip, std::wstring tip2, std::wstring path)
 {
 	bool show = false;

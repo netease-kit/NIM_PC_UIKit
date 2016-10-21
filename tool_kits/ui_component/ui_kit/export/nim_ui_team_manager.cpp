@@ -4,17 +4,6 @@
 namespace nim_ui
 {
 
-TeamManager::TeamManager()
-{
-
-}
-
-TeamManager::~TeamManager()
-{
-
-}
-
-
 UnregisterCallback TeamManager::RegAddTeam(OnTeamAdd add)
 {
 	return nim_comp::TeamService::GetInstance()->RegAddTeam(add);
@@ -55,24 +44,14 @@ UnregisterCallback TeamManager::RegChangeTeamOwner(OnTeamOwnerChange set_team_ow
 	return nim_comp::TeamService::GetInstance()->RegChangeTeamOwner(set_team_owner);
 }
 
+UnregisterCallback TeamManager::RegMuteMember(OnMuteMember mute)
+{
+	return nim_comp::TeamService::GetInstance()->RegMuteMember(mute);
+}
+
 std::wstring TeamManager::GetTeamName(const std::string& tid)
 {
 	return nim_comp::TeamService::GetInstance()->GetTeamName(tid);
-}
-
-std::wstring TeamManager::GetTeamPhoto(bool full_path)
-{
-	return nim_comp::TeamService::GetInstance()->GetTeamPhoto(full_path);
-}
-
-void TeamManager::QueryAllTeamInfo()
-{
-	nim_comp::TeamService::GetInstance()->QueryAllTeamInfo();
-}
-
-void TeamManager::InvokeChangeTeamMember(const std::string& tid, const std::string& uid, const std::string& team_card)
-{
-	nim_comp::TeamService::GetInstance()->InvokeChangeTeamMember(tid, uid, team_card);
 }
 
 }

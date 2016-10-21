@@ -16,7 +16,7 @@ extern"C"
   * 进入的回调函数定义
   * @param[out] room_id		聊天室ID
   * @param[out] enter_step	进入聊天室的过程(NIMChatRoomEnterStep)
-  * @param[out] error_code	错误码
+  * @param[out] error_code	错误码(如果错误码为kResRoomLocalNeedRequestAgain，聊天室重连机制结束，则需要向IM服务器重新请求进入该聊天室权限)
   * @param[out] result		聊天室信息
   * @param[out] json_extension	json扩展数据（备用）
   * @param[out] user_data	APP的自定义用户数据，SDK只负责传回给回调函数，不做任何处理！
@@ -113,7 +113,7 @@ typedef void (*nim_chatroom_set_member_attribute_cb_func)(__int64 room_id, int e
   * 获取当前聊天室信息的回调函数定义
   * @param[out] room_id			聊天室ID
   * @param[out] error_code		错误码
-  * @param[out] result			json string
+  * @param[out] result			member info json string
   * @param[out] json_extension	json扩展数据（备用）
   * @param[out] user_data		APP的自定义用户数据，SDK只负责传回给回调函数，不做任何处理！
   * @return void 无返回值
@@ -129,6 +129,89 @@ typedef void (*nim_chatroom_get_info_cb_func)(__int64 room_id, int error_code, c
   * @return void 无返回值
   */
 typedef void (*nim_chatroom_kick_member_cb_func)(__int64 room_id, int error_code, const char *json_extension, const void *user_data);
+
+/** @typedef void (*nim_chatroom_temp_mute_member_cb_func)(__int64 room_id, int error_code, const char *result, const char *json_extension, const void *user_data)
+  * 临时禁言指定成员的回调函数定义
+  * @param[out] room_id			聊天室ID
+  * @param[out] error_code		错误码
+  * @param[out] result			member info json string
+  * @param[out] json_extension	json扩展数据（备用）
+  * @param[out] user_data		APP的自定义用户数据，SDK只负责传回给回调函数，不做任何处理！
+  * @return void 无返回值
+  */
+typedef void (*nim_chatroom_temp_mute_member_cb_func)(__int64 room_id, int error_code, const char *result, const char *json_extension, const void *user_data);
+
+/** @typedef void (*nim_chatroom_update_room_info_cb_func)(__int64 room_id, int error_code, const char *json_extension, const void *user_data)
+  * 更新聊天室信息的回调函数定义
+  * @param[out] room_id			聊天室ID
+  * @param[out] error_code		错误码
+  * @param[out] json_extension	json扩展数据（备用）
+  * @param[out] user_data		APP的自定义用户数据，SDK只负责传回给回调函数，不做任何处理！
+  * @return void 无返回值
+  */
+typedef void (*nim_chatroom_update_room_info_cb_func)(__int64 room_id, int error_code, const char *json_extension, const void *user_data);
+
+/** @typedef void (*nim_chatroom_update_my_role_cb_func)(__int64 room_id, int error_code, const char *json_extension, const void *user_data)
+  * 更新我的信息的回调函数定义
+  * @param[out] room_id			聊天室ID
+  * @param[out] error_code		错误码
+  * @param[out] json_extension	json扩展数据（备用）
+  * @param[out] user_data		APP的自定义用户数据，SDK只负责传回给回调函数，不做任何处理！
+  * @return void 无返回值
+  */
+typedef void (*nim_chatroom_update_my_role_cb_func)(__int64 room_id, int error_code, const char *json_extension, const void *user_data);
+
+/** @typedef void (*nim_chatroom_queue_offer_cb_func)(__int64 room_id, int error_code, const char *json_extension, const void *user_data)
+  * 新加(更新)队列元素的回调函数定义
+  * @param[out] room_id			聊天室ID
+  * @param[out] error_code		错误码
+  * @param[out] json_extension	json扩展数据（备用）
+  * @param[out] user_data		APP的自定义用户数据，SDK只负责传回给回调函数，不做任何处理！
+  * @return void 无返回值
+  */
+typedef void (*nim_chatroom_queue_offer_cb_func)(__int64 room_id, int error_code, const char *json_extension, const void *user_data);
+
+/** @typedef void (*nim_chatroom_queue_poll_cb_func)(__int64 room_id, int error_code, const char *result, const char *json_extension, const void *user_data)
+  * 取出头元素的回调函数定义
+  * @param[out] room_id			聊天室ID
+  * @param[out] error_code		错误码
+  * @param[out] result			json object string (聊天室麦序队列元素Keys)
+  * @param[out] json_extension	json扩展数据（备用）
+  * @param[out] user_data		APP的自定义用户数据，SDK只负责传回给回调函数，不做任何处理！
+  * @return void 无返回值
+  */
+typedef void (*nim_chatroom_queue_poll_cb_func)(__int64 room_id, int error_code, const char *result, const char *json_extension, const void *user_data);
+
+/** @typedef void (*nim_chatroom_queue_list_cb_func)(__int64 room_id, int error_code, const char *result, const char *json_extension, const void *user_data)
+  * 排序列出所有元素的回调函数定义
+  * @param[out] room_id			聊天室ID
+  * @param[out] error_code		错误码
+  * @param[out] result			json array string (聊天室麦序队列元素Keys)
+  * @param[out] json_extension	json扩展数据（备用）
+  * @param[out] user_data		APP的自定义用户数据，SDK只负责传回给回调函数，不做任何处理！
+  * @return void 无返回值
+  */
+typedef void (*nim_chatroom_queue_list_cb_func)(__int64 room_id, int error_code, const char *result, const char *json_extension, const void *user_data);
+
+/** @typedef void (*nim_chatroom_queue_drop_cb_func)(__int64 room_id, int error_code, const char *json_extension, const void *user_data)
+  * 删除麦序队列的回调函数定义
+  * @param[out] room_id			聊天室ID
+  * @param[out] error_code		错误码
+  * @param[out] json_extension	json扩展数据（备用）
+  * @param[out] user_data		APP的自定义用户数据，SDK只负责传回给回调函数，不做任何处理！
+  * @return void 无返回值
+  */
+typedef void (*nim_chatroom_queue_drop_cb_func)(__int64 room_id, int error_code, const char *json_extension, const void *user_data);
+
+/** @typedef void (*nim_chatroom_queue_init_cb_func)(__int64 room_id, int error_code, const char *json_extension, const void *user_data)
+  * 麦序队列初始化的回调函数定义
+  * @param[out] room_id			聊天室ID
+  * @param[out] error_code		错误码
+  * @param[out] json_extension	json扩展数据（备用）
+  * @param[out] user_data		APP的自定义用户数据，SDK只负责传回给回调函数，不做任何处理！
+  * @return void 无返回值
+  */
+typedef void (*nim_chatroom_queue_init_cb_func)(__int64 room_id, int error_code, const char *json_extension, const void *user_data);
 
 /** @name 进入聊天室的可选填信息Json Keys
 * @{
@@ -154,7 +237,7 @@ static const char *kNIMChatRoomMsgKeyExt			= "ext";				/**< string, 第三方扩
 static const char *kNIMChatRoomMsgKeyRoomID			= "room_id";			/**< long, 消息所属的聊天室id,服务器填写,发送方不需要填写 */
 static const char *kNIMChatRoomMsgKeyFromAccount	= "from_id";			/**< string, 消息发送者的账号,服务器填写,发送方不需要填写 */
 static const char *kNIMChatRoomMsgKeyTime			= "time";				/**< long, 消息发送的时间戳(毫秒),服务器填写,发送方不需要填写 */
-static const char *kNIMChatRoomMsgKeyFromClientType = "from_client_type";	/**< int,消息发送方客户端类型,服务器填写,发送方不需要填写 */
+static const char *kNIMChatRoomMsgKeyFromClientType = "from_client_type";	/**< int,消息发送方客户端类型(NIMChatRoomClientType),服务器填写,发送方不需要填写 */
 static const char *kNIMChatRoomMsgKeyFromNick		= "from_nick";			/**< string, 消息发送方昵称,服务器填写,发送方不需要填写*/
 static const char *kNIMChatRoomMsgKeyFromAvatar		= "from_avator";		/**< string, 消息发送方头像,服务器填写,发送方不需要填写*/
 static const char *kNIMChatRoomMsgKeyFromExt		= "from_ext";			/**< string, 消息发送方身份扩展字段,服务器填写,发送方不需要填写*/
@@ -179,6 +262,18 @@ enum NIMChatRoomMsgType
 	kNIMChatRoomMsgTypeCustom = 100,	/**< 自定义消息*/
 
 	kNIMChatRoomMsgTypeUnknown = 1000,	/**< 未知类型消息，作为默认值*/
+};
+
+/** @enum NIMChatRoomClientType 聊天室消息来源端 */
+enum NIMChatRoomClientType
+{
+	kNIMChatRoomClientTypeDefault          = 0,		/**< default,unset*/
+	kNIMChatRoomClientTypeAndroid          = 1,		/**< android*/
+	kNIMChatRoomClientTypeiOS			   = 2,		/**< iOS*/
+	kNIMChatRoomClientTypePCWindows        = 4,		/**< PC*/
+	kNIMChatRoomClientTypeWindowsPhone	   = 8,		/**< WindowsPhone*/
+	kNIMChatRoomClientTypeWeb              = 16,	/**< Web*/
+	kNIMChatRoomClientTypeRestAPI		   = 32,	/**< RestAPI*/
 };
 
 /** @name 进入聊天室回调结果Json Keys
@@ -232,6 +327,9 @@ static const char *kNIMChatRoomMemberInfoKeyBlacklist	= "is_blacklist";	/**<int 
 static const char *kNIMChatRoomMemberInfoKeyMuted		= "is_muted";		/**<int 是禁言用户*/
 static const char *kNIMChatRoomMemberInfoKeyValid		= "valid";			/**<int 记录有效标记位*/
 static const char *kNIMChatRoomMemberInfoKeyUpdateTimetag= "update_timetag";/**<long 固定成员的记录更新时间,用于固定成员列表的排列查询*/
+static const char *kNIMChatRoomMemberInfoKeyTempMute	= "temp_mute";		/**<int 临时禁言*/
+static const char *kNIMChatRoomMemberInfoKeyTempMuteRestDuration= "temp_mute_rest_duration"; /**<long 临时禁言的解除时长,单位秒*/
+
 /** @}*/ //聊天室个人Info Json Keys
 
 /** @enum NIMChatRoomOnlineState 在线状态 */
@@ -298,7 +396,15 @@ static const char *kChatRoomNotificationDataKeyOpt	=	"operator";		/**<string 操
 static const char *kChatRoomNotificationDataKeyOptNick		=	"opeNick";		/**<string 操作者的账号nick */
 static const char *kChatRoomNotificationDataKeyTargetNick	=	"tarNick";	/**<string json array 被操作者的nick列表 */
 static const char *kChatRoomNotificationDataKeyTarget=	"target";		/**<string json array 被操作者的accid */
+static const char *kChatRoomNotificationDataKeyTempMuteDuration="muteDuration";	/**<long 当通知为临时禁言相关时有该值，禁言时kNIMChatRoomNotificationIdMemberTempMute代表本次禁言的时长(秒)，解禁时kNIMChatRoomNotificationIdMemberTempUnMute代表本次禁言剩余时长(秒) */
 /** @}*/ //聊天室通知Keys
+
+/** @name 聊天室麦序队列元素Keys
+  * @{
+  */
+static const char *kNIMChatRoomQueueElementKey		= "key";	/**<string 元素key */
+static const char *kNIMChatRoomQueueElementValue	= "value";	/**<string 元素value */
+/** @}*/ //聊天室麦序队列元素Keys
 
 /** @enum NIMChatRoomNotificationId 聊天室通知类型 */
 enum NIMChatRoomNotificationId
@@ -316,6 +422,9 @@ enum NIMChatRoomNotificationId
 	kNIMChatRoomNotificationIdClosed			= 311, /**< 聊天室被关闭了*/
 	kNIMChatRoomNotificationIdInfoUpdated		= 312, /**< 聊天室信息被更新了*/
 	kNIMChatRoomNotificationIdMemberKicked		= 313, /**< 成员被踢了*/
+	kNIMChatRoomNotificationIdMemberTempMute	= 314, /**< 临时禁言*/
+	kNIMChatRoomNotificationIdMemberTempUnMute	= 315, /**< 主动解除临时禁言*/
+	kNIMChatRoomNotificationIdMyRoleUpdated		= 316, /**< 成员主动更新了聊天室内的角色信息(仅指nick/avator/ext)*/
 };
 
 /** @enum NIMChatRoomLinkCondition 聊天室链接情况，一般都是有本地网路情况引起 */

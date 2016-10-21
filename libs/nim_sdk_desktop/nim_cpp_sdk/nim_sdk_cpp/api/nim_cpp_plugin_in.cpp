@@ -1,5 +1,5 @@
 /** @file nim_cpp_plugin_in.cpp
-  * @brief NIM SDK 提供的plugin接入接口
+  * @brief NIM SDK 鎻愪緵鐨刾lugin鎺ュ叆鎺ュ彛
   * @copyright (c) 2015-2016, NetEase Inc. All rights reserved
   * @author Oleg
   * @date 2015/12/29
@@ -31,7 +31,7 @@ void PluginIn::ChatRoomRequestEnterAsync(const __int64 room_id, const ChatRoomRe
 	if (callback)
 		cb_pointer = new ChatRoomRequestEnterCallback(callback);
 
-	return NIM_SDK_GET_FUNC(nim_plugin_chatroom_request_enter_async)(room_id, json_extension.c_str(), &CallbackRequestChatRoomEnter, cb_pointer);;
+	return NIM_SDK_GET_FUNC(nim_plugin_chatroom_request_enter_async)(room_id, json_extension.c_str(), &CallbackRequestChatRoomEnter, cb_pointer);
 }
 
 }

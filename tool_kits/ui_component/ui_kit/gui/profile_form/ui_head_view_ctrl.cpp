@@ -1,7 +1,7 @@
 ﻿#include "ui_head_view_ctrl.h"
 
 /*
-	优化策略: huangjun 2013-12-09
+	优化策略: hj 2013-12-09
 	[1].原图默认压缩到最大宽高不超过2000，保存在内存中作为替代原图的抠图对象。
 	[2].为解决用原图抠图在拖动时很卡的问题，原因是每次移动，都要重新抠图渲染，
 	画板上选区对应原图中的选区很大，要压缩到200*200比较耗时，造成画面顿卡。
@@ -90,7 +90,6 @@ void HeadViewControl::SetGraphicsMode( Graphics &gp )
 	gp.SetPixelOffsetMode(PixelOffsetModeHighQuality);
 }
 
-// 生成原图在内存中
 bool HeadViewControl::RenderImage(const std::wstring& path, bool compress)
 {
 	// 获取图像数据
@@ -149,7 +148,6 @@ bool HeadViewControl::RenderImage(const std::wstring& path, bool compress)
 	return false;
 }
 
-// 生成画布图
 void HeadViewControl::RenderCanvas( int canvas_width, int canvas_height )
 {
 	// 兼容实际画布大小的绘制
@@ -160,7 +158,6 @@ void HeadViewControl::RenderCanvas( int canvas_width, int canvas_height )
 	gp.DrawImage(image_.get(), rf_canvas, 0, 0, (Gdiplus::REAL)image_->GetWidth(), (Gdiplus::REAL)image_->GetHeight(), UnitPixel);
 }
 
-// 生成抠图用的临时图
 void HeadViewControl::RenderTempCanvas( int select_width )
 {
 	// 当选区宽度变化超过10px时重新生成
@@ -183,7 +180,6 @@ void HeadViewControl::RenderTempCanvas( int select_width )
 	}
 }
 
-// 抠图
 Bitmap* HeadViewControl::GetSelectBitmap( RECT select_rect, bool use_original_image/*= false */)
 {
 	if(zoom_ratio_ > 1.0f)

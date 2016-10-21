@@ -1,4 +1,5 @@
 ﻿#include "msg_record.h"
+#include "module/audio/audio_manager.h"
 
 using namespace ui;
 
@@ -24,8 +25,29 @@ void MsgRecordForm::ShowMsg(const nim::IMMessage &msg, bool first, bool show_tim
 
 	MsgBubbleItem* item = NULL;
 
-	if (msg.type_ == nim::kNIMMessageTypeText)
-		item = new MsgBubbleText;
+	if (msg.type_ == nim::kNIMMessageTypeText || IsNetCallMsg(msg.type_, msg.attach_))
+	{
+		Json::Value values;
+		Json::Reader reader;
+		if (reader.parse(msg.attach_, values)
+			&& values.isObject()
+			&& values.isMember("comment")
+			&& values["comment"].asString() == "is_recall_notification")
+		{
+			MsgBubbleNotice* cell = new MsgBubbleNotice;
+			GlobalManager::FillBoxWithCache(cell, L"session/cell_notice.xml");
+			if (first)
+				msg_list_->AddAt(cell, 0);
+			else
+				msg_list_->Add(cell);
+			cell->InitControl();
+			std::wstring notify_text = nbase::UTF8ToUTF16(msg.content_);
+			cell->InitCustomInfo(notify_text, session_id_, msg.client_msg_id_);
+			return;
+		}
+		else
+			item = new MsgBubbleText;
+	}
 	else if (msg.type_ == nim::kNIMMessageTypeImage)
 		item = new MsgBubbleImage;
 	else if (msg.type_ == nim::kNIMMessageTypeAudio)
@@ -34,7 +56,9 @@ void MsgRecordForm::ShowMsg(const nim::IMMessage &msg, bool first, bool show_tim
 		item = new MsgBubbleFile;
 	else if (msg.type_ == nim::kNIMMessageTypeLocation)
 		item = new MsgBubbleLocation;
-	else if (msg.type_ == nim::kNIMMessageTypeNotification)
+	else if (msg.type_ == nim::kNIMMessageTypeVideo)
+		item = new MsgBubbleVideo;
+	else if (msg.type_ == nim::kNIMMessageTypeNotification || msg.type_ == nim::kNIMMessageTypeTips)
 	{
 		id_bubble_pair_[bubble_id] = NULL;
 
@@ -171,15 +195,7 @@ void MsgRecordForm::RefreshRecord(std::string id, nim::NIMSessionType type)
 	msg_list_->RemoveAll();
 	id_bubble_pair_.clear();
 
-	std::string play_sid = AudioCallback::GetPlaySid();
-	std::wstring wsid = nbase::UTF8ToUTF16(play_sid);
-	if(GetWindowId() == wsid)
-	{
-		AudioCallback::SetPlaySid("");
-		AudioCallback::SetPlayCid("");
-
-		nim_audio::Audio::StopPlayAudio();
-	}
+	AudioManager::GetInstance()->StopPlayAudio(nbase::UTF16ToUTF8(GetWindowId()));
 
 	if (type == nim::kNIMSessionTypeTeam)
 	{
@@ -220,7 +236,7 @@ void MsgRecordForm::ShowMsgs(const std::vector<nim::IMMessage> &msg)
 		else
 		{
 			long long older_time = 0;
-			for (int j = i + 1; j < len; j++)
+			for (size_t j = i + 1; j < len; j++)
 			{
 				if (!IsNoticeMsg(msg[j]))
 				{
@@ -269,8 +285,7 @@ void MsgRecordForm::ShowMsgs(const std::vector<nim::IMMessage> &msg)
 
 void MsgRecordForm::QueryMsgOnlineCb(nim::NIMResCode code, const std::string& id, nim::NIMSessionType type, const nim::QueryMsglogResult& result)
 {
-	QLOG_APP(L"query online msg end: code={0} id={1} type={2}") <<code <<id <<type;
-
+	QLOG_APP(L"query online msg end: code={0} id={1} type={2} count={3} source={4}") <<code <<id <<type <<result.msglogs_.size()<< result.source_;
 
 	if (id != session_id_)
 		return;

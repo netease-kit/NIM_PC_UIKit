@@ -5,132 +5,10 @@
 #include "util/windows_manager.h"
 #include "callback/vchat/vchat_callback.h"
 #include "../rts/rts_manager.h"
-#include "libyuv.h"
-#include <sys/timeb.h>
 
 
 namespace nim_comp
 {
-nbase::NLock  lock_;
-PicRegion capture_video_pic_;
-PicRegion recv_video_pic_;
-
-VideoFrameMng::VideoFrameMng()
-{
-}
-
-VideoFrameMng::~VideoFrameMng()
-{
-}
-void VideoFrameMng::AddVideoFrame(bool capture, int64_t time, const char* data, int size, int width, int height, const std::string& json)
-{
-	nbase::NAutoLock auto_lock(&lock_);
-	nim::NIMVideoSubType subtype = nim::kNIMVideoSubTypeI420;
-	timeb time_now;
-	ftime(&time_now); // 秒数
-	int64_t cur_timestamp = time_now.time * 1000 + time_now.millitm; // 毫秒
-	if (capture)
-	{
-		//Json::Value valus;
-		//Json::Reader reader;
-		//if (reader.parse(json, valus))
-		//{
-		//	subtype = (nim::NIMVideoSubType)valus[nim::kNIMVideoSubType].asInt();
-		//}
-		capture_video_pic_.ResetData(cur_timestamp, data, size, width, height, subtype);
-	} 
-	else
-	{
-		recv_video_pic_.ResetData(cur_timestamp, data, size, width, height, subtype);
-	}
-}
-bool VideoFrameMng::GetVideoFrame(bool capture, int64_t& time, char* out_data, int& width, int& height, bool mirror)
-{
-	nbase::NAutoLock auto_lock(&lock_);
-	timeb time_now;
-	ftime(&time_now); // 秒数
-	int64_t cur_timestamp = time_now.time * 1000 + time_now.millitm; // 毫秒
-	PicRegion* pic_info = nullptr;
-	if (capture)
-	{
-		pic_info = &capture_video_pic_;
-	} 
-	else
-	{
-		pic_info = &recv_video_pic_;
-	}
-	if (pic_info && pic_info->pdata_ && time < pic_info->timestamp_ && cur_timestamp - 1000 < pic_info->timestamp_)
-	{
-		time = pic_info->timestamp_;
-		int src_w = pic_info->width_;
-		int src_h = pic_info->height_;
-		//等比
-		if (src_h * width > src_w * height)
-		{
-			width = src_w * height / src_h;
-		}
-		else
-		{
-			height = src_h * width / src_w;
-		}
-		width -= width % 2;
-		height -= height % 2;
-
-		std::string ret_data;
-		if (width != src_w || height != src_h)
-		{
-			ret_data.append(width * height * 3 / 2, (char)0);
-			uint8_t* src_y = (uint8_t*)pic_info->pdata_;
-			uint8_t* src_u = src_y + src_w * src_h;
-			uint8_t* src_v = src_u + src_w * src_h / 4;
-			uint8_t* des_y = (uint8_t*)ret_data.c_str();
-			uint8_t* des_u = des_y + width * height;
-			uint8_t* des_v = des_u + width * height / 4;
-			libyuv::FilterMode filter_mode = libyuv::kFilterBox;
-			libyuv::I420Scale(src_y, src_w,
-				src_u, src_w / 2,
-				src_v, src_w / 2,
-				src_w, src_h,
-				des_y, width,
-				des_u, width / 2,
-				des_v, width / 2,
-				width, height,
-				filter_mode);
-		}
-		else
-		{
-			ret_data.append(pic_info->pdata_, pic_info->size_);
-		}
-		if (mirror)
-		{
-			std::string data_src_temp = ret_data;
-			uint8_t* src_y = (uint8_t*)data_src_temp.c_str();
-			uint8_t* src_u = src_y + width * height;
-			uint8_t* src_v = src_u + width * height / 4;
-			uint8_t* des_y = (uint8_t*)ret_data.c_str();
-			uint8_t* des_u = des_y + width * height;
-			uint8_t* des_v = des_u + width * height / 4;
-			libyuv::I420Mirror(src_y, width,
-				src_u, width / 2,
-				src_v, width / 2,
-				des_y, width,
-				des_u, width / 2,
-				des_v, width / 2,
-				width, height);
-		}
-		uint8_t* des_y = (uint8_t*)ret_data.c_str();
-		uint8_t* des_u = des_y + width * height;
-		uint8_t* des_v = des_u + width * height / 4;
-		libyuv::I420ToARGB(
-			des_y, width,
-			des_u, width / 2,
-			des_v, width / 2,
-			(uint8_t*)out_data, width * 4,
-			width, height);
-		return true;
-	}
-	return false;
-}
 
 VideoManager::VideoManager()
 {
@@ -240,7 +118,11 @@ void VideoManager::OnStartDeviceCb(nim::NIMDeviceType type, bool ret)
 //}
 void VideoManager::OnVChatEvent(nim::NIMVideoChatSessionType type, uint64_t channel_id, int code, const std::string& json)
 {
-	QLOG_APP(L"OnVChatEvent type={0}, channel_id={1}, code={2}, json={3}") << type << channel_id << code << json;
+	if (type != nim::kNIMVideoChatSessionTypeInfoNotify
+		&& type != nim::kNIMVideoChatSessionTypeVolumeNotify)
+	{
+		QLOG_APP(L"OnVChatEvent type={0}, channel_id={1}, code={2}, json={3}") << type << channel_id << code << json;
+	}
 	switch (type)
 	{
 	case nim::kNIMVideoChatSessionTypeStartRes:{
@@ -249,14 +131,10 @@ void VideoManager::OnVChatEvent(nim::NIMVideoChatSessionType type, uint64_t chan
 		{
 			window->ChatStartCallback(code == 200, channel_id);
 		}
-		else if (chatroom_connect_cb_)
-		{
-			chatroom_connect_cb_(code);
-		}
 		else
 		{
 			QLOG_ERR(L"ChatStart no window");
-			EndChat();			
+			EndChat(json);
 		}
 	}break;
 	case nim::kNIMVideoChatSessionTypeInviteNotify:{
@@ -269,7 +147,7 @@ void VideoManager::OnVChatEvent(nim::NIMVideoChatSessionType type, uint64_t chan
 			if (!ShowVideoChatForm(uid, mode == nim::kNIMRtsVideoChatModeVideo, channel_id))
 			{
 				VChatControl(channel_id, nim::kNIMTagControlBusyLine);
-				VChatCalleeAck(channel_id, false);
+				VChatCalleeAck(channel_id, false, "");
 			}
 			else
 			{
@@ -333,6 +211,11 @@ void VideoManager::OnVChatEvent(nim::NIMVideoChatSessionType type, uint64_t chan
 		if (window && window->IsStart())
 		{
 			window->OnLogin(code == 200);
+			int bitrate = atoi(GetConfigValue("video_bitrate").c_str());
+			if (bitrate > 0)
+			{
+				nim::VChat::SetVideoBitrate(bitrate);
+			}
 		}
 		else if (chatroom_connect_cb_)
 		{
@@ -350,6 +233,19 @@ void VideoManager::OnVChatEvent(nim::NIMVideoChatSessionType type, uint64_t chan
 			else if (code == nim::kNIMVideoChatSessionStatusLeaved)
 			{
 				window->OnComeOut(0);
+			}
+		}
+		else if (chatroom_people_cb_)
+		{
+			Json::Value valus;
+			Json::Reader reader;
+			if (reader.parse(json, valus))
+			{
+				std::string uid = valus[nim::kNIMVChatUid].asString();
+				if (!uid.empty())
+				{
+					chatroom_people_cb_(uid, code == nim::kNIMVideoChatSessionStatusJoined);
+				}
 			}
 		}
 	}break;
@@ -446,12 +342,14 @@ bool VideoManager::IsVideoChatFormExist(bool show)
 	}
 	return false;
 }
-bool VideoManager::ShowVideoSetting()
+bool VideoManager::ShowVideoSetting(bool video)
 {
 	VideoSettingForm *window = (VideoSettingForm*)(WindowsManager::GetInstance()->GetWindow(VideoSettingForm::kClassName, VideoSettingForm::kClassName));
 	if (window)
 	{
 		window->ShowWindow(true, true);
+		window->ShowPage(video);
+		SetForegroundWindow(window->GetHWND());
 		return false;
 	}
 	else
@@ -460,7 +358,7 @@ bool VideoManager::ShowVideoSetting()
 		window->Create(NULL, L"音视频设置", WS_OVERLAPPEDWINDOW, 0);
 		window->CenterWindow();
 		window->ShowWindow();
-		window->ShowPage(false);
+		window->ShowPage(video);
 	}
 	return true;
 }
@@ -570,7 +468,14 @@ void VideoManager::StartDevice(nim::NIMDeviceType type, std::string device_path,
 		GetDefaultDevicePath(num_no, device_path, type);
 	}
 	SetDefaultDevicePath(device_path, type);
-	nim::VChat::StartDevice(type, device_path, 50, &VChatCallback::StartDeviceCb);
+	int width = 1280;
+	int height = 720;
+	if (1)
+	{
+		width = atoi(GetConfigValue("video_width").c_str());
+		height = atoi(GetConfigValue("video_height").c_str());
+	}
+	nim::VChat::StartDevice(type, device_path, 50, width, height, &VChatCallback::StartDeviceCb);
 	if (device_session_type_[type] == kDeviceSessionTypeNone)
 	{
 		nim::VChat::AddDeviceStatusCb(type, &VChatCallback::DeviceStatusCb);
@@ -586,12 +491,16 @@ void VideoManager::EndDevice(nim::NIMDeviceType type, DeviceSessionType session_
 	}
 }
 //通话
-bool VideoManager::StartChat(nim::NIMVideoChatMode mode, const std::string& apns_text, const std::string& custom_info, const std::string& uid)
+bool VideoManager::StartChat(nim::NIMVideoChatMode mode, const std::string& apns_text, const std::string& custom_info, const std::string& uid, const std::string& session_id)
 {
 	QLOG_APP(L"StartChat mode={0}, uid={1}") << mode << uid;
 	Json::FastWriter fs;
 	Json::Value value;
+	value[nim::kNIMVChatSessionId] = session_id;
 	value[nim::kNIMVChatUids].append(uid);
+	value[nim::kNIMVChatSound] = "video_chat_tip_receiver.aac";
+	value[nim::kNIMVChatNeedBadge] = 0;
+	value[nim::kNIMVChatNeedFromNick] = 0;
 	if (1)
 	{
 		std::string video_quality = GetConfigValue("video_quality");
@@ -602,7 +511,7 @@ bool VideoManager::StartChat(nim::NIMVideoChatMode mode, const std::string& apns
 		value[nim::kNIMVChatVideoRecord] = atoi(video_record.c_str());
 	}
 	std::string json_value = fs.write(value);
-	return nim::VChat::Start(mode, apns_text, custom_info, json_value);
+	return nim::VChat::Start(mode, nbase::UTF16ToUTF8(mode == nim::kNIMVideoChatModeAudio ? L"语音通话邀请test" : L"视频通话邀请test"), "test custom info", json_value);
 }
 //设置视频类型
 bool VideoManager::SetVoipMode(nim::NIMVideoChatMode mode)
@@ -611,7 +520,7 @@ bool VideoManager::SetVoipMode(nim::NIMVideoChatMode mode)
 	return nim::VChat::SetTalkingMode(mode, "");
 }
 //回应邀请
-bool VideoManager::VChatCalleeAck(uint64_t channel_id, bool accept)
+bool VideoManager::VChatCalleeAck(uint64_t channel_id, bool accept, const std::string& session_id)
 {
 	QLOG_APP(L"VChatCalleeAck channel_id={0}, accept={1}") << channel_id << accept;
 	std::string json_value;
@@ -625,6 +534,7 @@ bool VideoManager::VChatCalleeAck(uint64_t channel_id, bool accept)
 		value[nim::kNIMVChatVideoQuality] = atoi(video_quality.c_str());
 		value[nim::kNIMVChatRecord] = atoi(audio_record.c_str());
 		value[nim::kNIMVChatVideoRecord] = atoi(video_record.c_str());
+		value[nim::kNIMVChatSessionId] = session_id;
 		json_value = fs.write(value);
 	}
 	return nim::VChat::CalleeAck(channel_id, accept, json_value);
@@ -635,9 +545,58 @@ bool VideoManager::VChatControl(uint64_t channel_id, nim::NIMVChatControlType ty
 	QLOG_APP(L"VChatControl channel_id={0}, type={1}") << channel_id << type;
 	return nim::VChat::Control(channel_id, type);
 }
-void VideoManager::EndChat()
+void VideoManager::EndChat(const std::string& session_id)
 {
-	QLOG_APP(L"EndChat");
-	nim::VChat::End();
+	QLOG_APP(L"EndChat {0}") << session_id;
+	Json::FastWriter fs;
+	Json::Value value;
+	value[nim::kNIMVChatSessionId] = session_id;
+	std::string json_value = fs.write(value);
+	nim::VChat::End(json_value);
+}
+
+void VideoManager::SetViewerMode(bool viewer)
+{
+	nim::VChat::SetViewerMode(viewer);
+}
+
+bool VideoManager::GetViewerMode()
+{
+	return nim::VChat::GetViewerMode();
+}
+
+void VideoManager::SetAudioMuted(bool muted)
+{
+	nim::VChat::SetAudioMuted(muted);
+}
+
+bool VideoManager::GetAudioMuteEnabled()
+{
+	return nim::VChat::GetAudioMuteEnabled();
+}
+
+void VideoManager::SetMemberBlacklist(const std::string& uid, bool add, bool audio, nim::VChat::OptCallback cb)
+{
+	nim::VChat::SetMemberBlacklist(uid, add, audio, "", cb);
+}
+
+void VideoManager::CreateRoom(const std::string& room_name, const std::string& custom_info, nim::VChat::Opt2Callback cb)
+{
+	nim::VChat::CreateRoom(room_name, custom_info, "", cb);
+}
+
+bool VideoManager::JoinRoom(nim::NIMVideoChatMode mode, const std::string& room_name, const std::string& session_id, nim::VChat::Opt2Callback cb)
+{
+	Json::FastWriter fs;
+	Json::Value value;
+	value[nim::kNIMVChatSessionId] = session_id;
+	std::string json_value = fs.write(value);
+	return nim::VChat::JoinRoom(mode, room_name, json_value, cb);
+}
+
+void VideoManager::SetChatRoomCb(ConnectCallback connect_cb /*= nullptr*/, PeopleChangeCallback people_cb /*= nullptr*/)
+{
+	chatroom_connect_cb_ = connect_cb;
+	chatroom_people_cb_ = people_cb;
 }
 }

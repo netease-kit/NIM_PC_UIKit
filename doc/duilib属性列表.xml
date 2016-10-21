@@ -62,7 +62,6 @@
 		<Attribute name="name" default="" type="STRING" comment="控件名字,同一窗口内必须唯一,如(testbtn)"/>
 		<Attribute name="halign" default="left" type="STRING" comment="控件的横向位置,如(center),支持left、center、right三种位置"/>
 		<Attribute name="valign" default="top" type="STRING" comment="控件的纵向位置,如(center),支持top、center、bottom三种位置"/>
-		<Attribute name="padding" default="0,0,0,0" type="RECT" comment="内边距,如(2,2,2,2)"/>
 		<Attribute name="margin" default="0,0,0,0" type="RECT" comment="外边距,如(2,2,2,2)"/>
 		<Attribute name="bkcolor" default="" type="STRING" comment="背景颜色字符串常量,如(white)"/>
 		<Attribute name="bkcolor1" default="" type="STRING" comment="背景渐变色1,和bkcolor配合使用,如(blue)"/>
@@ -134,7 +133,7 @@
 		<Attribute name="linelimit" default="false" type="BOOL" comment="是否限制正行输出,如(true)"/>
 		<Attribute name="singleline" default="true" type="BOOL" comment="是否单行输出文字,如(true)"/>
 	</Label>
-	<LabelBox parent="Control" notifies="暂时不写" comment="属性同Label">
+	<LabelBox parent="Box" notifies="暂时不写" comment="属性同Label">
 	</LabelBox>
 
 	<Button parent="Label" notifies="暂时不写" comment="属性同Label">

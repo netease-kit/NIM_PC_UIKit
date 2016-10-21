@@ -6,16 +6,6 @@
 namespace nim_ui
 {
 
-UserConfig::UserConfig()
-{
-	icon_id_ = 0;
-}
-
-UserConfig::~UserConfig()
-{
-
-}
-
 std::wstring UserConfig::GetUserDataPath()
 {
 	return nim_comp::GetUserDataPath();
@@ -31,24 +21,17 @@ std::wstring UserConfig::GetUserAudioPath()
 	return nim_comp::GetUserAudioPath();
 }
 
-
-
-void UserConfig::Re_GetText(ITextServices * text_service, std::wstring& text)
-{
-	nim_comp::Re_GetText(text_service, text);
-}
-
 bool UserConfig::GetAppLocalVersion(int &version, std::wstring &version_flag)
 {
 	return nim_comp::LocalHelper::GetAppLocalVersion(version, version_flag);
 }
 
-UINT UserConfig::GetIcon()
+UINT UserConfig::GetDefaultIcon()
 {
 	return icon_id_;
 }
 
-void UserConfig::SetIcon(UINT nRes)
+void UserConfig::SetDefaultIcon(UINT nRes)
 {
 	if (nRes >= 0)
 	{

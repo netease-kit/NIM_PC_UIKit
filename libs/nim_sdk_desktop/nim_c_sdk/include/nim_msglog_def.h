@@ -8,6 +8,8 @@
 #define NIM_SDK_DLL_EXPORT_HEADERS_MSGLOG_DEF_H_
 
 #include "nim_session_def.h"
+#include "../util/stdbool.h"
+#include "../util/nim_base_types.h"
 
 #ifdef __cplusplus
 extern"C"
@@ -24,7 +26,7 @@ extern"C"
   */ 
 typedef void (*nim_msglog_query_single_cb_func)(int res_code, const char *msg_id, const char *result, const char *json_extension, const void *user_data);
 
-/** @typedef void (*nim_msglog_query_cb_func)(int res_code, const char *id, NIMSessionType type, const char *result, const char *json_extension, const void *user_data)
+/** @typedef void (*nim_msglog_query_cb_func)(int res_code, const char *id, enum NIMSessionType type, const char *result, const char *json_extension, const void *user_data)
   * 本地或在线查询消息的回调函数定义
   * @param[out] res_code		操作结果，成功200
   *								1. 在线查询双人会话消息需要处理的错误号：
@@ -39,7 +41,7 @@ typedef void (*nim_msglog_query_single_cb_func)(int res_code, const char *msg_id
   * @param[out] user_data		APP的自定义用户数据，SDK只负责传回给回调函数，不做任何处理！
   * @return void 无返回值
   */ 
-typedef void (*nim_msglog_query_cb_func)(int res_code, const char *id, NIMSessionType type, const char *result, const char *json_extension, const void *user_data);
+typedef void (*nim_msglog_query_cb_func)(int res_code, const char *id, enum NIMSessionType type, const char *result, const char *json_extension, const void *user_data);
 
 /** @typedef void (*nim_msglog_res_cb_func)(int res_code, const char *msg_id, const char *json_extension, const void *user_data)
   * 消息历史操作结果的回调函数定义(按消息历史id操作)
@@ -51,7 +53,7 @@ typedef void (*nim_msglog_query_cb_func)(int res_code, const char *id, NIMSessio
   */
 typedef void (*nim_msglog_res_cb_func)(int res_code, const char *msg_id, const char *json_extension, const void *user_data);
 
-/** @typedef void (*nim_msglog_res_ex_cb_func)(int res_code, const char *uid, NIMSessionType to_type, const char *json_extension, const void *user_data)
+/** @typedef void (*nim_msglog_res_ex_cb_func)(int res_code, const char *uid, enum NIMSessionType type, const char *json_extension, const void *user_data)
   * 消息历史操作结果的回调函数定义（按消息对象id操作）
   * @param[out] res_code	操作结果，成功200
   * @param[out] uid			对象id(account_id , team_id etc.)
@@ -60,7 +62,7 @@ typedef void (*nim_msglog_res_cb_func)(int res_code, const char *msg_id, const c
   * @param[out] user_data	APP的自定义用户数据，SDK只负责传回给回调函数，不做任何处理！
   * @return void 无返回值
   */
-typedef void (*nim_msglog_res_ex_cb_func)(int res_code, const char *uid, NIMSessionType type, const char *json_extension, const void *user_data);
+typedef void (*nim_msglog_res_ex_cb_func)(int res_code, const char *uid, enum NIMSessionType type, const char *json_extension, const void *user_data);
 
 /** @typedef void (*nim_msglog_modify_res_cb_func)(int res_code, const char *json_extension, const void *user_data)
   * 消息历史操作结果的回调函数定义(只关心rescode)
@@ -71,7 +73,7 @@ typedef void (*nim_msglog_res_ex_cb_func)(int res_code, const char *uid, NIMSess
   */
 typedef void (*nim_msglog_modify_res_cb_func)(int res_code, const char *json_extension, const void *user_data);
 
-/** @typedef void (*nim_msglog_import_prg_cb_func)(__int64 imported_count, __int64 total_count, const char *json_extension, const void *user_data)
+/** @typedef void (*nim_msglog_import_prg_cb_func)(int64_t imported_count, int64_t total_count, const char *json_extension, const void *user_data)
   * 消息历史数据库导入过程的回调函数定义
   * @param[out] imported_count 		已导入的消息历史记录数目
   * @param[out] total_count			消息历史记录总数目
@@ -79,7 +81,7 @@ typedef void (*nim_msglog_modify_res_cb_func)(int res_code, const char *json_ext
   * @param[out] user_data			APP的自定义用户数据，SDK只负责传回给回调函数，不做任何处理！
   * @return void 无返回值
   */
-typedef void (*nim_msglog_import_prg_cb_func)(__int64 imported_count, __int64 total_count, const char *json_extension, const void *user_data);
+typedef void (*nim_msglog_import_prg_cb_func)(int64_t imported_count, int64_t total_count, const char *json_extension, const void *user_data);
 
 /** @typedef void (*nim_msglog_status_changed_cb_func)(int res_code, const char *result, const char *json_extension, const void *user_data)
   * 消息状态变更通知的回调函数定义
@@ -102,13 +104,22 @@ static const char *kNIMMsglogStatusChangedKeyStatus = "status";
 /** @name 查询消息历史结果Json Keys
   * for example: 
   * {"count": 20,
-  *  "content":[***]
+	 "source" : 0,
+  *  "content":[obj, obj, obj, ....]
   * }
   * @{
   */
 static const char *kNIMMsglogQueryKeyCount		= "count";			/**< int, 查询得到的数量 */
+static const char *kNIMMsglogQueryKeySource		= "source";			/**< NIMMsglogQuerySource, 查询结果来源 */
 static const char *kNIMMsglogQueryKeyContent	= "content";		/**< json object array (Keys SEE MORE in `nim_talk_def.h` 『消息结构 Json Keys』)，查询得到的msglog内容 */
 /** @}*/ //查询消息历史结果Json Keys
+
+/** @enum NIMMsglogQuerySource 消息历史查询来源 */
+enum NIMMsglogQuerySource
+{
+	kNIMMsglogQuerySourceLocal      = 0,			/**< 本地查询*/
+	kNIMMsglogQuerySourceServer     = 1,			/**< 云端查询*/ 
+};
 
 /** @enum NIMMessageType Message Type */
 enum NIMMessageType
@@ -123,10 +134,10 @@ enum NIMMessageType
 	kNIMMessageTypeTips		 = 10,			/**< 提醒类型消息,Tip内容根据格式要求填入消息结构中的kNIMMsgKeyServerExt字段*/
 	kNIMMessageTypeCustom    = 100,			/**< 自定义消息*/
 
-	kNIMMessageTypeUnknown	 = 1000,		/**< 未知类型消息，作为默认值*/
+	kNIMMessageTypeUnknown	 = 1000,		/**< 未知类型消息，本地使用，发送时勿使用，作为默认值*/
 };
 
-/** @enum NIMMessageFeature Message Feature */
+/** @enum NIMMessageFeature 消息种类 */
 enum NIMMessageFeature
 {
 	kNIMMessageFeatureDefault	= 0,			/**< 默认*/
@@ -136,7 +147,7 @@ enum NIMMessageFeature
 	kNIMMessageFeatureCustomizedMsg	= 4,		/**< 透传消息*/
 };
 
-/** @enum NIMMsgLogStatus Message Log Status */
+/** @enum NIMMsgLogStatus 消息状态 */
 enum NIMMsgLogStatus
 {
 	kNIMMsgLogStatusNone		= 0,			/**< 默认,不能当查询条件,意义太多*/
@@ -151,11 +162,11 @@ enum NIMMsgLogStatus
 	kNIMMsgLogStatusSendCancel	= 9,			/**< 发送取消*/
 };
 
-/** @enum NIMNotificationId Notification Id */
+/** @enum NIMNotificationId 通知类型 */
 enum NIMNotificationId
 {
-	kNIMNotificationIdTeamInvite			= 0,			/**< 普通群拉人，{"ids":["a1", "a2"],"user_namecards":["namecard1", "namecard2"]}*/
-	kNIMNotificationIdTeamKick				= 1,			/**< 普通群踢人，{"ids":["a1", "a2"],"user_namecards":["namecard1", "namecard2"]}*/
+	kNIMNotificationIdTeamInvite			= 0,			/**< 普通群拉人，{"ids":["a1", "a2"],"user_namecards":["namecard1", "namecard2"], "attach" : ""} attach为可选字段，作为应用自定义扩展字段,解析前需要判断有没有这个字段 */
+	kNIMNotificationIdTeamKick				= 1,			/**< 普通群踢人，{"ids":["a1", "a2"],"user_namecards":["namecard1", "namecard2"], "attach" : ""} attach为可选字段，作为应用自定义扩展字段,解析前需要判断有没有这个字段 */
 	kNIMNotificationIdTeamLeave				= 2,			/**< 退出群，{"id" : "a1","user_namecards":["namecard1", "namecard2"]}*/
 	kNIMNotificationIdTeamUpdate			= 3,			/**< team_info更新，{"team_info":team_info,"user_namecards":["namecard1", "namecard2"]} //群组信息(Keys SEE MORE `nim_team_def.h` 『群组信息 Json Keys』)*/
 	kNIMNotificationIdTeamDismiss			= 4,			/**< 群解散，{"user_namecards":["namecard1", "namecard2"]}*/
@@ -164,6 +175,7 @@ enum NIMNotificationId
 	kNIMNotificationIdTeamAddManager		= 7,			/**< 增加管理员，{"ids":["a1","a2"],"user_namecards":["namecard1", "namecard2"]}*/
 	kNIMNotificationIdTeamRemoveManager		= 8,			/**< 删除管理员，{"ids":["a1","a2"],"user_namecards":["namecard1", "namecard2"]}*/
 	kNIMNotificationIdTeamInviteAccept		= 9,			/**< 高级群接受邀请进群，{"id":"a1","user_namecards":["namecard1", "namecard2"]}*/
+	kNIMNotificationIdTeamMuteMember		= 10,			/**< 禁言/解禁群成员，{"user_namecards":["namecard1", "namecard2"],"team_info":team_info,"id":"a1","mute":1-禁言,0-解禁} */
 
 	kNIMNotificationIdNetcallMiss			= 101,			/**< 未接电话,{"calltype":1,"channel":6146078138783760761,"from":"id1","ids":["id1","id2"],"time":1430995380471}*/
 	kNIMNotificationIdNetcallBill			= 102,			/**< 话单,{"calltype":2,"channel":6146077129466446197,"duration":8,"ids":["id1","id2"],"time":1430995117398}*/
@@ -171,17 +183,18 @@ enum NIMNotificationId
 	//服务器在线同步协议返回的结果
 	kNIMNotificationIdTeamSyncCreate		= 1000,			/**< 创建群 {"team_info" : team_info} //群组信息(Keys SEE MORE `nim_team_def.h` 『群组信息 Json Keys』)*/
 	kNIMNotificationIdTeamMemberChanged		= 1001,			/**< 群成员变更{"team_member" : team_member_info} //群组成员信息（不包括自己）(Keys SEE MORE `nim_team_def.h` 『群组成员信息 Json Keys』)*/
-	kNIMNotificationIdTeamSyncUpdateTlist	= 1002,			/**< 同步通知：修改群属性（可能是自己的或别人的）{"team_member" : team_member_info} //目前只需kNIMTeamUserKeyNick和kNIMTeamUserKeyBits (Keys SEE MORE `nim_team_def.h` 『群组成员信息 Json Keys』)*/
+	kNIMNotificationIdTeamSyncUpdateMemberProperty	= 1002,	/**< 同步通知：修改群成员属性（可能是自己的或别人的）{"team_member" : team_member_info} //目前只需kNIMTeamUserKeyNick和kNIMTeamUserKeyBits (Keys SEE MORE `nim_team_def.h` 『群组成员信息 Json Keys』)*/
 
-	//本地操作通知APP上层
+	//本地发起的操作通知APP上层
 	kNIMNotificationIdLocalCreateTeam		= 2000,			/**< 本地操作创建群 {"ids" : ["a1", "a2"]}*/
 	kNIMNotificationIdLocalApplyTeam		= 2001,			/**< 本地操作申请加入群 {}*/
 	kNIMNotificationIdLocalRejectApply		= 2002,			/**< 本地操作拒绝申请 {"id":"a1"}*/
 	kNIMNotificationIdLocalRejectInvite		= 2003,			/**< 本地操作拒绝邀请 {"id":"a1"}*/
-	kNIMNotificationIdLocalUpdateTlist		= 2004,			/**< 本地操作更新tlist  {"team_member" : team_member_info}，目前只需kNIMTeamUserKeyNick和kNIMTeamUserKeyBits*/  
+	kNIMNotificationIdLocalUpdateMemberProperty	= 2004,		/**< 本地操作更新群成员属性  {"team_member" : team_member_info} */  
 	kNIMNotificationIdLocalUpdateOtherNick	= 2005,			/**< 本地操作更新他人nickname {}*/
 	kNIMNotificationIdLocalGetTeamInfo		= 2006,			/**< 本地操作获取群信息 {"team_info":team_info} //群组信息(Keys SEE MORE `nim_team_def.h` 『群组信息 Json Keys』)*/
 	kNIMNotificationIdLocalGetTeamList		= 2007,			/**< 本地操作获取群成员信息结束*/
+	kNIMNotificationIdLocalMuteMember		= 2008,			/**< 本地操作对群成员禁言 {"id":"a1", "mute":1-禁言,0-解禁} */
 	//Netcall本地操作通知
 	kNIMNotificationIdLocalNetcallReject	= 3103,			/**< 拒绝电话,{"calltype":1,"channel":6146078138783760761,"from":"id1","ids":["id1","id2"],"time":1430995380471}*/
 	kNIMNotificationIdLocalNetcallNoResponse= 3104,			/**< 无应答，未接通电话,{"calltype":1,"channel":6146078138783760761,"from":"id1","ids":["id1","id2"],"time":1430995380471}*/
@@ -195,6 +208,20 @@ enum NIMMsgLogSubStatus
 	//这二个标志适用于所有
 	kNIMMsgLogSubStatusNotPlaying           = 20,			/**< 未播放*/
 	kNIMMsgLogSubStatusPlayed               = 21,			/**< 已播放*/
+};
+
+/** @name 接口nim_msglog_query_msg_async扩展参数json object key定义
+  * @{
+  */
+static const char *kNIMMsglogQueryJsonExtensionKeyDirection		= "direction"; /**< NIMMsglogSearchDirection，默认为kForward */
+static const char *kNIMMsglogQueryJsonExtensionKeyReverse		= "reverse"; /**< bool，返回的消息历史排序正序(false)/逆序(true),默认为false */
+/** @}*/ //接口nim_msglog_query_msg_async扩展参数json key定义
+
+/** @enum NIMMsglogSearchDirection 消息历史查询方向 */
+enum NIMMsglogSearchDirection
+{
+	kForward = 0,	/**< 以时间点为准向前搜索 */
+	kBackward = 1,	/**< 以时间点为准向后搜索 */
 };
 
 /** @enum NIMMsgLogQueryRange 消息历史的检索范围 */
@@ -217,9 +244,11 @@ enum NIMMsgLogQueryRange
   * @{
   */
 static const char *kNIMNotificationKeyId		= "id";				/**< int, 见NIMNotificationId */
-static const char *kNIMNotificationKeyData		= "data";			/**< json object 包含以下四种可能的数据*/
+static const char *kNIMNotificationKeyData		= "data";			/**< json object 包含以下5种可能的数据结构*/
 static const char *kNIMNotificationKeyDataIds	= "ids";			/**< string array */
 static const char *kNIMNotificationKeyDataId	= "id";				/**< string */
+static const char *kNIMNotificationKeyDataLeave = "leave";			/**< bool */
+static const char *kNIMNotificationKeyDataMute	= "mute";			/**< int */
 static const char *kNIMNotificationKeyTeamInfo	= "team_info";		/**< string, team_info 群组信息 Json Keys*/
 static const char *kNIMNotificationKeyTeamMember = "team_member";	/**< string, team_member_property 群组成员信息 Json Keys*/
 static const char *kNIMNotificationKeyUserNameCards = "name_cards";	/**< json string array, 操作者和被操作者双方的 用户名片 Json Keys*/

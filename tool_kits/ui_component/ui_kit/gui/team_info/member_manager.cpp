@@ -3,7 +3,6 @@
 #include "shared/pin_yin_helper.h"
 #include "callback/team/team_callback.h"
 #include "shared/tool.h"
-#include "gui/invoke_chat_form/invoke_chat_form.h"
 #include "shared/ui/msgbox.h"
 #include "module/login/login_manager.h"
 #include "module/service/user_service.h"
@@ -60,7 +59,7 @@ void MemberManagerForm::InitWindow()
 	std::string team_card = member_info_.GetNick();
 
 	Button* head_image_button = (Button*)FindControl(L"head_image");
-	head_image_button->SetBkImage(UserService::GetInstance()->GetUserPhoto(user_id));
+	head_image_button->SetBkImage(PhotoService::GetInstance()->GetUserPhoto(user_id));
 	Label* show_name_label = (Label*)FindControl(L"show_name");
 	show_name_label->SetText(UserService::GetInstance()->GetUserName(user_id));
 	re_team_card_ = (ui::RichEdit*)FindControl(L"team_card");
@@ -95,7 +94,7 @@ static void OnTeamEventCallback(const std::string& uid, const std::string& team_
 {
 	if (team_event.res_code_ == nim::kNIMResSuccess)
 	{
-		if (team_event.notification_id_ == nim::kNIMNotificationIdLocalUpdateOtherNick || team_event.notification_id_ == nim::kNIMNotificationIdLocalUpdateTlist)
+		if (team_event.notification_id_ == nim::kNIMNotificationIdLocalUpdateOtherNick || team_event.notification_id_ == nim::kNIMNotificationIdLocalUpdateMemberProperty)
 		{
 			TeamService::GetInstance()->InvokeChangeTeamMember(team_event.team_id_, uid, team_card);
 		}
@@ -107,10 +106,20 @@ bool MemberManagerForm::OnBtnConfirmClick(ui::EventArgs* param)
 	std::string user_id = member_info_.GetAccountID();
 	std::string team_card = member_info_.GetNick();
 	nim::NIMTeamUserType user_type = member_info_.GetUserType();
-
+	std::string tid = tid_;
 	if (((Option*)FindControl(L"owner"))->IsSelected())
 	{
-		nim::Team::TransferTeamAsync(tid_, user_id, false, nbase::Bind(&TeamCallback::OnTeamEventCallback, std::placeholders::_1));
+		if (member_info_.IsMute())
+		{
+			nim::Team::MuteMemberAsync(tid_, user_id, false, ToWeakCallback([this, tid, user_id](const nim::TeamEvent& result){
+				if (result.res_code_ == nim::kNIMResSuccess)
+				{
+					nim::Team::TransferTeamAsync(tid, user_id, false, nbase::Bind(&TeamCallback::OnTeamEventCallback, std::placeholders::_1));
+				}
+			}));
+		}
+		else
+			nim::Team::TransferTeamAsync(tid_, user_id, false, nbase::Bind(&TeamCallback::OnTeamEventCallback, std::placeholders::_1));
 	}
 	else if (((Option*)FindControl(L"manager"))->IsSelected() && user_type != nim::kNIMTeamUserTypeManager)
 	{

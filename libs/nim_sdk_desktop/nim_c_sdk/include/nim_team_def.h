@@ -8,6 +8,8 @@
 #ifndef NIM_SDK_DLL_EXPORT_HEADERS_TEAM_DEF_H_
 #define NIM_SDK_DLL_EXPORT_HEADERS_TEAM_DEF_H_
 
+#include "../util/stdbool.h"
+
 #ifdef __cplusplus
 extern"C"
 {
@@ -91,6 +93,34 @@ typedef void (*nim_team_query_team_member_cb_func)(const char *tid,
   */
 typedef void (*nim_team_query_team_info_cb_func)(const char *tid, const char *result, const char *json_extension, const void *user_data);
 
+/** @enum NIMTeamBeInviteMode 被邀请人同意方式 */
+enum NIMTeamBeInviteMode
+{
+	kNIMTeamBeInviteModeNeedAgree	= 0,	/**< 需要同意 */
+	kNIMTeamBeInviteModeNotNeedAgree= 1,	/**< 不需要同意 */
+};
+
+/** @enum NIMTeamInviteMode 谁可以邀请他人入群 */
+enum NIMTeamInviteMode
+{
+	kNIMTeamInviteModeManager	= 0,	/**< 管理员 */
+	kNIMTeamInviteModeEveryone  = 1,	/**< 所有人 */
+};
+
+/** @enum NIMTeamUpdateInfoMode 谁可以修改群资料 */
+enum NIMTeamUpdateInfoMode
+{
+	kNIMTeamUpdateInfoModeManager	= 0,	/**< 管理员 */
+	kNIMTeamUpdateInfoModeEveryone  = 1,	/**< 所有人 */
+};
+
+/** @enum NIMTeamUpdateCustomMode 谁可以更新群自定义属性 */
+enum NIMTeamUpdateCustomMode
+{
+	kNIMTeamUpdateCustomModeManager	= 0,	/**< 管理员 */
+	kNIMTeamUpdateCustomModeEveryone  = 1,	/**< 所有人 */
+};
+
 /** @name 群组信息 Json Keys
   * @{
   */
@@ -109,12 +139,17 @@ static const char *kNIMTeamInfoKeyMemberValid	= "member_valid";	/**< int,群有�
 static const char *kNIMTeamInfoKeyIntro			= "intro";			/**< string,群介绍,长度限制：255字符 */
 static const char *kNIMTeamInfoKeyAnnouncement	= "announcement";	/**< string,群公告,长度限制：5000字符 */
 static const char *kNIMTeamInfoKeyJoinMode		= "join_mode";		/**< int,入群模式(NIMTeamJoinMode),默认为kNIMTeamJoinModeNoAuth(0),不需要验证 */
-static const char *kNIMTeamInfoKeyBits			= "bits";			/**< long，群开关(NIMTeamBitsConfigMask) */
+static const char *kNIMTeamInfoKeyBits			= "bits";			/**< long, 群属性,开发者无需关注 20161011 by Oleg*/
 static const char *kNIMTeamInfoKeyCustom		= "custom";			/**< string, 第三方扩展字段（仅负责存储和透传） */
 static const char *kNIMTeamInfoKeyServerCustom	= "server_custom";	/**< string, 第三方服务器扩展字段（该配置项只能通过服务器接口设置，对客户端只读） */
+static const char *kNIMTeamInfoKeyIcon			= "icon";			/**< string, 群头像,长度限制：1024字符 */
+static const char *kNIMTeamInfoKeyBeInviteMode	= "be_invite_mode"; /**< int, 被邀请人同意方式，属性本身只有群主管理员可以修改,默认kNIMTeamBeInviteModeNeedAgree(0)/kNIMTeamBeInviteModeNotNeedAgree(1) */
+static const char *kNIMTeamInfoKeyInviteMode	= "invite_mode";	/**< int, 谁可以邀请他人入群，属性本身只有群主管理员可以修改,默认kNIMTeamInviteModeManager(0)/kNIMTeamInviteModeEveryone(1) */
+static const char *kNIMTeamInfoKeyUpdateInfoMode= "update_info_mode";/**< int, 谁可以修改群资料，属性本身只有群主管理员可以修改,默认kNIMTeamUpdateInfoModeManager(0)/kNIMTeamUpdateInfoModeEveryone(1) */
+static const char *kNIMTeamInfoKeyUpdateCustomMode	= "update_custom_mode";/**< int, 谁可以更新群自定义属性，属性本身只有群主管理员可以修改,默认kNIMTeamUpdateCustomModeManager(0)/kNIMTeamUpdateCustomModeEveryone(1) */
 /** @}*/ //群组信息Json Keys
 
-/** @enum NIMTeamBitsConfigMask 群组信息Bits属性kNIMTeamInfoKeyBits的配置定义 */
+/** @enum NIMTeamBitsConfigMask 群组成员信息Bits属性kNIMTeamUserKeyBits的配置定义 */
 enum NIMTeamBitsConfigMask
 {
 	kNIMTeamBitsConfigMaskMuteNotify	= 1,	/**< 关闭消息提醒(bit: 1 << 0)。0：开启提醒, 1：关闭提醒 */
@@ -134,10 +169,12 @@ static const char *kNIMTeamUserKeyID			= "tid";			/**< string,群id */
 static const char *kNIMTeamUserKeyAccID			= "accid";			/**< string,群成员id */
 static const char *kNIMTeamUserKeyType			= "type";			/**< int,群成员类型(NIMTeamUserType),默认kNIMTeamUserTypeNomal(0) */
 static const char *kNIMTeamUserKeyNick			= "nick";			/**< string,群成员昵称 */
-static const char *kNIMTeamUserKeyBits			= "bits";			/**< long,群成员属性开关 */
+static const char *kNIMTeamUserKeyBits			= "bits";			/**< long,群成员属性,位操作(NIMTeamBitsConfigMask) */
 static const char *kNIMTeamUserKeyValidFlag		= "valid";			/**< int,群成员有效性标记位,有效1,无效0 */
 static const char *kNIMTeamUserKeyCreateTime	= "create_timetag";	/**< long,入群时间戳(毫秒) */
 static const char *kNIMTeamUserKeyUpdateTime	= "update_timetag";	/**< long,群成员信息上次更新时间戳(毫秒) */
+static const char *kNIMTeamUserKeyCustom		= "custom";			/**< string,群成员自定义扩展字段,必须为可以解析为json的非格式化的字符串 */
+static const char *kNIMTeamUserKeyMute			= "mute";			/**< int,是否被禁言,0-非禁言(默认),1-禁言 */
 /** @}*/ //群组成员信息Json Keys
 
 /** @enum NIMTeamUserType 群成员类型 */
@@ -157,6 +194,13 @@ enum NIMTeamJoinMode
 	kNIMTeamJoinModeNeedAuth	= 1,		/**< 需要验证 */
 	kNIMTeamJoinModeRejectAll	= 2,		/**< 拒绝所有人入群 */
 };
+
+/** @name 搜索本地群组相关信息扩展参数
+  * @{
+  */
+static const char *kNIMTeamSearchKeyIncludeInvalid			= "include_invalid";			/**< bool,是否包括无效群(成员)，不在群里（离开或被踢）或者群已经解散 */	
+/** @}*/ //搜索本地群组相关信息扩展参数
+
 
 #ifdef __cplusplus
 };

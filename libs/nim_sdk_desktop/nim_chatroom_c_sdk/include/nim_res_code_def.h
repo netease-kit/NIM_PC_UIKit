@@ -5,8 +5,8 @@
   * @date 2015/2/1
   */
 
-#ifndef NIM_SDK_DLL_EXPORT_HEADERS_NIM_RES_CODE_DEF_H_
-#define NIM_SDK_DLL_EXPORT_HEADERS_NIM_RES_CODE_DEF_H_
+#ifndef NIM_CHATROOM_SDK_DLL_EXPORT_HEADERS_NIM_RES_CODE_DEF_H_
+#define NIM_CHATROOM_SDK_DLL_EXPORT_HEADERS_NIM_RES_CODE_DEF_H_
 
 #ifdef __cplusplus
 extern"C"
@@ -26,11 +26,13 @@ enum NIMResCode
 	kNIMResParameterError		= 414,		/**< 参数错误 */
 	kNIMResConnectionError		= 415,		/**< 网络连接出现错误 */
 	kNIMResFrequently			= 416,		/**< 操作太过频繁 */
-	kNIMResExist				= 417,		/**< 对象已经存在 */
+	kNIMResExist				= 417,		/**< 对象已经存在/重复操作 */
+	kNIMResOverrun				= 419,		/**< 超限 */
 	kNIMResAccountBlock			= 422,		/**< 帐号被禁用 */
 	kNIMResUnknownError			= 500,		/**< 未知错误，或者不方便告诉你 */
 	kNIMResServerDataError		= 501,		/**< 服务器数据错误 */
 	kNIMResTooBuzy				= 503,		/**< 服务器太忙 */
+	kNIMResExceedLimit			= 508,		/**< 超过配置有效期 */
 	kNIMResInvalid				= 509,		/**< 协议无效, 不允许访问的协议 */
 	//群错误码
 	kNIMResTeamECountLimit		= 801,		/**< 已达到人数限制 */
@@ -43,21 +45,29 @@ enum NIMResCode
 	kNIMResTeamApplySuccess		= 808,		/**< 申请成功 */
 	kNIMResTeamAlreadyIn		= 809,		/**< 已经在群里 */
 	kNIMResTeamInviteSuccess	= 810,		/**< 邀请成功 */
+	kNIMResForcePushCountLimit	= 811,		/**< 强推列表账号数量超限 */
+
 	//数据整解编错误代码
 	kNIMResInvalidProtocol		= 997,		/**< 协议已失效 */
 	kNIMResEUnpacket			= 998,		/**< 解包错误 */
 	kNIMResEPacket				= 999,		/**< 打包错误 */
+
+	//
+	kNIMResInBlack				= 7101,		/**< 被接收方加入黑名单 SDK版本大于2.5.0支持*/
+
 	//客户端自定义的错误号
-	kNIMLocalRes					= 10000,		/**< 值大于该错误号的都是客户端自定义的错误号。不能随意更改其值！ */
+	kNIMLocalRes						= 10000,	/**< 值大于该错误号的都是客户端自定义的错误号。不能随意更改其值！ */
+	kNIMResRoomLocalNeedRequestAgain	= 10001,	/**< 客户端本地错误号，需要重新向IM服务器获取进入聊天室权限 */
 
 	//客户端自定义的消息错误号
 	kNIMLocalResMsgNosUploadCancel	= 10200,		/**< 发送文件消息，NOS上传暂停 */
 	kNIMLocalResMsgNosDownloadCancel = 10206,		/**< 收到文件消息，NOS下载暂停 */
-	kNIMLocalResMsgFileNotExist		= 10404,		/**< 本地资源不存在 */
-	kNIMLocalResMsgUrlInvalid		= 10414,		/**< 收到消息，资源下载地址无效，无法下载 */
-	kNIMLocalResMsgFileExist		= 10417,		/**< 收到消息，本地资源已存在，不需要重复下载 */
-	kNIMLocalResParaError			= 10450,		/**< 调用api，传入的参数有误 */
+	kNIMLocalResMsgNosDownloadCheckError = 10207,	/**< 收到文件消息，NOS下载完成后本地文件检查错误，一般为下载的文件大小与文件信息不符 */
+	kNIMLocalResMsgFileNotExist = 10404,		/**< 本地资源不存在 */
+	kNIMLocalResParameterError		= 10414,		/**< 本地错误码，参数错误，(收到消息，资源下载地址无效，无法下载) */
+	kNIMLocalResExist				= 10417,		/**< 本地错误码，对象已经存在/重复操作，(收到消息，本地资源已存在，不需要重复下载) */
 	kNIMLocalResMsgSendNosError		= 10502,		/**< 发送消息，上传NOS失败 */
+	kNIMLocalResExceedLimit			= 10508,		/**< 本地错误码,超过配置有效期或者所需参数不存在 */
 	kNIMLocalResCheckMsgDBFailed	= 10600,		/**< 导入消息历史时验证身份和加密密钥不通过 */
 	kNIMLocalResImportMsgDBFailed	= 10601,		/**< 导入消息历史时写记录失败 */
 	//客户端自定义的RTS错误号
@@ -67,14 +77,18 @@ enum NIMResCode
 	kNIMLocalResRtsStatusError		= 11501,		/**< rts会话 通道状态不正确 */
 	kNIMLocalResRtsChannelNotExist	= 11510,		/**< rts会话 通道不存在 */
 
+	kNIMResRoomLinkError			= 13001,		/**< 主链接错误 */
+	kNIMResRoomError				= 13002,		/**< 聊天室状态异常 */
+	kNIMResRoomBlackBeOut			= 13003,		/**< 黑名单用户禁止进入 */
+
 	//客户端自定义的api调用问题
 	kNIMLocalResAPIErrorInitUndone	= 20000,		/**< 还未初始化或初始化未正常完成 */
-	kNIMLocalResAPIErrorEnterUndone	= 20001,		/**< 还未登陆或登录未完成 */
-	kNIMLocalResAPIErrorEntered		= 20002,		/**< 已经登录 */
+	kNIMLocalResAPIErrorLoginUndone = 20001,		/**< 还未登陆或登录未完成 */
+	kNIMLocalResAPIErrorLogined		= 20002,		/**< 已经登录 */
 	kNIMLocalResAPIErrorVersionError= 20003,		/**< SDK版本不对，可能会引发其他问题 */
 };
 
 #ifdef __cplusplus
 };
 #endif //__cplusplus
-#endif //NIM_SDK_DLL_EXPORT_HEADERS_NIM_RES_CODE_DEF_H_
+#endif //NIM_CHATROOM_SDK_DLL_EXPORT_HEADERS_NIM_RES_CODE_DEF_H_

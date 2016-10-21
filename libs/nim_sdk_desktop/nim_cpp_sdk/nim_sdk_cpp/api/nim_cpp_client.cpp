@@ -23,6 +23,9 @@ typedef void(*nim_client_reg_kickout_cb)(const char *json_extension, nim_json_tr
 typedef void(*nim_client_reg_disconnect_cb)(const char *json_extension, nim_json_transport_cb_func cb, const void* user_data);
 typedef void(*nim_client_reg_multispot_login_notify_cb)(const char *json_extension, nim_json_transport_cb_func cb, const void *user_data);
 typedef void(*nim_client_reg_kickout_other_client_cb)(const char *json_extension, nim_json_transport_cb_func cb, const void *user_data);
+typedef void(*nim_client_reg_sync_multiport_push_config_cb)(const char *json_extension, nim_client_multiport_push_config_cb_func cb, const void *user_data);
+typedef void(*nim_client_set_multiport_push_config)(const char *switch_content, const char *json_extension, nim_client_multiport_push_config_cb_func cb, const void *user_data);
+typedef void(*nim_client_get_multiport_push_config)(const char *json_extension, nim_client_multiport_push_config_cb_func cb, const void *user_data);
 
 static void CallbackLogin(const char* json_res, const void *callback)
 {
@@ -36,6 +39,7 @@ static void CallbackLogin(const char* json_res, const void *callback)
 			res.res_code_ = (NIMResCode)values[kNIMResCode].asInt();
 			res.login_step_ = (NIMLoginStep)values[kNIMLoginStep].asUInt();
 			res.relogin_ = values[kNIMRelogin].asBool();
+			res.retrying_ = values[kNIMRetrying].asBool();
 			ParseOtherClientsPres(values[kNIMOtherClientsPres], res.other_clients_);
 		}
 		Client::LoginCallback *cb = (Client::LoginCallback *)callback;
@@ -131,14 +135,16 @@ bool Client::Init(const std::string& app_data_dir
 	, const std::string& app_install_dir
 	, const SDKConfig &config)
 {
-	if (!SDKFunction::LoadSdkDll())
+	if (!SDKFunction::LoadSdkDll(""))
 		return false;
 
 	Json::Value config_root;
 	//sdk能力参数（必填）
 	Json::Value config_values;
-	config_values[nim::kNIMDataBaseEncryptKey] = config.database_encrypt_key_;//"41e7247dd58611b6329db670fa3d4f6c"; //string（db key必填，目前只支持最多32个字符的加密密钥！建议使用32个字符）
-	config_values[nim::kNIMPreloadAttach] = config.preload_attach_;        //bool （选填，是否需要预下载附件缩略图， sdk默认预下载）
+	config_values[nim::kNIMDataBaseEncryptKey] = config.database_encrypt_key_;
+	config_values[nim::kNIMPreloadAttach] = config.preload_attach_;	
+	config_values[nim::kNIMPreloadImageQuality] = config.preload_image_quality_;
+	config_values[nim::kNIMPreloadImageResize] = config.preload_image_resize_;
 	config_values[nim::kNIMSDKLogLevel] = config.sdk_log_level_;
 	config_root[nim::kNIMGlobalConfig] = config_values;
 
@@ -287,6 +293,90 @@ void Client::RegKickOtherClientCb(const KickOtherCallback& cb, const std::string
 	g_cb_kickother_ = new KickOtherCallback(cb);
 
 	return NIM_SDK_GET_FUNC(nim_client_reg_kickout_other_client_cb)(json_extension.c_str(), &CallbackKickother, g_cb_kickother_);
+}
+
+static void CallbackSyncMultiportPushConfig(int rescode, const char *content, const char *json_extension, const void *user_data)
+{
+	if (user_data)
+	{
+		Client::MultiportPushConfigCallback* cb_pointer = (Client::MultiportPushConfigCallback*)user_data;
+		if (*cb_pointer)
+		{
+			Json::Value values;
+			Json::Reader reader;
+			if (rescode == nim::kNIMResSuccess && reader.parse(PCharToString(content), values) && values.isObject())
+			{
+				bool open = values[kNIMMultiportPushConfigContentKeyOpen].asInt() == 1;
+				PostTaskToUIThread(std::bind((*cb_pointer), rescode, open));
+				//(*cb_pointer)(rescode, open);
+				return;
+			}
+			(*cb_pointer)(rescode, false);
+		}
+	}
+}
+
+static Client::MultiportPushConfigCallback* g_cb_sync_multiport_push_switch_ = nullptr;
+void Client::RegSyncMultiportPushConfigCb(const MultiportPushConfigCallback& cb, const std::string& json_extension/* = ""*/)
+{
+	if (g_cb_sync_multiport_push_switch_)
+	{
+		delete g_cb_sync_multiport_push_switch_;
+		g_cb_sync_multiport_push_switch_ = nullptr;
+	}
+	g_cb_sync_multiport_push_switch_ = new MultiportPushConfigCallback(cb);
+	return NIM_SDK_GET_FUNC(nim_client_reg_sync_multiport_push_config_cb)(json_extension.c_str(), &CallbackSyncMultiportPushConfig, g_cb_sync_multiport_push_switch_);
+}
+
+static void CallbackMultiportPushConfig(int rescode, const char *content, const char *json_extension, const void *user_data)
+{
+	if (user_data)
+	{
+		Client::MultiportPushConfigCallback* cb_pointer = (Client::MultiportPushConfigCallback*)user_data;
+		if (*cb_pointer)
+		{
+			Json::Value values;
+			Json::Reader reader;
+			if (rescode == nim::kNIMResSuccess && reader.parse(PCharToString(content), values) && values.isObject())
+			{
+				bool open = values[kNIMMultiportPushConfigContentKeyOpen].asInt() == 1;
+				PostTaskToUIThread(std::bind((*cb_pointer), rescode, open));
+				//(*cb_pointer)(rescode, open);
+				delete cb_pointer;
+				return;
+			}
+			(*cb_pointer)(rescode, false);
+		}
+		delete cb_pointer;
+	}
+}
+
+void Client::SetMultiportPushConfigAsync(bool switch_on, const MultiportPushConfigCallback& cb, const std::string& json_extension/* = ""*/)
+{
+	MultiportPushConfigCallback* cb_pointer = nullptr;
+	if (cb)
+	{
+		cb_pointer = new MultiportPushConfigCallback(cb);
+	}
+	Json::Value values;
+	Json::FastWriter fw;
+	values[kNIMMultiportPushConfigContentKeyOpen] = switch_on ? 1 : 2;
+	NIM_SDK_GET_FUNC(nim_client_set_multiport_push_config)(GetJsonStringWithNoStyled(values).c_str()
+		, json_extension.c_str()
+		, &CallbackMultiportPushConfig
+		, cb_pointer);
+}
+
+void Client::GetMultiportPushConfigAsync(const MultiportPushConfigCallback& cb, const std::string& json_extension/* = ""*/)
+{
+	MultiportPushConfigCallback* cb_pointer = nullptr;
+	if (cb)
+	{
+		cb_pointer = new MultiportPushConfigCallback(cb);
+	}
+	NIM_SDK_GET_FUNC(nim_client_get_multiport_push_config)(json_extension.c_str()
+		, &CallbackMultiportPushConfig
+		, cb_pointer);
 }
 
 void Client::UnregClientCb()

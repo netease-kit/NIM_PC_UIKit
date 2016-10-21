@@ -40,16 +40,16 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <OutDir>$(ProjectDir)..\..\..\..\libs\</OutDir>
+    <OutDir>$(ProjectDir)..\..\..\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <TargetName>nim_chatroom_cpp_sdk_d</TargetName>
-    <IntDir>$(ProjectDir)..\..\..\..\tmp\$(ProjectName)\$(Configuration)\</IntDir>
+    <IntDir>$(ProjectDir)..\..\tmp\$(ProjectName)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <OutDir>$(ProjectDir)..\..\..\..\libs\</OutDir>
+    <OutDir>$(ProjectDir)..\..\..\</OutDir>
     <TargetName>nim_chatroom_cpp_sdk</TargetName>
-    <IntDir>$(ProjectDir)..\..\..\..\tmp\$(ProjectName)\$(Configuration)\</IntDir>
+    <IntDir>$(ProjectDir)..\..\tmp\$(ProjectName)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -97,6 +97,7 @@
     <ClCompile Include="helper\nim_chatroom_common_helper.cpp" />
     <ClCompile Include="helper\nim_chatroom_file_helper.cpp" />
     <ClCompile Include="helper\nim_chatroom_sdk_helper.cpp" />
+    <ClCompile Include="nim_chatroom_cpp_api.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="api\nim_chatroom_cpp.h" />

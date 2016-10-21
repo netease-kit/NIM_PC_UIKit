@@ -21,7 +21,8 @@ Duilib是windows平台下的一款轻量级directUI开源库（遵循BSD协议�
 ## 云信Duilib使用帮助
 
 * `云信Duilib`与原版的Duilib已经有了较大的不同，但是如果已经熟练使用原版Duilib的开发人员可以很快的学会`云信Duilib`，所以建议您先学习一下原版Duilib的使用方法。  
-* `云信Duilib`与原版Duilib最大的不同在于控件和控件属性的的增删以及XML布局的配置方法。我们提供了`云信Duilib`的控件属性列表[云信Duilib属性列表](./duilib属性列表.xml)，搭配云信Demo来理解`云信Duilib`的使用方法[NIM Demo For PC](https://github.com/netease-im/NIM_PC_Demo)。  
+* `云信Duilib`与原版Duilib最大的不同在于控件和控件属性的增删以及XML布局的配置方法。我们提供了`云信Duilib`的控件属性列表[云信Duilib属性列表](./duilib属性列表.xml)，搭配云信Demo来理解`云信Duilib`的使用方法[NIM Demo For PC](https://github.com/netease-im/NIM_PC_Demo)。  
+* 关于`云信Duilib`界面布局的教程：[云信Duilib布局指南](./nim_duilib_layout.md)  
 * `云信Duilib`依赖基础引擎库`base库`，所以在使用`云信Duilib`的项目中必须要需要同时添加`base库`，`base库`在UI组件中的`tool_kits\base`目录提供。
 * `云信Duilib`的所有类都位于`ui`命名空间下。
 

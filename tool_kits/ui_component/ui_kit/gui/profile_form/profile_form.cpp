@@ -1,8 +1,10 @@
 ﻿#include "profile_form.h"
+#include "callback/multiport/multiport_push_callback.h"
 #include "module/session/session_manager.h"
 #include "module/service/mute_black_service.h"
 #include "head_modify_form.h"
 #include "api/nim_cpp_friend.h"
+#include "callback/team/team_callback.h"
 
 namespace nim_comp
 {
@@ -34,13 +36,39 @@ ProfileForm * ProfileForm::ShowProfileForm(UTF8String uid)
 	return form;
 }
 
+ProfileForm *ProfileForm::ShowProfileForm(UTF8String tid, UTF8String uid, nim::NIMTeamUserType my_type)
+{
+	ProfileForm* form = (ProfileForm*)WindowsManager::GetInstance()->GetWindow(kClassName, kClassName);
+	if (form != NULL && form->m_uinfo.GetAccId().compare(uid) == 0 && form->tid_ == tid) //当前已经打开的名片正是希望打开的名片
+		; // 直接显示
+	else
+	{
+		if (form != NULL && (form->m_uinfo.GetAccId().compare(uid) != 0 || form->tid_ != tid))//当前已经打开的名片不是希望打开的名片
+			::DestroyWindow(form->m_hWnd); //关闭重新创建
+		form = new ProfileForm(tid, uid, my_type);
+		form->Create(NULL, L"", WS_OVERLAPPEDWINDOW & ~WS_MAXIMIZEBOX, 0L);
+
+		// 获取用户信息
+		nim::UserNameCard info;
+		UserService::GetInstance()->GetUserInfo(uid, info);
+		form->InitUserInfo(info);
+	}
+	if (!::IsWindowVisible(form->m_hWnd))
+	{
+		::ShowWindow(form->m_hWnd, SW_SHOW);
+		form->CenterWindow();
+	}
+	form->__super::ActiveWindow();
+	return form;
+}
+
 ProfileForm::ProfileForm()
 {
 	auto user_info_change_cb = nbase::Bind(&ProfileForm::OnUserInfoChange, this, std::placeholders::_1);
 	unregister_cb.Add(UserService::GetInstance()->RegUserInfoChange(user_info_change_cb));
 
-	auto user_photo_ready_cb = nbase::Bind(&ProfileForm::OnUserPhotoReady, this, std::placeholders::_1, std::placeholders::_2);
-	unregister_cb.Add(UserService::GetInstance()->RegUserPhotoReady(user_photo_ready_cb));
+	auto user_photo_ready_cb = nbase::Bind(&ProfileForm::OnUserPhotoReady, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
+	unregister_cb.Add(PhotoService::GetInstance()->RegPhotoReady(user_photo_ready_cb));
 
 	auto misc_uinfo_change_cb = nbase::Bind(&ProfileForm::OnMiscUInfoChange, this, std::placeholders::_1);
 	unregister_cb.Add(UserService::GetInstance()->RegMiscUInfoChange(misc_uinfo_change_cb));
@@ -85,8 +113,10 @@ void ProfileForm::InitWindow()
 	nickname_label = static_cast<ui::Label*>(FindControl(L"nickname"));
 	sex_icon = static_cast<ui::CheckBox*>(FindControl(L"sex_icon"));
 
+	multi_push_switch = static_cast<ui::CheckBox*>(FindControl(L"multi_push_switch"));
 	notify_switch = static_cast<ui::CheckBox*>(FindControl(L"notify_switch"));
 	black_switch = static_cast<ui::CheckBox*>(FindControl(L"black_switch"));
+	mute_switch = static_cast<ui::CheckBox*>(FindControl(L"mute_switch"));
 	start_chat = static_cast<ui::Button*>(FindControl(L"start_chat"));
 	add_or_del = static_cast<ui::TabBox*>(FindControl(L"add_or_del"));
 	delete_friend = static_cast<ui::Button*>(FindControl(L"delete_friend"));
@@ -120,6 +150,19 @@ void ProfileForm::InitWindow()
 	
 	signature_label = static_cast<ui::Label*>(FindControl(L"signature"));
 	signature_edit = static_cast<ui::RichEdit*>(FindControl(L"signature_edit"));
+
+	if (tid_.empty())
+	{
+		ui::Box* panel = static_cast<ui::Box*>(FindControl(L"mute_switch_box"));
+		panel->SetVisible(false);
+	}
+	else
+	{
+		if (my_team_user_type_ != nim::kNIMTeamUserTypeCreator && my_team_user_type_ != nim::kNIMTeamUserTypeManager)
+			mute_switch->SetEnabled(false);
+		else
+			have_mute_right_ = true;
+	}
 }
 
 void ProfileForm::InitUserInfo(const nim::UserNameCard &info)
@@ -133,11 +176,15 @@ void ProfileForm::InitUserInfo(const nim::UserNameCard &info)
 
 	if (user_type == -1) // 自己的名片
 	{
+		// 获取多端推送开关
+		nim::Client::GetMultiportPushConfigAsync(&MultiportPushCallback::OnMultiportPushConfigChange);
+
 		head_image_btn->SetMouseEnabled(true); // 可点击头像进行更换
 		btn_modify_info->SetVisible(true); // 显示“编辑”按钮
 		head_image_btn->SetMouseEnabled(true); // 可点击头像进行更换
 
-		FindControl(L"only_other")->SetVisible(false); // 当名片是自己的时候，下面两块隐藏
+		FindControl(L"only_other")->SetVisible(false);	// 当名片是自己的时候，隐藏下面两块
+		FindControl(L"only_me")->SetVisible(true);		// 当名片是自己的时候，显示多端推送开关
 
 		nickname_edit->SetLimitText(10);
 		phone_edit->SetLimitText(13);
@@ -152,9 +199,15 @@ void ProfileForm::InitUserInfo(const nim::UserNameCard &info)
 		btn_modify_info->AttachClick(nbase::Bind(&ProfileForm::OnModifyOrCancelBtnClicked, this, std::placeholders::_1, true));
 		btn_cancel_modify->AttachClick(nbase::Bind(&ProfileForm::OnModifyOrCancelBtnClicked, this, std::placeholders::_1, false));
 		btn_save_modify->AttachClick(nbase::Bind(&ProfileForm::OnSaveInfoBtnClicked, this, std::placeholders::_1));
+
+		multi_push_switch->AttachSelect(nbase::Bind(&ProfileForm::OnMultiPushSwitchSelected, this, std::placeholders::_1));
+		multi_push_switch->AttachUnSelect(nbase::Bind(&ProfileForm::OnMultiPushSwitchUnSelected, this, std::placeholders::_1));
 	}
 	else
 	{
+		FindControl(L"only_other")->SetVisible(true);	// 当名片是自己的时候，显示下面两块
+		FindControl(L"only_me")->SetVisible(false);		// 当名片是自己的时候，隐藏多端推送开关
+
 		CheckInMuteBlack();
 		add_or_del->SelectItem(user_type == nim::kNIMFriendFlagNormal ? 0 : 1);
 
@@ -170,6 +223,8 @@ void ProfileForm::InitUserInfo(const nim::UserNameCard &info)
 		notify_switch->AttachUnSelect(nbase::Bind(&ProfileForm::OnNotifySwitchUnSelected, this, std::placeholders::_1));
 		black_switch->AttachSelect(nbase::Bind(&ProfileForm::OnBlackSwitchSelected, this, std::placeholders::_1));
 		black_switch->AttachUnSelect(nbase::Bind(&ProfileForm::OnBlackSwitchUnSelected, this, std::placeholders::_1));
+		mute_switch->AttachSelect(nbase::Bind(&ProfileForm::OnMuteSwitchSelected, this, std::placeholders::_1));
+		mute_switch->AttachUnSelect(nbase::Bind(&ProfileForm::OnMuteSwitchUnSelected, this, std::placeholders::_1));
 
 		unregister_cb.Add(MuteBlackService::GetInstance()->RegSyncSetMuteCallback(nbase::Bind(&ProfileForm::OnNotifyChangeCallback, this, std::placeholders::_1, std::placeholders::_2)));
 		unregister_cb.Add(MuteBlackService::GetInstance()->RegSyncSetBlackCallback(nbase::Bind(&ProfileForm::OnBlackChangeCallback, this, std::placeholders::_1, std::placeholders::_2)));
@@ -177,6 +232,17 @@ void ProfileForm::InitUserInfo(const nim::UserNameCard &info)
 		start_chat->AttachClick(nbase::Bind(&ProfileForm::OnStartChatBtnClicked, this, std::placeholders::_1));
 		delete_friend->AttachClick(nbase::Bind(&ProfileForm::OnDeleteFriendBtnClicked, this, std::placeholders::_1));
 		add_friend->AttachClick(nbase::Bind(&ProfileForm::OnAddFriendBtnClicked, this, std::placeholders::_1));
+
+		if (have_mute_right_)
+		{
+			//TODO(litianyi) 同步堵塞接口测试
+			//nim::TeamMemberProperty prop = nim::Team::QueryTeamMemberBlock(tid_, m_uinfo.GetAccId());
+			//mute_switch->Selected(prop.IsMute());
+
+			nim::Team::QueryTeamMemberAsync(tid_, m_uinfo.GetAccId(), ToWeakCallback([this](const nim::TeamMemberProperty& team_member_info) {
+				mute_switch->Selected(team_member_info.IsMute());
+			}));
+		}
 	}
 
 	InitLabels();
@@ -226,6 +292,18 @@ bool ProfileForm::Notify(ui::EventArgs * msg)
 	return true;
 }
 
+bool ProfileForm::OnMultiPushSwitchSelected(ui::EventArgs* args)
+{
+	nim::Client::SetMultiportPushConfigAsync(true, &MultiportPushCallback::OnMultiportPushConfigChange);
+	return true;
+}
+
+bool ProfileForm::OnMultiPushSwitchUnSelected(ui::EventArgs* args)
+{
+	nim::Client::SetMultiportPushConfigAsync(false, &MultiportPushCallback::OnMultiportPushConfigChange);
+	return true;
+}
+
 bool ProfileForm::OnNotifySwitchSelected(ui::EventArgs* args)
 {
 	MuteBlackService::GetInstance()->InvokeSetMute(m_uinfo.GetAccId(), false);
@@ -247,6 +325,18 @@ bool ProfileForm::OnBlackSwitchSelected(ui::EventArgs* args)
 bool ProfileForm::OnBlackSwitchUnSelected(ui::EventArgs* args)
 {
 	MuteBlackService::GetInstance()->InvokeSetBlack(m_uinfo.GetAccId(), false);
+	return true;
+}
+
+bool ProfileForm::OnMuteSwitchSelected(ui::EventArgs* args)
+{
+	nim::Team::MuteMemberAsync(tid_, m_uinfo.GetAccId(), true, nbase::Bind(&TeamCallback::OnTeamEventCallback, std::placeholders::_1));
+	return true;
+}
+
+bool ProfileForm::OnMuteSwitchUnSelected(ui::EventArgs* args)
+{
+	nim::Team::MuteMemberAsync(tid_, m_uinfo.GetAccId(), false, nbase::Bind(&TeamCallback::OnTeamEventCallback, std::placeholders::_1));
 	return true;
 }
 
@@ -275,7 +365,7 @@ void ProfileForm::OnBlackChangeCallback(std::string id, bool black)
 
 bool ProfileForm::OnStartChatBtnClicked(ui::EventArgs* args)
 {
-	SessionManager::GetInstance()->OpenSessionForm(m_uinfo.GetAccId(), nim::kNIMSessionTypeP2P);
+	SessionManager::GetInstance()->OpenSessionBox(m_uinfo.GetAccId(), nim::kNIMSessionTypeP2P);
 	return true;
 }
 
@@ -307,12 +397,24 @@ bool ProfileForm::OnAddFriendBtnClicked(ui::EventArgs* args)
 	return true;
 }
 
+void ProfileForm::OnModifyHeaderComplete(const std::string& id, const std::string &url)
+{
+	// 头像上传成功，开始更新用户信息
+	auto update_cb = nbase::Bind(&ProfileForm::UpdateUInfoHeaderCallback, this, std::placeholders::_1);
+	UserService::GetInstance()->InvokeUpdateMyPhoto(url, update_cb);
+}
+
+void ProfileForm::UpdateUInfoHeaderCallback(int res)
+{
+	QLOG_ERR(L"updateUInfoHeaderCallback error code: {0}.") << res;
+}
+
 bool ProfileForm::OnHeadImageClicked(ui::EventArgs * args)
 {
 	HeadModifyForm* form = (HeadModifyForm*)WindowsManager::GetInstance()->GetWindow(HeadModifyForm::kClassName, HeadModifyForm::kClassName);
 	if (form == NULL)
 	{
-		form = new HeadModifyForm(m_uinfo.GetAccId());
+		form = new HeadModifyForm(m_uinfo.GetAccId(), L"");
 		form->Create(NULL, NULL, WS_OVERLAPPED, 0L);
 		form->ShowWindow(true);
 		form->CenterWindow();
@@ -321,6 +423,7 @@ bool ProfileForm::OnHeadImageClicked(ui::EventArgs * args)
 	{
 		::SetForegroundWindow(form->GetHWND());
 	}
+	form->RegCompleteCallback(nbase::Bind(&ProfileForm::OnModifyHeaderComplete, this, std::placeholders::_1, std::placeholders::_2));
 
 	return true;
 }
@@ -420,7 +523,7 @@ bool ProfileForm::OnSaveInfoBtnClicked(ui::EventArgs * args)
 	}
 	
 	if (new_info.ExistValue(nim::kUserNameCardKeyAll))
-		UserService::GetInstance()->InvokeUpdateUserInfo(new_info, nullptr);
+		UserService::GetInstance()->InvokeUpdateMyInfo(new_info, nullptr);
 	else
 		OnModifyOrCancelBtnClicked(nullptr, false);
 
@@ -578,7 +681,7 @@ void ProfileForm::OnUserInfoChange(const std::list<nim::UserNameCard>& uinfos)
 		{
 			m_uinfo.Update(info);
 			if (info.ExistValue(nim::kUserNameCardKeyIconUrl))
-				head_image_btn->SetBkImage(UserService::GetInstance()->GetUserPhoto(m_uinfo.GetAccId()));
+				head_image_btn->SetBkImage(PhotoService::GetInstance()->GetUserPhoto(m_uinfo.GetAccId()));
 			if(info.ExistValue(nim::kUserNameCardKeyName))
 			{
 				SetShowName();
@@ -589,9 +692,9 @@ void ProfileForm::OnUserInfoChange(const std::list<nim::UserNameCard>& uinfos)
 	}
 }
 
-void nim_comp::ProfileForm::OnUserPhotoReady(const std::string & account, const std::wstring & photo_path)
+void nim_comp::ProfileForm::OnUserPhotoReady(PhotoType type, const std::string & account, const std::wstring & photo_path)
 {
-	if (m_uinfo.GetAccId() == account)
+	if (type == kUser && m_uinfo.GetAccId() == account)
 		head_image_btn->SetBkImage(photo_path);
 }
 
@@ -609,11 +712,19 @@ void nim_comp::ProfileForm::OnMiscUInfoChange(const std::list<nim::UserNameCard>
 	}
 }
 
+void ProfileForm::OnMultiportPushConfigChange(bool switch_on)
+{
+	if (-1 != user_type)
+		return;
+
+	multi_push_switch->Selected(switch_on, false);
+}
+
 void ProfileForm::InitLabels()
 {
 	SetShowName();
 
-	head_image_btn->SetBkImage(UserService::GetInstance()->GetUserPhoto(m_uinfo.GetAccId())); //头像
+	head_image_btn->SetBkImage(PhotoService::GetInstance()->GetUserPhoto(m_uinfo.GetAccId())); //头像
 
 	if (m_uinfo.ExistValue(nim::kUserNameCardKeyGender))
 	{

@@ -14,6 +14,44 @@
 extern"C"
 {
 #endif
+
+/** @typedef void (*nim_client_multiport_push_config_cb_func)(const char *content, const char *json_params, const void *user_data)
+* 多端推送设置/同步回调
+* @param[out] rescode
+* @param[out] content
+* @param[out] json_extension	json扩展数据（备用）
+* @param[out] user_data APP的自定义用户数据，SDK只负责传回给回调函数，不做任何处理！
+* @return void 无返回值
+*/
+typedef void(*nim_client_multiport_push_config_cb_func)(int rescode, const char *content, const char *json_params, const void *user_data);
+
+/** @typedef void (*nim_client_dnd_cb_func)(const char *content, const char *json_params, const void *user_data)
+* ios免打扰设置/同步回调
+* @param[out] rescode
+* @param[out] content
+* @param[out] json_extension	json扩展数据（备用）
+* @param[out] user_data APP的自定义用户数据，SDK只负责传回给回调函数，不做任何处理！
+* @return void 无返回值
+*/
+typedef void(*nim_client_dnd_cb_func)(int rescode,const char *content, const char *json_params, const void *user_data);
+
+/** @name 多端推送设置/同步 内容Json key
+  * @{
+  */ 
+static const char *kNIMMultiportPushConfigContentKeyOpen	= "switch_open";		/**< int, 1开启，即桌面端在线时移动端不需推送；2关闭，即桌面端在线时移动端需推送 */
+/** @}*/ //多端推送设置/同步 内容Json key
+
+/** @name 免打扰设置 内容Json key
+客户端传入的属性（如果开启免打扰，请让第三方确保把时间转成东八区，即北京时间，小时是24小时制)
+*/
+static const char *kNIMDndShowDetail = "show_detail"; /**< 是否显示详情，1显示详情，2不显示详情，其它按1处理(Integer)*/
+static const char *kNIMDndOpened = "switch_open"; /**< 是否开启免打扰，1开启，2关闭，其它按2处理(Integer)*/
+static const char *kNIMDndFromH = "fromh"; /**< 如果开启免打扰，开始小时数(Integer)*/
+static const char *kNIMDndFromM = "fromm"; /**< 如果开启免打扰，开始分钟数(Integer)*/
+static const char *kNIMDndToH = "toh"; /**< 如果开启免打扰，截止小时数(Integer)*/
+static const char *kNIMDndToM = "tom"; /**< 如果开启免打扰，截止分钟数(Integer)*/
+/** @}*/ //免打扰设置 内容Json key
+
 /** @enum NIMLogoutType Logout类型 */
 enum NIMLogoutType
 {
@@ -34,11 +72,13 @@ enum NIMKickReason
 /** @enum NIMClientType 客户端类型 */
 enum NIMClientType
 {
+	kNIMClientTypeDefault		= 0,  /**< Default, unset*/
 	kNIMClientTypeAndroid		= 1,  /**< Android*/
 	kNIMClientTypeiOS			= 2,  /**< iOS*/
 	kNIMClientTypePCWindows		= 4,  /**< PC Windows*/
 	kNIMClientTypeWindowsPhone	= 8,  /**< Windows Phone*/
 	kNIMClientTypeWeb			= 16, /**< Web*/
+	kNIMClientTypeRestAPI		= 32, /**< RestAPI*/
 };
 
 /** @enum NIMLoginStep 登录步骤 */
@@ -53,28 +93,24 @@ enum NIMLoginStep
 /** @enum NIMMultiSpotNotifyType 多点登录通知类型 */
 enum NIMMultiSpotNotifyType
 {
-	kNIMMultiSpotNotifyTypeImIn	=   2,		/**< 通知其他在线端自己登录了*/
-	kNIMMultiSpotNotifyTypeImOut	=   3,		/**< 通知其他在线端自己退出*/
-};
-
-/** @enum NIMSDKLogLevel NIM SDK log级别，级别越高，log越详细 */
-enum NIMSDKLogLevel
-{
-	kNIMSDKLogLevelApp		= 5,	/**< SDK应用级别Log，正式发布时为了精简sdk log，可采用此级别*/
-	kNIMSDKLogLevelPro		= 6,	/**< SDK过程级别Log，更加详细，更有利于开发调试*/
+	kNIMMultiSpotNotifyTypeImIn	= 2,		/**< 通知其他在线端自己登录了*/
+	kNIMMultiSpotNotifyTypeImOut= 3,		/**< 通知其他在线端自己退出*/
 };
 
 /** @name json extension params for nim_client_init API
   * for example: 
-  * {"global_config":{"db_encrypt_key":"xxxxx","preload_attach":true},
+  * {"global_config":{"db_encrypt_key":"xxxxx","preload_attach":true,"sdk_log_level":1,"push_cer_name":"xxxxx"},
   *  "private_server_setting":{"lbs":"xxxxx","nos_lbs":"xxxxx","default_link":["xxxxx"],"default_nos_upload":["xxxxx"],"default_nos_download":["xxxxx"],"rsa_public_key_module":"xxxxx"}
   * }
   * @{
   */ 
 static const char *kNIMGlobalConfig				= "global_config";			/**< json object, Global Config */
-static const char *kNIMDataBaseEncryptKey		= "db_encrypt_key";			/**< string, （必填，目前只支持最多32个字符的加密密钥！建议使用32个字符） */
-static const char *kNIMPreloadAttach			= "preload_attach";			/**< bool, （必填，是否需要预下载附件缩略图） */
+static const char *kNIMDataBaseEncryptKey		= "db_encrypt_key";			/**< string, 必填，目前只支持最多32个字符的加密密钥！建议使用32个字符 */
+static const char *kNIMPreloadAttach			= "preload_attach";			/**< bool, 是否需要预下载附件(图片和语音),选填,默认为true,如果有对带宽流量有较高要求的请关闭该选项，改为上层开发者按需下载附件文件 */
+static const char *kNIMPreloadImageQuality		= "preload_image_quality";	/**< int, 预下载图片质量,选填,范围0-100 */
+static const char *kNIMPreloadImageResize		= "preload_image_resize";	/**< string, 预下载图片基于长宽做内缩略,选填,比如宽100高50,则赋值为100x50,中间为字母小写x */
 static const char *kNIMSDKLogLevel				= "sdk_log_level";			/**< int，定义见NIMSDKLogLevel（选填，SDK默认的内置级别为kNIMSDKLogLevelPro） */
+static const char *kNIMPushCerName				= "push_cer_name";			/**< string，推送证书名（选填，iOS端需要） */
 
 static const char *kNIMPrivateServerSetting		= "private_server_setting";	/**< json object, Private Server Setting（一旦设置了私有服务器，则全部连私有服务器，必须确保配置正确！） */
 static const char *kNIMLbsAddress				= "lbs";					/**< string, （必填，lbs地址） */
@@ -99,14 +135,15 @@ static const char *kNIMKickoutOtherDeviceIDs				= "device_ids";		/**< string arr
 
 /** @name json params for nim_json_transport_cb_func that has been registered in nim_client_login and nim_client_reg_auto_relogin_cb API
   * for example: 
-  * {"err_code": 200, "relogin": false, "login_step": 3,
+  * {"err_code": 200, "relogin": false, "login_step": 3, "retrying": false, 
   *  "other_clients_pres":[{"app_account":"abc","client_os":"***","client_type":1,"device_id":"***","mac":"***","login_time":"123456789"}]
   * }
   * @{
   */
-static const char *kNIMErrorCode		= kNIMResCode;			/**< int, 返回的错误码NIMResCode */
-static const char *kNIMRelogin			= "relogin";			/**< bool, 是否重连 */
+static const char *kNIMErrorCode		= "err_code";			/**< int, 返回的错误码NIMResCode */
+static const char *kNIMRelogin			= "relogin";			/**< bool, 是否属于重连 */
 static const char *kNIMLoginStep		= "login_step";			/**< int, 登录步骤NIMLoginStep */
+static const char *kNIMRetrying			= "retrying";			/**< bool, SDK是否在重试，如果为false，开发者需要检查登录步骤和错误码，明确问题后调用手动重连接口进行登录操作 */
 static const char *kNIMOtherClientsPres	= "other_clients_pres";	/**< json object array， 其他端的在线状态列表，Keys SEE MORE in "kNIMPres***" Json Keys（登录成功才会返回这部分内容） */
 
 static const char *kNIMPresAppAccount	= "app_account";		/**< string, 第三方帐号 */
@@ -133,7 +170,7 @@ static const char *kNIMMultiSpotNotifyType		= "multi_spot_notiy_type";	/**< int�
   * }
   * @{
   */
-static const char *kNIMLogoutErrorCode		= kNIMResCode;		/**< int, 返回的错误码NIMResCode */
+static const char *kNIMLogoutErrorCode		= "err_code"/*kNIMResCode*/;		/**< int, 返回的错误码NIMResCode */
 /** @}*/ //json params for nim_json_transport_cb_func that has been registered in nim_client_logout API
 
 /** @name json params for nim_json_transport_cb_func that has been registered in nim_client_reg_kickout_cb API
@@ -154,7 +191,7 @@ static const char *kNIMKickoutReasonCode	= "reason_code";	/**< int, 返回的被
   * }
   * @{
   */
-static const char *kNIMKickoutOtherResErrorCode				= kNIMResCode;		/**< int, 返回的错误码NIMResCode */
+static const char *kNIMKickoutOtherResErrorCode				= "err_code"/*kNIMResCode*/;		/**< int, 返回的错误码NIMResCode */
 static const char *kNIMKickoutOtherResDeviceIDs				= "device_ids";		/**< string array, 设备id，uuid */
 /** @}*/ //json params for nim_json_transport_cb_func that has been registered in nim_client_reg_kickout_other_client_cb API
 #ifdef __cplusplus

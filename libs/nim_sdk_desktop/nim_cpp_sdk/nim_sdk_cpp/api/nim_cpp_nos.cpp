@@ -1,5 +1,5 @@
-/** @file nim_cpp_nos.cpp
-  * @brief NIM SDKÃ·π©µƒNOS‘∆¥Ê¥¢∑˛ŒÒΩ”ø⁄
+Ôªø/** @file nim_cpp_nos.cpp
+  * @brief NIM SDKÊèê‰æõÁöÑNOS‰∫ëÂ≠òÂÇ®ÊúçÂä°Êé•Âè£
   * @copyright (c) 2015-2016, NetEase Inc. All rights reserved
   * @author towik, Oleg
   * @date 2015/2/1
@@ -22,15 +22,15 @@ typedef void(*nim_nos_download)(const char *nos_url, nim_nos_download_cb_func ca
 struct UploadCallbackUserData
 {
 	UploadCallbackUserData() :	callback_result(),	callback_progress_pointer(nullptr) {}
-	NOS::UploadMediaCallback callback_result; 	/**< …œ¥´Ω·π˚ªÿµ˜ */
-	NOS::ProgressCallback* callback_progress_pointer; /**< π˝≥Ãªÿµ˜ */
+	NOS::UploadMediaCallback callback_result; 	/**< ‰∏ä‰º†ÁªìÊûúÂõûË∞É */
+	NOS::ProgressCallback* callback_progress_pointer; /**< ËøáÁ®ãÂõûË∞É */
 };
 
 struct DownloadCallbackUserData
 {
 	DownloadCallbackUserData() : callback_result(),	callback_progress_pointer(nullptr) {}
-	NOS::DownloadMediaCallback callback_result;	/**< œ¬‘ÿΩ·π˚ªÿµ˜ */
-	NOS::ProgressCallback* callback_progress_pointer; /**< π˝≥Ãªÿµ˜ */
+	NOS::DownloadMediaCallback callback_result;	/**< ‰∏ãËΩΩÁªìÊûúÂõûË∞É */
+	NOS::ProgressCallback* callback_progress_pointer; /**< ËøáÁ®ãÂõûË∞É */
 };
 
 static void CallbackUpload(int res_code, const char *url, const char *json_extension, const void *user_data)
@@ -41,7 +41,7 @@ static void CallbackUpload(int res_code, const char *url, const char *json_exten
 		if (cb)
 		{
 			PostTaskToUIThread(std::bind((cb), (NIMResCode)res_code, PCharToString(url)));
-// 			cb((nim::NIMResCode)res_code, PCharToString(url));
+// 			cb((NIMResCode)res_code, PCharToString(url));
 		}
 		delete ((UploadCallbackUserData*)user_data)->callback_progress_pointer;
 		delete user_data;
@@ -56,7 +56,7 @@ static void CallbackDownload(int res_code, const char *file_path, const char *ca
 		if (cb)
 		{
 			PostTaskToUIThread(std::bind((cb), (NIMResCode)res_code, PCharToString(file_path), PCharToString(call_id), PCharToString(res_id)));
-			//cb((nim::NIMResCode)res_code, PCharToString(file_path), PCharToString(call_id), PCharToString(res_id));
+			//cb((NIMResCode)res_code, PCharToString(file_path), PCharToString(call_id), PCharToString(res_id));
 		}
 		delete ((DownloadCallbackUserData*)user_data)->callback_progress_pointer;
 		delete user_data;
@@ -83,8 +83,8 @@ static void CallbackMediaDownloadResult(int res_code, const char *file_path, con
 		NOS::DownloadMediaCallback* cb = (NOS::DownloadMediaCallback*)user_data;
 		if (*cb)
 		{
-			PostTaskToUIThread(std::bind((*cb), (nim::NIMResCode)res_code, PCharToString(file_path), PCharToString(call_id), PCharToString(res_id)));
-			//(*cb)((nim::NIMResCode)res_code, PCharToString(file_path), PCharToString(call_id), PCharToString(res_id));
+			PostTaskToUIThread(std::bind((*cb), (NIMResCode)res_code, PCharToString(file_path), PCharToString(call_id), PCharToString(res_id)));
+			//(*cb)((NIMResCode)res_code, PCharToString(file_path), PCharToString(call_id), PCharToString(res_id));
 		}
 	}
 }

@@ -1,7 +1,7 @@
 ﻿/** @file nim_client.h
   * @brief NIM SDK提供的Client接口，主要包括SDK初始化/清理、客户端登录/退出/重连/掉线/被踢等流程
   * NIM SDK所有接口命名说明: nim_***(模块)_***(功能)，如nim_client_init
-  * NIM SDK所有接口参数说明: 除了少数指定用UTF-16编码(wchar_t *)，其余所有与字符串相关的参数(char *)全部为UTF-8编码。
+  * NIM SDK所有接口参数说明: 所有与字符串相关的参数(char *)全部为UTF-8编码。
   * @copyright (c) 2015-2016, NetEase Inc. All rights reserved
   * @author Harrison
   * @date 2015/2/1
@@ -12,6 +12,7 @@
 
 #include "nim_sdk_dll.h"
 #include "nim_client_def.h"
+#include "../util/stdbool.h"
 
 #ifdef __cplusplus
 extern"C"
@@ -33,6 +34,13 @@ NIM_SDK_DLL_API	bool nim_client_init(const char *app_data_dir, const char *app_i
   */
 NIM_SDK_DLL_API	void nim_client_cleanup(const char *json_extension);
 
+/** @fn void nim_client_update_apns_token(const char *device_token)   
+  * (PC SDK该接口无效)更新Device Token，iOS推送使用    
+  * @param[in] device_token device token
+  * @return void 无返回值
+  */
+NIM_SDK_DLL_API	void nim_client_update_apns_token(const char *device_token);
+
 /** @fn void nim_client_login(const char *app_key, const char *account, const char *token, const char *json_extension, nim_json_transport_cb_func cb, const void *user_data)
   * NIM客户端登录，传入的JSON参数定义见nim_client_def.h    
   * @param[in] app_key APP key
@@ -52,7 +60,7 @@ NIM_SDK_DLL_API	void nim_client_login(const char *app_key, const char *account, 
   */
 NIM_SDK_DLL_API	void nim_client_relogin(const char *json_extension);
 
-/** @fn void nim_client_logout(NIMLogoutType logout_type, const char *json_extension, nim_json_transport_cb_func cb, const void *user_data)
+/** @fn void nim_client_logout(enum NIMLogoutType logout_type, const char *json_extension, nim_json_transport_cb_func cb, const void *user_data)
   * NIM客户端注销/退出，传入的JSON参数定义见nim_client_def.h 
   * @param[in] logout_type Logout操作类型，其定义见nim_client_def.h
   * @param[in] json_extension json扩展参数（备用，目前不需要）
@@ -60,7 +68,7 @@ NIM_SDK_DLL_API	void nim_client_relogin(const char *json_extension);
   * @param[in] user_data APP的自定义用户数据，SDK只负责传回给回调函数cb，不做任何处理！
   * @return void 无返回值
   */
-NIM_SDK_DLL_API	void nim_client_logout(NIMLogoutType logout_type, const char *json_extension, nim_json_transport_cb_func cb, const void *user_data);
+NIM_SDK_DLL_API	void nim_client_logout(enum NIMLogoutType logout_type, const char *json_extension, nim_json_transport_cb_func cb, const void *user_data);
 
 /** @fn void nim_client_kick_other_client(const char *json_extension)
   * 将本帐号的其他端踢下线
@@ -70,7 +78,7 @@ NIM_SDK_DLL_API	void nim_client_logout(NIMLogoutType logout_type, const char *js
 NIM_SDK_DLL_API void nim_client_kick_other_client(const char *json_extension);
 
 /** @fn void nim_client_reg_auto_relogin_cb(const char *json_extension, nim_json_transport_cb_func cb, const void *user_data)
-  * 注册NIM客户端自动重连回调。重连失败时，如果不是网络错误引起的（网络相关的错误号为kNIMResTimeoutError和kNIMResConnectionError），而是服务器返回了非kNIMResSuccess的错误号，
+  * (全局回调)注册NIM客户端自动重连回调。重连失败时，如果不是网络错误引起的（网络相关的错误号为kNIMResTimeoutError和kNIMResConnectionError），而是服务器返回了非kNIMResSuccess的错误号，
   * 则说明重连的机制已经失效，需要APP层调用nim_client_logout执行注销操作并退回到登录界面后进行重新登录。
   * @param[in] json_extension json扩展参数（备用，目前不需要）
   * @param[in] cb 自动重连的回调函数， nim_json_transport_cb_func回调函数定义见nim_global_def.h。
@@ -81,7 +89,7 @@ NIM_SDK_DLL_API void nim_client_kick_other_client(const char *json_extension);
 NIM_SDK_DLL_API	void nim_client_reg_auto_relogin_cb(const char *json_extension, nim_json_transport_cb_func cb, const void *user_data);
 
 /** @fn void nim_client_reg_kickout_cb(const char *json_extension, nim_json_transport_cb_func cb, const void *user_data)
-  * 注册NIM客户端被踢回调
+  * (全局回调)注册NIM客户端被踢回调
   * @param[in] json_extension json扩展参数（备用，目前不需要）
   * @param[in] cb 被踢的回调函数， nim_json_transport_cb_func回调函数定义见nim_global_def.h
   * @param[in] user_data APP的自定义用户数据，SDK只负责传回给回调函数cb，不做任何处理！
@@ -90,7 +98,7 @@ NIM_SDK_DLL_API	void nim_client_reg_auto_relogin_cb(const char *json_extension, 
 NIM_SDK_DLL_API void nim_client_reg_kickout_cb(const char *json_extension, nim_json_transport_cb_func cb, const void *user_data);
 
 /** @fn nim_client_reg_disconnect_cb(const char *json_extension, nim_json_transport_cb_func cb, const void *user_data)
-  * 注册NIM客户端掉线回调
+  * (全局回调)注册NIM客户端掉线回调
   * @param[in] json_extension json扩展参数（备用，目前不需要）
   * @param[in] cb 掉线的回调函数， nim_json_transport_cb_func回调函数定义见nim_global_def.h
   * @param[in] user_data APP的自定义用户数据，SDK只负责传回给回调函数cb，不做任何处理！
@@ -99,7 +107,7 @@ NIM_SDK_DLL_API void nim_client_reg_kickout_cb(const char *json_extension, nim_j
 NIM_SDK_DLL_API void nim_client_reg_disconnect_cb(const char *json_extension, nim_json_transport_cb_func cb, const void *user_data);
 
 /** @fn void nim_client_reg_multispot_login_notify_cb(const char *json_extension, nim_json_transport_cb_func cb, const void *user_data)
-  * 注册NIM客户端多点登录通知回调
+  * (全局回调)注册NIM客户端多点登录通知回调
   * @param[in] json_extension json扩展参数（备用，目前不需要）
   * @param[in] cb 多点登录通知的回调函数， nim_json_transport_cb_func回调函数定义见nim_global_def.h
   * @param[in] user_data APP的自定义用户数据，SDK只负责传回给回调函数cb，不做任何处理！
@@ -108,13 +116,59 @@ NIM_SDK_DLL_API void nim_client_reg_disconnect_cb(const char *json_extension, ni
 NIM_SDK_DLL_API void nim_client_reg_multispot_login_notify_cb(const char *json_extension, nim_json_transport_cb_func cb, const void *user_data);
 
 /** @fn void nim_client_reg_kickout_other_client_cb(const char *json_extension, nim_json_transport_cb_func cb, const void *user_data)
-  * 注册NIM客户端将本帐号的其他端踢下线结果回调
+  * (全局回调)注册NIM客户端将本帐号的其他端踢下线结果回调
   * @param[in] json_extension json扩展参数（备用，目前不需要）
   * @param[in] cb 操作结果的回调函数， nim_json_transport_cb_func回调函数定义见nim_global_def.h
   * @param[in] user_data APP的自定义用户数据，SDK只负责传回给回调函数cb，不做任何处理！
   * @return void 无返回值
   */
 NIM_SDK_DLL_API void nim_client_reg_kickout_other_client_cb(const char *json_extension, nim_json_transport_cb_func cb, const void *user_data);
+
+/** @fn void nim_client_reg_sync_multiport_push_config_cb(const char *json_extension, nim_client_multiport_push_config_cb_func cb, const void *user_data);
+  * (全局回调)注册多端推送设置同步回调
+  * @param[in] json_extension json扩展参数（备用，目前不需要）
+  * @param[in] cb 
+  * @param[in] user_data APP的自定义用户数据，SDK只负责传回给回调函数cb，不做任何处理！
+  * @return void 无返回值
+  */
+NIM_SDK_DLL_API void nim_client_reg_sync_multiport_push_config_cb(const char *json_extension, nim_client_multiport_push_config_cb_func cb, const void *user_data);
+
+/** @fn nim_client_set_multiport_push_config(const char *switch_content, const char *json_extension, nim_client_multiport_push_config_cb_func cb, const void *user_data);
+  * 设置多端推送控制开关
+  * @param[in] switch_content 开关内容
+  * @param[in] json_extension json扩展参数（备用，目前不需要）
+  * @param[in] cb 操作结果的回调函数
+  * @param[in] user_data APP的自定义用户数据，SDK只负责传回给回调函数cb，不做任何处理！
+  * @return void 无返回值 通过注册nim_client_reg_kickout_other_client_cb回调得到结果
+  */
+NIM_SDK_DLL_API void nim_client_set_multiport_push_config(const char *switch_content, const char *json_extension, nim_client_multiport_push_config_cb_func cb, const void *user_data);
+
+/** @fn nim_client_get_multiport_push_config(const char *json_extension, nim_client_multiport_push_config_cb_func cb, const void *user_data);
+  * 获取多端推送控制开关
+  * @param[in] json_extension json扩展参数（备用，目前不需要）
+  * @param[in] cb 操作结果的回调函数
+  * @param[in] user_data APP的自定义用户数据，SDK只负责传回给回调函数cb，不做任何处理！
+  * @return void 无返回值 通过注册nim_client_reg_kickout_other_client_cb回调得到结果
+  */
+NIM_SDK_DLL_API void nim_client_get_multiport_push_config(const char *json_extension, nim_client_multiport_push_config_cb_func cb, const void *user_data);
+
+/** @fn nim_client_set_dnd_config(const char* cfg_json, const char *json_extension, nim_client_dnd_cb_func cb, const void *user_data);
+* (PC SDK该接口无效)ios 免打扰设置
+* @param[in] cfg_json 免打扰设置
+* @param[in] json_extension json扩展参数（备用，目前不需要）
+* @param[in] cb 操作结果的回调函数
+* @param[in] user_data APP的自定义用户数据，SDK只负责传回给回调函数cb，不做任何处理！
+* @return void 无返回值 通过注册nim_client_reg_kickout_other_client_cb回调得到结果
+*/
+NIM_SDK_DLL_API void nim_client_set_dnd_config(const char* cfg_json, const char *json_extension, nim_client_dnd_cb_func cb, const void *user_data);
+
+/** @fn nim_client_get_dnd_config(nim_client_dnd_cb_func cb, const void *user_data);
+* (PC SDK该接口无效)获取ios 免打扰设置
+* @param[in] cb 操作结果的回调函数
+* @param[in] user_data APP的自定义用户数据，SDK只负责传回给回调函数cb，不做任何处理！
+* @return void 无返回值 通过注册nim_client_reg_kickout_other_client_cb回调得到结果
+*/
+NIM_SDK_DLL_API void nim_client_get_dnd_config(nim_client_dnd_cb_func cb, const void *user_data);
 #ifdef __cplusplus
 };
 #endif //__cplusplus

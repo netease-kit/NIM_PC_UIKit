@@ -16,16 +16,6 @@ VideoSettingForm::~VideoSettingForm()
 {
 }
 
-ui::UILIB_RESOURCETYPE VideoSettingForm::GetResourceType() const
-{
-	return ui::UILIB_FILE; 
-}
-
-std::wstring VideoSettingForm::GetZIPFileName() const
-{
-	return (L"video_setting.zip");
-}
-
 std::wstring VideoSettingForm::GetSkinFolder()
 {
 	return L"video";
@@ -40,7 +30,7 @@ ui::Control* VideoSettingForm::CreateControl(const std::wstring& pstrClass)
 {
 	if (pstrClass == _T("BitmapControl"))
 	{
-		return new ui::CBitmapControl();
+		return new ui::BitmapControl(&nim_comp::VideoManager::GetInstance()->video_frame_mng_);
 	}
 	return NULL;
 }
@@ -82,7 +72,7 @@ void VideoSettingForm::InitWindow()
 
 	auto_input_volumn_checkbox_    = (CheckBox*) FindControl(L"auto_input_volumn");
 
-	video_show_ctrl_ = (CBitmapControl*) FindControl(L"video_show");
+	video_show_ctrl_ = (BitmapControl*) FindControl(L"video_show");
 
 	camera_fail_ctrl_ = FindControl( L"camera_fail" );
 	error_notice_label_ = (Label*) FindControl(L"error_notice");
@@ -95,6 +85,7 @@ void VideoSettingForm::OnFinalMessage(HWND hWnd)
 {
 	VideoManager::GetInstance()->EndDevice(nim::kNIMDeviceTypeAudioIn, kDeviceSessionTypeSetting);
 	VideoManager::GetInstance()->EndDevice(nim::kNIMDeviceTypeAudioOut, kDeviceSessionTypeSetting);
+	VideoManager::GetInstance()->EndDevice(nim::kNIMDeviceTypeAudioOutChat, kDeviceSessionTypeSetting);
 	VideoManager::GetInstance()->EndDevice(nim::kNIMDeviceTypeVideo, kDeviceSessionTypeSetting);
 	
 	__super::OnFinalMessage(hWnd);
@@ -370,6 +361,7 @@ void VideoSettingForm::SwitchInputAudioDevice( const std::string &device_path )
 void VideoSettingForm::SwitchOutputAudioDevice( const std::string &device_path )
 {
 	VideoManager::GetInstance()->StartDevice(nim::kNIMDeviceTypeAudioOut, device_path, kDeviceSessionTypeSetting);
+	VideoManager::GetInstance()->StartDevice(nim::kNIMDeviceTypeAudioOutChat, device_path, kDeviceSessionTypeSetting);
 }
 
 void VideoSettingForm::SwitchInputVideoDevice( const std::string &device_path )
@@ -386,8 +378,8 @@ void VideoSettingForm::OnVideoDeviceStartCallback(bool result)
 	if( result )
 	{
 		paint_video_timer_.Cancel();
-		auto task = nbase::Bind(&VideoSettingForm::PaintVideo, this);
-		nbase::ThreadManager::PostRepeatedTask(kThreadUI, task, nbase::TimeDelta::FromMilliseconds(70));
+		StdClosure task = nbase::Bind(&VideoSettingForm::PaintVideo, this);
+		nbase::ThreadManager::PostRepeatedTask(kThreadUI, paint_video_timer_.ToWeakCallback(task), nbase::TimeDelta::FromMilliseconds(70));
 		camera_fail_ctrl_->SetVisible( false );
 		error_notice_label_->SetVisible( false );
 	}

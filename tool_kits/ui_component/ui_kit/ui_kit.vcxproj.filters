@@ -31,9 +31,6 @@
     <Filter Include="callback\team">
       <UniqueIdentifier>{024770d5-02da-463f-9f00-50e54666df59}</UniqueIdentifier>
     </Filter>
-    <Filter Include="gui\invoke_chat_form">
-      <UniqueIdentifier>{2dd91baf-10a1-49a1-affb-4bf188d7523d}</UniqueIdentifier>
-    </Filter>
     <Filter Include="gui\team_info">
       <UniqueIdentifier>{6bce3f89-0ccf-4c18-b790-dd24b37a44b9}</UniqueIdentifier>
     </Filter>
@@ -115,6 +112,39 @@
     <Filter Include="gui\black_list">
       <UniqueIdentifier>{a6425fab-1c04-4774-8221-42f9282bce1a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="gui\video\helper">
+      <UniqueIdentifier>{413e9754-b788-402a-95e6-5ba717e03186}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="gui\toast">
+      <UniqueIdentifier>{987e0053-5f75-44af-9cc5-3cd8fd41b1f2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="gui\session\at_list">
+      <UniqueIdentifier>{b04470a2-aa11-4fdd-8e4b-22f5d3021b69}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="gui\session\control\bubbles">
+      <UniqueIdentifier>{f9e6462f-11c0-41a1-846e-c91ecb7018e7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="callback\multiport">
+      <UniqueIdentifier>{ea593020-c551-4154-ada9-4815a6c39962}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="gui\contact_select_form">
+      <UniqueIdentifier>{2dd91baf-10a1-49a1-affb-4bf188d7523d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="module\audio">
+      <UniqueIdentifier>{71911015-6541-49ad-8277-a3abbfb96cc5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="module\dragdrop">
+      <UniqueIdentifier>{f719a14f-c42f-4059-9364-5a7fbc8d32d1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="gui\session\dragdrop">
+      <UniqueIdentifier>{8ea8ad91-1548-4cbe-b651-73f14065dd51}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="gui\session\forms">
+      <UniqueIdentifier>{84a5ff34-f6ea-488f-9d56-6efdc5ce1034}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="gui\main\forms">
+      <UniqueIdentifier>{e3b1bc0f-263e-40ee-bc88-539b2a9e14a7}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -126,45 +156,6 @@
     <ClInclude Include="module\emoji\emoji_info.h">
       <Filter>module\emoji</Filter>
     </ClInclude>
-    <ClInclude Include="gui\session\control\bubble_audio.h">
-      <Filter>gui\session\control</Filter>
-    </ClInclude>
-    <ClInclude Include="gui\session\control\bubble_file.h">
-      <Filter>gui\session\control</Filter>
-    </ClInclude>
-    <ClInclude Include="gui\session\control\bubble_finger.h">
-      <Filter>gui\session\control</Filter>
-    </ClInclude>
-    <ClInclude Include="gui\session\control\bubble_image.h">
-      <Filter>gui\session\control</Filter>
-    </ClInclude>
-    <ClInclude Include="gui\session\control\bubble_item.h">
-      <Filter>gui\session\control</Filter>
-    </ClInclude>
-    <ClInclude Include="gui\session\control\bubble_location.h">
-      <Filter>gui\session\control</Filter>
-    </ClInclude>
-    <ClInclude Include="gui\session\control\bubble_notice.h">
-      <Filter>gui\session\control</Filter>
-    </ClInclude>
-    <ClInclude Include="gui\session\control\bubble_snapchat.h">
-      <Filter>gui\session\control</Filter>
-    </ClInclude>
-    <ClInclude Include="gui\session\control\bubble_sticker.h">
-      <Filter>gui\session\control</Filter>
-    </ClInclude>
-    <ClInclude Include="gui\session\control\bubble_text.h">
-      <Filter>gui\session\control</Filter>
-    </ClInclude>
-    <ClInclude Include="gui\session\control\bubble_unknown.h">
-      <Filter>gui\session\control</Filter>
-    </ClInclude>
-    <ClInclude Include="gui\session\control\bubble_writing.h">
-      <Filter>gui\session\control</Filter>
-    </ClInclude>
-    <ClInclude Include="gui\session\control\session_util.h">
-      <Filter>gui\session\control</Filter>
-    </ClInclude>
     <ClInclude Include="gui\session\control\team_item.h">
       <Filter>gui\session\control</Filter>
     </ClInclude>
@@ -173,18 +164,6 @@
     </ClInclude>
     <ClInclude Include="callback\team\team_callback.h">
       <Filter>callback\team</Filter>
-    </ClInclude>
-    <ClInclude Include="gui\session\custom_msg_form.h">
-      <Filter>gui\session</Filter>
-    </ClInclude>
-    <ClInclude Include="gui\session\msg_record.h">
-      <Filter>gui\session</Filter>
-    </ClInclude>
-    <ClInclude Include="gui\session\session_form.h">
-      <Filter>gui\session</Filter>
-    </ClInclude>
-    <ClInclude Include="gui\invoke_chat_form\invoke_chat_form.h">
-      <Filter>gui\invoke_chat_form</Filter>
     </ClInclude>
     <ClInclude Include="gui\team_info\member_manager.h">
       <Filter>gui\team_info</Filter>
@@ -228,9 +207,6 @@
     <ClInclude Include="module\msglog\msg_extend_db.h">
       <Filter>module\msglog</Filter>
     </ClInclude>
-    <ClInclude Include="module\msglog\msglog.h">
-      <Filter>module\msglog</Filter>
-    </ClInclude>
     <ClInclude Include="module\rts\rts_manager.h">
       <Filter>module\rts</Filter>
     </ClInclude>
@@ -239,9 +215,6 @@
     </ClInclude>
     <ClInclude Include="module\video\video_manager.h">
       <Filter>module\video</Filter>
-    </ClInclude>
-    <ClInclude Include="gui\video\ui_bitmap_control.h">
-      <Filter>gui\video</Filter>
     </ClInclude>
     <ClInclude Include="gui\video\video_form.h">
       <Filter>gui\video</Filter>
@@ -254,12 +227,6 @@
     </ClInclude>
     <ClInclude Include="gui\main\control\session_item.h">
       <Filter>gui\main\control</Filter>
-    </ClInclude>
-    <ClInclude Include="gui\main\multispot_form.h">
-      <Filter>gui\main</Filter>
-    </ClInclude>
-    <ClInclude Include="gui\main\team_event_form.h">
-      <Filter>gui\main</Filter>
     </ClInclude>
     <ClInclude Include="gui\profile_form\profile_form.h">
       <Filter>gui\profile_form</Filter>
@@ -354,12 +321,6 @@
     <ClInclude Include="gui\main\group_list.h">
       <Filter>gui\main</Filter>
     </ClInclude>
-    <ClInclude Include="gui\main\friend_list.h">
-      <Filter>gui\main</Filter>
-    </ClInclude>
-    <ClInclude Include="gui\main\friend_list_item_manager.h">
-      <Filter>gui\main</Filter>
-    </ClInclude>
     <ClInclude Include="gui\main\control\friend_item.h">
       <Filter>gui\main\control</Filter>
     </ClInclude>
@@ -381,6 +342,150 @@
     <ClInclude Include="util\window_ex.h">
       <Filter>util</Filter>
     </ClInclude>
+    <ClInclude Include="module\video\video_frame_mng.h">
+      <Filter>module\video</Filter>
+    </ClInclude>
+    <ClInclude Include="module\service\http_service.h">
+      <Filter>module\service</Filter>
+    </ClInclude>
+    <ClInclude Include="export\nim_ui_http_manager.h">
+      <Filter>export</Filter>
+    </ClInclude>
+    <ClInclude Include="module\video\audio_frame_mng.h">
+      <Filter>module\video</Filter>
+    </ClInclude>
+    <ClInclude Include="gui\video\helper\screen_capture.h">
+      <Filter>gui\video\helper</Filter>
+    </ClInclude>
+    <ClInclude Include="gui\video\helper\ui_barrage_control.h">
+      <Filter>gui\video\helper</Filter>
+    </ClInclude>
+    <ClInclude Include="gui\video\helper\ui_bitmap_control.h">
+      <Filter>gui\video\helper</Filter>
+    </ClInclude>
+    <ClInclude Include="gui\video\helper\yuv_image.h">
+      <Filter>gui\video\helper</Filter>
+    </ClInclude>
+    <ClInclude Include="gui\video\screen_capture_tool.h">
+      <Filter>gui\video</Filter>
+    </ClInclude>
+    <ClInclude Include="gui\video\window_select.h">
+      <Filter>gui\video</Filter>
+    </ClInclude>
+    <ClInclude Include="module\service\photo_service.h">
+      <Filter>module\service</Filter>
+    </ClInclude>
+    <ClInclude Include="callback\login\data_sync_callback.h">
+      <Filter>callback\login</Filter>
+    </ClInclude>
+    <ClInclude Include="gui\toast\toast.h">
+      <Filter>gui\toast</Filter>
+    </ClInclude>
+    <ClInclude Include="gui\video\helper\smooth.h">
+      <Filter>gui\video\helper</Filter>
+    </ClInclude>
+    <ClInclude Include="gui\video\helper\colorbalance.h">
+      <Filter>gui\video\helper</Filter>
+    </ClInclude>
+    <ClInclude Include="gui\session\control\atme_view.h">
+      <Filter>gui\session\control</Filter>
+    </ClInclude>
+    <ClInclude Include="gui\session\atlist\at_list_form.h">
+      <Filter>gui\session\at_list</Filter>
+    </ClInclude>
+    <ClInclude Include="gui\session\atlist\at_list_item.h">
+      <Filter>gui\session\at_list</Filter>
+    </ClInclude>
+    <ClInclude Include="gui\session\control\bubbles\bubble_audio.h">
+      <Filter>gui\session\control\bubbles</Filter>
+    </ClInclude>
+    <ClInclude Include="gui\session\control\bubbles\bubble_file.h">
+      <Filter>gui\session\control\bubbles</Filter>
+    </ClInclude>
+    <ClInclude Include="gui\session\control\bubbles\bubble_finger.h">
+      <Filter>gui\session\control\bubbles</Filter>
+    </ClInclude>
+    <ClInclude Include="gui\session\control\bubbles\bubble_image.h">
+      <Filter>gui\session\control\bubbles</Filter>
+    </ClInclude>
+    <ClInclude Include="gui\session\control\bubbles\bubble_item.h">
+      <Filter>gui\session\control\bubbles</Filter>
+    </ClInclude>
+    <ClInclude Include="gui\session\control\bubbles\bubble_location.h">
+      <Filter>gui\session\control\bubbles</Filter>
+    </ClInclude>
+    <ClInclude Include="gui\session\control\bubbles\bubble_notice.h">
+      <Filter>gui\session\control\bubbles</Filter>
+    </ClInclude>
+    <ClInclude Include="gui\session\control\bubbles\bubble_snapchat.h">
+      <Filter>gui\session\control\bubbles</Filter>
+    </ClInclude>
+    <ClInclude Include="gui\session\control\bubbles\bubble_sticker.h">
+      <Filter>gui\session\control\bubbles</Filter>
+    </ClInclude>
+    <ClInclude Include="gui\session\control\bubbles\bubble_text.h">
+      <Filter>gui\session\control\bubbles</Filter>
+    </ClInclude>
+    <ClInclude Include="gui\session\control\bubbles\bubble_unknown.h">
+      <Filter>gui\session\control\bubbles</Filter>
+    </ClInclude>
+    <ClInclude Include="gui\session\control\bubbles\bubble_video.h">
+      <Filter>gui\session\control\bubbles</Filter>
+    </ClInclude>
+    <ClInclude Include="gui\session\control\bubbles\bubble_writing.h">
+      <Filter>gui\session\control\bubbles</Filter>
+    </ClInclude>
+    <ClInclude Include="callback\multiport\multiport_push_callback.h">
+      <Filter>callback\multiport</Filter>
+    </ClInclude>
+    <ClInclude Include="gui\contact_select_form\contact_select_form.h">
+      <Filter>gui\contact_select_form</Filter>
+    </ClInclude>
+    <ClInclude Include="module\audio\audio_manager.h">
+      <Filter>module\audio</Filter>
+    </ClInclude>
+    <ClInclude Include="export\nim_ui_photo_manager.h">
+      <Filter>export</Filter>
+    </ClInclude>
+    <ClInclude Include="gui\session\control\audio_capture.h">
+      <Filter>gui\session\control</Filter>
+    </ClInclude>
+    <ClInclude Include="module\dragdrop\drag_drop.h">
+      <Filter>module\dragdrop</Filter>
+    </ClInclude>
+    <ClInclude Include="gui\session\dragdrop\bitmap_control.h">
+      <Filter>gui\session\dragdrop</Filter>
+    </ClInclude>
+    <ClInclude Include="gui\session\dragdrop\drag_form.h">
+      <Filter>gui\session\dragdrop</Filter>
+    </ClInclude>
+    <ClInclude Include="gui\session\control\merge_item.h">
+      <Filter>gui\session\control</Filter>
+    </ClInclude>
+    <ClInclude Include="gui\session\custom_msg_form.h">
+      <Filter>gui\session\forms</Filter>
+    </ClInclude>
+    <ClInclude Include="gui\session\msg_record.h">
+      <Filter>gui\session\forms</Filter>
+    </ClInclude>
+    <ClInclude Include="gui\session\session_box.h">
+      <Filter>gui\session</Filter>
+    </ClInclude>
+    <ClInclude Include="gui\session\session_form.h">
+      <Filter>gui\session</Filter>
+    </ClInclude>
+    <ClInclude Include="module\session\session_util.h">
+      <Filter>module\session</Filter>
+    </ClInclude>
+    <ClInclude Include="gui\main\friend_list.h">
+      <Filter>gui\main</Filter>
+    </ClInclude>
+    <ClInclude Include="gui\main\multispot_form.h">
+      <Filter>gui\main\forms</Filter>
+    </ClInclude>
+    <ClInclude Include="gui\main\team_event_form.h">
+      <Filter>gui\main\forms</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -388,45 +493,6 @@
     </ClCompile>
     <ClCompile Include="module\emoji\emoji_info.cpp">
       <Filter>module\emoji</Filter>
-    </ClCompile>
-    <ClCompile Include="gui\session\control\bubble_audio.cpp">
-      <Filter>gui\session\control</Filter>
-    </ClCompile>
-    <ClCompile Include="gui\session\control\bubble_file.cpp">
-      <Filter>gui\session\control</Filter>
-    </ClCompile>
-    <ClCompile Include="gui\session\control\bubble_finger.cpp">
-      <Filter>gui\session\control</Filter>
-    </ClCompile>
-    <ClCompile Include="gui\session\control\bubble_image.cpp">
-      <Filter>gui\session\control</Filter>
-    </ClCompile>
-    <ClCompile Include="gui\session\control\bubble_item.cpp">
-      <Filter>gui\session\control</Filter>
-    </ClCompile>
-    <ClCompile Include="gui\session\control\bubble_location.cpp">
-      <Filter>gui\session\control</Filter>
-    </ClCompile>
-    <ClCompile Include="gui\session\control\bubble_notice.cpp">
-      <Filter>gui\session\control</Filter>
-    </ClCompile>
-    <ClCompile Include="gui\session\control\bubble_snapchat.cpp">
-      <Filter>gui\session\control</Filter>
-    </ClCompile>
-    <ClCompile Include="gui\session\control\bubble_sticker.cpp">
-      <Filter>gui\session\control</Filter>
-    </ClCompile>
-    <ClCompile Include="gui\session\control\bubble_text.cpp">
-      <Filter>gui\session\control</Filter>
-    </ClCompile>
-    <ClCompile Include="gui\session\control\bubble_unknown.cpp">
-      <Filter>gui\session\control</Filter>
-    </ClCompile>
-    <ClCompile Include="gui\session\control\bubble_writing.cpp">
-      <Filter>gui\session\control</Filter>
-    </ClCompile>
-    <ClCompile Include="gui\session\control\session_util.cpp">
-      <Filter>gui\session\control</Filter>
     </ClCompile>
     <ClCompile Include="gui\session\control\team_item.cpp">
       <Filter>gui\session\control</Filter>
@@ -436,30 +502,6 @@
     </ClCompile>
     <ClCompile Include="callback\team\team_callback.cpp">
       <Filter>callback\team</Filter>
-    </ClCompile>
-    <ClCompile Include="gui\session\custom_msg_form.cpp">
-      <Filter>gui\session</Filter>
-    </ClCompile>
-    <ClCompile Include="gui\session\msg_record.cpp">
-      <Filter>gui\session</Filter>
-    </ClCompile>
-    <ClCompile Include="gui\session\msg_record_ui.cpp">
-      <Filter>gui\session</Filter>
-    </ClCompile>
-    <ClCompile Include="gui\session\session_form.cpp">
-      <Filter>gui\session</Filter>
-    </ClCompile>
-    <ClCompile Include="gui\session\session_form_audio.cpp">
-      <Filter>gui\session</Filter>
-    </ClCompile>
-    <ClCompile Include="gui\session\session_form_team.cpp">
-      <Filter>gui\session</Filter>
-    </ClCompile>
-    <ClCompile Include="gui\session\session_form_ui.cpp">
-      <Filter>gui\session</Filter>
-    </ClCompile>
-    <ClCompile Include="gui\invoke_chat_form\invoke_chat_form.cpp">
-      <Filter>gui\invoke_chat_form</Filter>
     </ClCompile>
     <ClCompile Include="gui\team_info\member_manager.cpp">
       <Filter>gui\team_info</Filter>
@@ -503,9 +545,6 @@
     <ClCompile Include="module\msglog\msg_extend_db.cpp">
       <Filter>module\msglog</Filter>
     </ClCompile>
-    <ClCompile Include="module\msglog\msglog.cpp">
-      <Filter>module\msglog</Filter>
-    </ClCompile>
     <ClCompile Include="module\rts\rts_manager.cpp">
       <Filter>module\rts</Filter>
     </ClCompile>
@@ -514,9 +553,6 @@
     </ClCompile>
     <ClCompile Include="module\video\video_manager.cpp">
       <Filter>module\video</Filter>
-    </ClCompile>
-    <ClCompile Include="gui\video\ui_bitmap_control.cpp">
-      <Filter>gui\video</Filter>
     </ClCompile>
     <ClCompile Include="gui\video\video_form.cpp">
       <Filter>gui\video</Filter>
@@ -532,12 +568,6 @@
     </ClCompile>
     <ClCompile Include="gui\main\control\session_item.cpp">
       <Filter>gui\main\control</Filter>
-    </ClCompile>
-    <ClCompile Include="gui\main\multispot_form.cpp">
-      <Filter>gui\main</Filter>
-    </ClCompile>
-    <ClCompile Include="gui\main\team_event_form.cpp">
-      <Filter>gui\main</Filter>
     </ClCompile>
     <ClCompile Include="gui\profile_form\profile_form.cpp">
       <Filter>gui\profile_form</Filter>
@@ -581,9 +611,6 @@
     <ClCompile Include="gui\main\control\custom_msg.cpp">
       <Filter>gui\main\control</Filter>
     </ClCompile>
-    <ClCompile Include="gui\main\event_form_custom.cpp">
-      <Filter>gui\main</Filter>
-    </ClCompile>
     <ClCompile Include="export\nim_ui_login_manager.cpp">
       <Filter>export</Filter>
     </ClCompile>
@@ -623,12 +650,6 @@
     <ClCompile Include="gui\profile_form\head_modify_form.cpp">
       <Filter>gui\profile_form</Filter>
     </ClCompile>
-    <ClCompile Include="gui\main\friend_list.cpp">
-      <Filter>gui\main</Filter>
-    </ClCompile>
-    <ClCompile Include="gui\main\friend_list_item_manager.cpp">
-      <Filter>gui\main</Filter>
-    </ClCompile>
     <ClCompile Include="gui\main\group_list.cpp">
       <Filter>gui\main</Filter>
     </ClCompile>
@@ -652,6 +673,180 @@
     </ClCompile>
     <ClCompile Include="util\window_ex.cpp">
       <Filter>util</Filter>
+    </ClCompile>
+    <ClCompile Include="module\video\video_frame_mng.cpp">
+      <Filter>module\video</Filter>
+    </ClCompile>
+    <ClCompile Include="module\service\http_service.cpp">
+      <Filter>module\service</Filter>
+    </ClCompile>
+    <ClCompile Include="export\nim_ui_http_manager.cpp">
+      <Filter>export</Filter>
+    </ClCompile>
+    <ClCompile Include="module\video\audio_frame_mng.cpp">
+      <Filter>module\video</Filter>
+    </ClCompile>
+    <ClCompile Include="gui\video\helper\screen_capture.cpp">
+      <Filter>gui\video\helper</Filter>
+    </ClCompile>
+    <ClCompile Include="gui\video\helper\ui_barrage_control.cpp">
+      <Filter>gui\video\helper</Filter>
+    </ClCompile>
+    <ClCompile Include="gui\video\helper\ui_bitmap_control.cpp">
+      <Filter>gui\video\helper</Filter>
+    </ClCompile>
+    <ClCompile Include="gui\video\helper\yuv_image.cpp">
+      <Filter>gui\video\helper</Filter>
+    </ClCompile>
+    <ClCompile Include="gui\video\screen_capture_tool.cpp">
+      <Filter>gui\video</Filter>
+    </ClCompile>
+    <ClCompile Include="gui\video\window_select.cpp">
+      <Filter>gui\video</Filter>
+    </ClCompile>
+    <ClCompile Include="module\service\photo_service.cpp">
+      <Filter>module\service</Filter>
+    </ClCompile>
+    <ClCompile Include="callback\login\data_sync_callback.cpp">
+      <Filter>callback\login</Filter>
+    </ClCompile>
+    <ClCompile Include="gui\toast\toast.cpp">
+      <Filter>gui\toast</Filter>
+    </ClCompile>
+    <ClCompile Include="gui\video\helper\smooth.cpp">
+      <Filter>gui\video\helper</Filter>
+    </ClCompile>
+    <ClCompile Include="gui\video\helper\colorbalance.cpp">
+      <Filter>gui\video\helper</Filter>
+    </ClCompile>
+    <ClCompile Include="gui\session\control\atme_view.cpp">
+      <Filter>gui\session\control</Filter>
+    </ClCompile>
+    <ClCompile Include="gui\session\atlist\at_list_form.cpp">
+      <Filter>gui\session\at_list</Filter>
+    </ClCompile>
+    <ClCompile Include="gui\session\atlist\at_list_item.cpp">
+      <Filter>gui\session\at_list</Filter>
+    </ClCompile>
+    <ClCompile Include="gui\session\control\bubbles\bubble_audio.cpp">
+      <Filter>gui\session\control\bubbles</Filter>
+    </ClCompile>
+    <ClCompile Include="gui\session\control\bubbles\bubble_file.cpp">
+      <Filter>gui\session\control\bubbles</Filter>
+    </ClCompile>
+    <ClCompile Include="gui\session\control\bubbles\bubble_finger.cpp">
+      <Filter>gui\session\control\bubbles</Filter>
+    </ClCompile>
+    <ClCompile Include="gui\session\control\bubbles\bubble_image.cpp">
+      <Filter>gui\session\control\bubbles</Filter>
+    </ClCompile>
+    <ClCompile Include="gui\session\control\bubbles\bubble_item.cpp">
+      <Filter>gui\session\control\bubbles</Filter>
+    </ClCompile>
+    <ClCompile Include="gui\session\control\bubbles\bubble_location.cpp">
+      <Filter>gui\session\control\bubbles</Filter>
+    </ClCompile>
+    <ClCompile Include="gui\session\control\bubbles\bubble_notice.cpp">
+      <Filter>gui\session\control\bubbles</Filter>
+    </ClCompile>
+    <ClCompile Include="gui\session\control\bubbles\bubble_snapchat.cpp">
+      <Filter>gui\session\control\bubbles</Filter>
+    </ClCompile>
+    <ClCompile Include="gui\session\control\bubbles\bubble_sticker.cpp">
+      <Filter>gui\session\control\bubbles</Filter>
+    </ClCompile>
+    <ClCompile Include="gui\session\control\bubbles\bubble_text.cpp">
+      <Filter>gui\session\control\bubbles</Filter>
+    </ClCompile>
+    <ClCompile Include="gui\session\control\bubbles\bubble_unknown.cpp">
+      <Filter>gui\session\control\bubbles</Filter>
+    </ClCompile>
+    <ClCompile Include="gui\session\control\bubbles\bubble_video.cpp">
+      <Filter>gui\session\control\bubbles</Filter>
+    </ClCompile>
+    <ClCompile Include="gui\session\control\bubbles\bubble_writing.cpp">
+      <Filter>gui\session\control\bubbles</Filter>
+    </ClCompile>
+    <ClCompile Include="callback\multiport\multiport_push_callback.cpp">
+      <Filter>callback\multiport</Filter>
+    </ClCompile>
+    <ClCompile Include="gui\contact_select_form\contact_select_form.cpp">
+      <Filter>gui\contact_select_form</Filter>
+    </ClCompile>
+    <ClCompile Include="gui\contact_select_form\contact_select_form_ui.cpp">
+      <Filter>gui\contact_select_form</Filter>
+    </ClCompile>
+    <ClCompile Include="module\audio\audio_manager.cpp">
+      <Filter>module\audio</Filter>
+    </ClCompile>
+    <ClCompile Include="export\nim_ui_photo_manager.cpp">
+      <Filter>export</Filter>
+    </ClCompile>
+    <ClCompile Include="gui\session\control\audio_capture.cpp">
+      <Filter>gui\session\control</Filter>
+    </ClCompile>
+    <ClCompile Include="module\dragdrop\drag_drop.cpp">
+      <Filter>module\dragdrop</Filter>
+    </ClCompile>
+    <ClCompile Include="gui\session\dragdrop\bitmap_control.cpp">
+      <Filter>gui\session\dragdrop</Filter>
+    </ClCompile>
+    <ClCompile Include="gui\session\dragdrop\drag_form.cpp">
+      <Filter>gui\session\dragdrop</Filter>
+    </ClCompile>
+    <ClCompile Include="gui\session\control\merge_item.cpp">
+      <Filter>gui\session\control</Filter>
+    </ClCompile>
+    <ClCompile Include="gui\session\custom_msg_form.cpp">
+      <Filter>gui\session\forms</Filter>
+    </ClCompile>
+    <ClCompile Include="gui\session\msg_record.cpp">
+      <Filter>gui\session\forms</Filter>
+    </ClCompile>
+    <ClCompile Include="gui\session\msg_record_ui.cpp">
+      <Filter>gui\session\forms</Filter>
+    </ClCompile>
+    <ClCompile Include="gui\session\session_box.cpp">
+      <Filter>gui\session</Filter>
+    </ClCompile>
+    <ClCompile Include="gui\session\session_box_audio.cpp">
+      <Filter>gui\session</Filter>
+    </ClCompile>
+    <ClCompile Include="gui\session\session_box_team.cpp">
+      <Filter>gui\session</Filter>
+    </ClCompile>
+    <ClCompile Include="gui\session\session_box_ui.cpp">
+      <Filter>gui\session</Filter>
+    </ClCompile>
+    <ClCompile Include="gui\session\session_form.cpp">
+      <Filter>gui\session</Filter>
+    </ClCompile>
+    <ClCompile Include="module\session\session_manager_dragdrop.cpp">
+      <Filter>module\session</Filter>
+    </ClCompile>
+    <ClCompile Include="gui\session\session_form_dragdrop.cpp">
+      <Filter>gui\session</Filter>
+    </ClCompile>
+    <ClCompile Include="gui\session\session_box_dragdrop.cpp">
+      <Filter>gui\session</Filter>
+    </ClCompile>
+    <ClCompile Include="gui\session\session_box_at.cpp">
+      <Filter>gui\session</Filter>
+    </ClCompile>
+    <ClCompile Include="module\session\session_util.cpp">
+      <Filter>module\session</Filter>
+    </ClCompile>
+    <ClCompile Include="gui\main\friend_list.cpp">
+      <Filter>gui\main</Filter>
+    </ClCompile>
+    <ClCompile Include="gui\main\multispot_form.cpp">
+      <Filter>gui\main\forms</Filter>
+    </ClCompile>
+    <ClCompile Include="gui\main\team_event_form.cpp">
+      <Filter>gui\main\forms</Filter>
+    </ClCompile>
+    <ClCompile Include="gui\main\team_event_form_custom.cpp">
+      <Filter>gui\main\forms</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

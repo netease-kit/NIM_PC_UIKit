@@ -1,5 +1,5 @@
 ﻿#include "custom_msg.h"
-#include "gui/session/control/session_util.h"
+#include "module/session/session_util.h"
 #include "module/emoji/emoji_info.h"
 
 using namespace ui;
@@ -33,12 +33,12 @@ void CustomMsgBubble::InitInfo(const nim::IMMessage &msg)
 	std::wstring sender = UserService::GetInstance()->GetUserName(sender_id_);
 	if (session_type_ == nim::kNIMSessionTypeP2P)
 	{
-		head_->SetBkImage(UserService::GetInstance()->GetUserPhoto(sender_id_));
+		head_->SetBkImage(PhotoService::GetInstance()->GetUserPhoto(sender_id_));
 		name_->SetText(sender);
 	}
 	else
 	{
-		head_->SetBkImage(TeamService::GetInstance()->GetTeamPhoto(true));
+		head_->SetBkImage(PhotoService::GetInstance()->GetTeamPhoto(receiver_id_, true));
 		std::wstring team_sender = TeamService::GetInstance()->GetTeamName(receiver_id_) + L"->" + sender;
 		name_->SetText(team_sender);
 	}
@@ -71,27 +71,34 @@ void CustomMsgBubble::InitInfo(const nim::IMMessage &msg)
 		}
 		msg_body += L"【附言】" + nbase::UTF8ToUTF16(msg.content_);
 	}
+	bool fetch_data = false;
 	Json::Value json;
-	if (StringToJson(msg.attach_, json))
+	if (StringToJson(msg.attach_, json) && json.isObject())
 	{
-		std::string id = json["id"].asString();
-		std::string content = json["content"].asString();
-		if (id == "2" && !content.empty())
+		if (json.isMember("id") && json.isMember("content"))
 		{
-			if (!msg_body.empty())
+			std::string id = json["id"].asString();
+			std::string content = json["content"].asString();
+			if (id == "2" && !content.empty())
 			{
-				msg_body += L"\r\n【内容】";
+				if (!msg_body.empty())
+				{
+					msg_body += L"\r\n【内容】";
+				}
+				msg_body = nbase::UTF8ToUTF16(content);
+				fetch_data = true;
 			}
-			msg_body = nbase::UTF8ToUTF16(content);
 		}
 	}
+	if (!fetch_data)
+		msg_body = nbase::UTF8ToUTF16(msg.attach_);
 
 	SetMsgText(msg_body);
 }
 
 void CustomMsgBubble::SetMsgText(const std::wstring &str)
 {
-	emoji::InsertToEdit(text_, str);
+	InsertTextToEdit(text_, str);
 	int width = 250;
 
 	ui::CSize sz = text_->GetNaturalSize(width, 0);
@@ -107,7 +114,7 @@ void CustomMsgBubble::OnUserInfoChange(const nim::UserNameCard & info)
 		if (session_type_ == nim::kNIMSessionTypeP2P)
 		{
 			name_->SetText(sender);
-			head_->SetBkImage(UserService::GetInstance()->GetUserPhoto(info.GetAccId()));
+			head_->SetBkImage(PhotoService::GetInstance()->GetUserPhoto(info.GetAccId()));
 		}
 		else
 		{

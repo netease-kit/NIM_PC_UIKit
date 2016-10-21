@@ -60,13 +60,15 @@
 #include "nim_tools_audio_cpp_wrapper.h"
 
 //msg
-#include "module/msglog/msglog.h"
+#include "module/session/session_util.h"
 
 //notify
 #include "module/service/notify_center.h"
 #include "module/service/user_service.h"
 #include "module/service/team_service.h"
 #include "module/service/mute_black_service.h"
+#include "module/service/http_service.h"
+#include "module/service/photo_service.h"
 
 //helper
 #include "shared/closure.h"

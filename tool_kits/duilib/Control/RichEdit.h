@@ -124,18 +124,19 @@ public:
     void HomeLeft();
     void EndRight();
 
-    CSize EstimateSize(CSize szAvailable);
-    void SetPos(UiRect rc);
-    void HandleMessage(EventArgs& event);
-    void Paint(HDC hDC, const UiRect& rcPaint) override;
-
-    void SetAttribute(const std::wstring& pstrName, const std::wstring& pstrValue);
+	virtual CSize EstimateSize(CSize szAvailable) override;
+	virtual void SetPos(UiRect rc) override;
+	virtual void HandleMessage(EventArgs& event) override;
+	virtual void Paint(HDC hDC, const UiRect& rcPaint) override;
+	virtual void SetWindow(Window* pManager, Box* pParent, bool bInit = true) override;
+	virtual void SetAttribute(const std::wstring& pstrName, const std::wstring& pstrValue) override;
 
 	LRESULT MessageHandler(UINT uMsg, WPARAM wParam, LPARAM lParam, bool& bHandled);
 
 	BOOL CreateCaret(INT xWidth, INT yHeight);
 	BOOL ShowCaret(BOOL fShow);
 	BOOL SetCaretPos(INT x, INT y);
+	RECT GetCaretRect();
 	void ChangeCaretVisiable();
 
 	ITextHost * GetTextHost();
@@ -237,6 +238,7 @@ protected:
 	std::wstring m_sPromptText;
 	std::wstring m_sPromptTextId;
 	nbase::WeakCallbackFlag drawCaretFlag;
+	std::weak_ptr<nbase::WeakFlag> windowFlag; //记录所属窗体的flag
 
 private:
 	struct LinkInfo

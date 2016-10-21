@@ -9,16 +9,12 @@
 #define NIM_SDK_DLL_EXPORT_HEADERS_NIM_USER_DEF_H_
 
 #include "nim_global_def.h"
+#include "../util/stdbool.h"
 
 #ifdef __cplusplus
 extern"C"
 {
 #endif
-/** @name json params for nim_json_transport_cb_func of nim_user_set_stat API，顺风环境专用更新用户自定义在线状态（公网版不开发该接口）
-  * @{
-  */
-static const char *kNIMUserErrorCode		= kNIMResCode;		/**< int, 返回的错误码NIMResCode */
-/** @}*/ //json params for nim_json_transport_cb_func of nim_user_set_stat API，顺风环境专用更新用户自定义在线状态（公网版不开发该接口）
 
 /** @enum NIMUserSpecialRelationshipChangeType 用户特殊关系数据变更类型 */
 enum NIMUserSpecialRelationshipChangeType
@@ -58,7 +54,7 @@ static const char *kNIMNameCardKeyCreateTime	= "create_timetag";	/**< long 创�
 static const char *kNIMNameCardKeyUpdateTime	= "update_timetag";	/**< long 更新时间戳 毫秒*/
 /** @}*/ //用户名片 Json Keys
 
-/** @typedef void (*nim_user_special_relationship_change_cb_func)(NIMUserSpecialRelationshipChangeType type, const char *result_json ,const char *json_extension, const void *user_data)
+/** @typedef void (*nim_user_special_relationship_change_cb_func)(enum NIMUserSpecialRelationshipChangeType type, const char *result_json ,const char *json_extension, const void *user_data)
   * 用户多端同步类型（黑名单、静音名单）的监听回调函数定义
   * @param[out] type		NIMUserSpecialRelationshipChangeType，用户多端同步类型
   * @param[out] result_json		同步内容，kNIMUserSpecialRelationshipChangeTypeMarkBlack: {"accid" : "abc", "black" : bool} , kNIMUserSpecialRelationshipChangeTypeMarkMute: {"accid" : "abc", "mute" : bool}, kNIMUserSpecialRelationshipChangeTypeSyncMuteAndBlackList: {a, b, c ...}(a,b,c为json value array - 用户特殊关系（黑名单、静音名单） Json Keys)
@@ -66,7 +62,7 @@ static const char *kNIMNameCardKeyUpdateTime	= "update_timetag";	/**< long 更�
   * @param[out] user_data		APP的自定义用户数据，SDK只负责传回给回调函数，不做任何处理！
   * @return void 无返回值
   */
-typedef void (*nim_user_special_relationship_change_cb_func)(NIMUserSpecialRelationshipChangeType type, const char *result_json ,const char *json_extension, const void *user_data);
+typedef void (*nim_user_special_relationship_change_cb_func)(enum NIMUserSpecialRelationshipChangeType type, const char *result_json ,const char *json_extension, const void *user_data);
 
 /** @typedef void (*nim_user_opt_cb_func)(int res_code, const char *id, bool opt, const char *json_extension, const void *user_data)
   * 用户操作（加黑或取消加黑，加静音或取消静音）的回调函数定义
