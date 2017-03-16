@@ -1,0 +1,14 @@
+/tmp
+/doc/.vs/demo_config/v14/.suo
+/doc/demo_config.sdf
+/doc/demo_config.v12.suo
+/doc/ipch/UI_KIT-7ca5bb70/NIM_UI_KIT_D-c09a0d0d.ipch
+/libs/base_d.lib
+/libs/db_d.lib
+/libs/libcef.lib
+/libs/libcef_d.lib
+/libs/nim_image_view_d.lib
+/libs/nim_ui_kit_d.lib
+/libs/shared_d.lib
+/libs/x64/libcef.lib
+/libs/x64/libcef_d.lib
