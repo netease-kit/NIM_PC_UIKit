@@ -254,8 +254,8 @@ void LoginCallback::UILogoutCallback()
 	}
 	else
 	{
-		PostQuitMessage(0);
 		//nim_cef::CefManager::GetInstance()->PostQuitMessage(0);
+		::PostQuitMessage(0);
 		_DoBeforeAppExit();
 	}
 }

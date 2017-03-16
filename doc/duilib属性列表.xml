@@ -55,7 +55,10 @@
 		<Attribute name="textid" default="" type="STRING" comment="窗体标题字符串的ID,ID在多语言文件中指定,如(STRID_MIANWINDOW_TITLE)"/>
 		<Attribute name="roundcorner" default="0,0" type="SIZE" comment="窗口圆角大小,如(4,4)"/>
 		<Attribute name="shadowattached" default="true" type="BOOL" comment="窗口是否附加阴影效果,如(true)"/>
-		<Attribute name="custom_shadow" default="14,14,14,14" type="RECT" comment="图片阴影素材的九宫格描述（当前的阴影素材和九宫格属性都是硬编码）"/>
+		<Attribute name="shadowimage" default="" type="STRING" comment="使用自定义的阴影素材去代替默认的阴影效果，设置的路径要注意相对路径以及九宫格属性，如(file='../public/bk/bk_shadow.png' corner='30,30,30,30')"/>
+		<Attribute name="shadowcorner" default="0,0,0,0" type="RECT" comment="设置了shadowimage属性后，设置此属性来指定阴影素材的九宫格描述，这个属性一定要写在size属性前面"/>	
+		<Attribute name="alphafixcorner" default="14,14,14,14" type="RECT" comment="透明通道修补范围的的九宫格描述"/>
+		<Attribute name="custom_shadow" default="14,14,14,14" type="RECT" comment="与alphafixcorner完全一样，为了兼容老版本xml所以没有去掉这个属性"/>
 	</Window>
 	<Control parent="" notifies="暂时不写">
 		<Attribute name="class" default="" type="STRING" comment="控件样式,用样式里面的属性值来设置本控件的属性,如(btn_default),可以同时指定多个样式,各个样式之间用空格分隔,需要写在第一个属性位置,"/>
@@ -221,7 +224,6 @@
 		<Attribute name="padding" default="0,0,0,0" type="RECT" comment="内边距,如(2,2,2,2)"/>
 		<Attribute name="childmargin" default="0" type="INT" comment="子控件之间的额外距离,如(4)"/>
 		<Attribute name="mousechild" default="true" type="BOOL" comment="本控件的子控件是否可以响应用户操作,如(true)"/>
-		<Attribute name="clip" default="true" type="BOOL" comment="是否支持区域裁剪,如(true)"/>
 	</Box>
 
 	<VBox parent="Box" notifies="暂时不写" comment="属性同Box" >
