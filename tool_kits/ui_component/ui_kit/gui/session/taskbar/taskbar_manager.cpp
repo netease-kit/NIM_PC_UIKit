@@ -44,6 +44,11 @@ void TaskbarTabItem::UnInit()
 		DestroyWindow(m_hWnd);
 }
 
+void TaskbarTabItem::SetTaskbarTitle(const std::wstring &title)
+{
+	::SetWindowTextW(m_hWnd, title.c_str());
+}
+
 void TaskbarTabItem::SetTaskbarManager(TaskbarManager *taskbar_manager)
 {
 	taskbar_manager_ = taskbar_manager;
@@ -215,27 +220,38 @@ HBITMAP TaskbarManager::GenerateBindControlBitmapWithForm(ui::Control *control)
 	if ( NULL == control)
 		return NULL;
 
-	WINDOWPLACEMENT placement = { sizeof(WINDOWPLACEMENT) };
-	::GetWindowPlacement(parent_window_->GetHWND(), &placement);
-	int window_width = placement.rcNormalPosition.right - placement.rcNormalPosition.left;
-	int window_height = placement.rcNormalPosition.bottom - placement.rcNormalPosition.top;
+	int window_width = 0, window_height = 0;
+	RECT rc_wnd;
+	bool check_wnd_size = false;
+	if (::IsIconic(parent_window_->GetHWND())) //当前是最小化状态
+	{
+		WINDOWPLACEMENT placement{ sizeof(WINDOWPLACEMENT) };
+		::GetWindowPlacement(parent_window_->GetHWND(), &placement);
+		if (placement.flags == WPF_RESTORETOMAXIMIZED) //最小化前是最大化状态
+		{
+			MONITORINFO oMonitor = { sizeof(MONITORINFO) };
+			::GetMonitorInfo(::MonitorFromWindow(parent_window_->GetHWND(), MONITOR_DEFAULTTONEAREST), &oMonitor);
+			rc_wnd = oMonitor.rcWork;
+		}
+		else
+		{
+			rc_wnd = placement.rcNormalPosition;
+			check_wnd_size = true; //少数情况下，WINDOWPLACEMENT::rcNormalPosition不正确
+		}
+	}
+	else
+		::GetWindowRect(parent_window_->GetHWND(), &rc_wnd);
+	window_width = rc_wnd.right - rc_wnd.left;
+	window_height = rc_wnd.bottom - rc_wnd.top;
+	if (window_width == 0 || window_height == 0)
+		return nullptr;
 
 	// 1.创建内存dc
-	unsigned int *bitmapBits = NULL;
-	HDC hPaintDC = ::CreateCompatibleDC(parent_window_->GetPaintDC());
-	HBITMAP hPaintBitmap = RenderEngine::CreateDIBBitmap(parent_window_->GetPaintDC(), window_width, window_height, (LPVOID*)&bitmapBits);
-	ASSERT(hPaintDC);
-	ASSERT(hPaintBitmap);
-	HBITMAP hOldPaintBitmap = (HBITMAP) ::SelectObject(hPaintDC, hPaintBitmap);
+	auto render = GlobalManager::CreateRenderContext();
+	render->Resize(window_width, window_height);
 
 	// 2.把窗口双缓冲的位图画到内存dc
-	HDC hParentWindowDC = ::CreateCompatibleDC(parent_window_->GetPaintDC());
-	ASSERT(hParentWindowDC);
-	HBITMAP hOldParentBitmap = (HBITMAP)::SelectObject(hParentWindowDC, parent_window_->GetBackgroundBitmap());
-
-	::BitBlt(hPaintDC, 0, 0, window_width, window_height, hParentWindowDC, 0, 0, SRCCOPY);
-	::SelectObject(hParentWindowDC, hOldParentBitmap);
-	::DeleteDC(hParentWindowDC);
+	render->BitBlt(0, 0, window_width, window_height, parent_window_->GetRenderContext()->GetDC());
 
 	// 3.把某个会话盒子的位图画到内存dc，覆盖原窗口对应位置的位图
 	UiRect rcPaint = control->GetPos();
@@ -245,28 +261,18 @@ HBITMAP TaskbarManager::GenerateBindControlBitmapWithForm(ui::Control *control)
 
 	// 这里不设置剪裁区域，就无法正常绘制
 	{
-		RenderClip rectClip;
-		rectClip.GenerateClip(hPaintDC, rcPaint, true);
+		AutoClip rectClip(render.get(), rcPaint);
 
 		bool visible = control->IsInternVisible();
 		control->SetInternVisible(true);
-		control->Paint(hPaintDC, rcPaint);
+		control->Paint(render.get(), rcPaint);
 		control->SetInternVisible(visible);
 	}
 
 	// 4.修复绘制区域的alpha通道
-	for (int i = rcPaint.top; i < rcPaint.bottom; i++) {
-		for (int j = rcPaint.left; j < rcPaint.right; j++) {
-			BYTE* alpha = (BYTE*)(bitmapBits + i * window_width + j) + 3;
-			*alpha = 255;
-		}
-	}
+	render->RestoreAlpha(rcPaint);
 
-	// 5.清理工作
-	::SelectObject(hPaintDC, hOldPaintBitmap);
-	::DeleteDC(hPaintDC);
-
-	return hPaintBitmap;
+	return render->DetachBitmap();
 }
 
 HBITMAP TaskbarManager::GenerateBindControlBitmap(ui::Control *control, const int dest_width, const int dest_height)
@@ -275,18 +281,35 @@ HBITMAP TaskbarManager::GenerateBindControlBitmap(ui::Control *control, const in
 	if (dest_width <= 0 || dest_height <= 0 || NULL == control)
 		return NULL;
 
-	WINDOWPLACEMENT placement = { sizeof(WINDOWPLACEMENT) };
-	::GetWindowPlacement(parent_window_->GetHWND(), &placement);
-	int window_width = placement.rcNormalPosition.right - placement.rcNormalPosition.left;
-	int window_height = placement.rcNormalPosition.bottom - placement.rcNormalPosition.top;
+	int window_width = 0, window_height = 0;
+	RECT rc_wnd;
+	bool check_wnd_size = false;
+	if (::IsIconic(parent_window_->GetHWND())) //当前是最小化状态
+	{
+		WINDOWPLACEMENT placement{ sizeof(WINDOWPLACEMENT) };
+		::GetWindowPlacement(parent_window_->GetHWND(), &placement);
+		if (placement.flags == WPF_RESTORETOMAXIMIZED) //最小化前是最大化状态
+		{
+			MONITORINFO oMonitor = { sizeof(MONITORINFO) };
+			::GetMonitorInfo(::MonitorFromWindow(parent_window_->GetHWND(), MONITOR_DEFAULTTONEAREST), &oMonitor);
+			rc_wnd = oMonitor.rcWork;
+		}
+		else
+		{
+			rc_wnd = placement.rcNormalPosition;
+			check_wnd_size = true; //少数情况下，WINDOWPLACEMENT::rcNormalPosition不正确
+		}
+	}
+	else
+		::GetWindowRect(parent_window_->GetHWND(), &rc_wnd);
+	window_width = rc_wnd.right - rc_wnd.left;
+	window_height = rc_wnd.bottom - rc_wnd.top;
+	if (window_width == 0 || window_height == 0)
+		return nullptr;
 
 	// 1.创建内存dc
-	unsigned int *bitmapBits = NULL;
-	HDC hPaintDC = ::CreateCompatibleDC(parent_window_->GetPaintDC());
-	HBITMAP hPaintBitmap = RenderEngine::CreateDIBBitmap(parent_window_->GetPaintDC(), window_width, window_height, (LPVOID*)&bitmapBits);
-	ASSERT(hPaintDC);
-	ASSERT(hPaintBitmap);
-	HBITMAP hOldPaintBitmap = (HBITMAP) ::SelectObject(hPaintDC, hPaintBitmap);
+	auto render = GlobalManager::CreateRenderContext();
+	render->Resize(window_width, window_height);
 
 	// 2.把某个会话盒子的位图画到内存dc，覆盖原窗口对应位置的位图
 	UiRect rcPaint = control->GetPos();
@@ -296,44 +319,26 @@ HBITMAP TaskbarManager::GenerateBindControlBitmap(ui::Control *control, const in
 
 	// 这里不设置剪裁区域，就无法正常绘制
 	{
-		RenderClip rectClip;
-		rectClip.GenerateClip(hPaintDC, rcPaint, true);
+		AutoClip rectClip(render.get(), rcPaint);
 
 		bool visible = control->IsInternVisible();
 		control->SetInternVisible(true);
-		control->Paint(hPaintDC, rcPaint);
+		control->Paint(render.get(), rcPaint);
 		control->SetInternVisible(visible);
 	}
 
 	// 3.修复绘制区域的alpha通道
-	for (int i = rcPaint.top; i < rcPaint.bottom; i++) {
-		for (int j = rcPaint.left; j < rcPaint.right; j++) {
-			BYTE* alpha = (BYTE*)(bitmapBits + i * window_width + j) + 3;
-			*alpha = 255;
-		}
-	}
+	render->RestoreAlpha(rcPaint);
 
 	// 4.缩放到目标尺寸
 	UiRect rcControl = control->GetPos();
-	HBITMAP hBitmap = ResizeBitmap(dest_width, dest_height, hPaintDC, rcControl.left, rcControl.top, rcControl.GetWidth(), rcControl.GetHeight());
-
-	// 5.清理工作
-	::SelectObject(hPaintDC, hOldPaintBitmap);
-	::DeleteObject(hPaintBitmap);
-	::DeleteDC(hPaintDC);
-
-	return hBitmap;
+	return ResizeBitmap(dest_width, dest_height, render->GetDC(), rcControl.left, rcControl.top, rcControl.GetWidth(), rcControl.GetHeight());
 }
 
 HBITMAP TaskbarManager::ResizeBitmap(int dest_width, int dest_height, HDC src_dc, int src_x, int src_y, int src_width, int src_height)
 {
-	LPDWORD pDest = NULL;
-	HDC hCloneDC = ::CreateCompatibleDC(parent_window_->GetPaintDC());
-	HBITMAP hBitmap = RenderEngine::CreateDIBBitmap(parent_window_->GetPaintDC(), dest_width, dest_height, (LPVOID*)&pDest);
-	ASSERT(hCloneDC);
-	ASSERT(hBitmap);
-
-	if (hBitmap != NULL)
+	auto render = GlobalManager::CreateRenderContext();
+	if (render->Resize(dest_width, dest_height))
 	{
 		int scale_width = 0;
 		int scale_height = 0;
@@ -351,14 +356,10 @@ HBITMAP TaskbarManager::ResizeBitmap(int dest_width, int dest_height, HDC src_dc
 			scale_width = (int)(dest_height * (float)src_width / (float)src_height);
 		}
 
-		HBITMAP hOldBitmap = (HBITMAP) ::SelectObject(hCloneDC, hBitmap);
-		BLENDFUNCTION ftn = { AC_SRC_OVER, 0, 255, AC_SRC_ALPHA };
-		::AlphaBlend(hCloneDC, (dest_width - scale_width) / 2, (dest_height - scale_height) / 2, scale_width, scale_height, src_dc, src_x, src_y, src_width, src_height, ftn);
-		::SelectObject(hCloneDC, hOldBitmap);
-		::DeleteDC(hCloneDC);
+		render->AlphaBlend((dest_width - scale_width) / 2, (dest_height - scale_height) / 2, scale_width, scale_height, src_dc, src_x, src_y, src_width, src_height);
 	}
 
-	return hBitmap;
+	return render->DetachBitmap();
 }
 
 void TaskbarManager::OnTabItemClose(TaskbarTabItem &tab_item)

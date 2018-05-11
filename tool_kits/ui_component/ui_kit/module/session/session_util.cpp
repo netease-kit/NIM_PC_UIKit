@@ -36,6 +36,12 @@ bool IsBubbleRight(const nim::IMMessage &msg)
 {
 	if (LoginManager::GetInstance()->IsEqual(msg.sender_accid_))
 	{
+		if (msg.type_ == nim::kNIMMessageTypeRobot)
+		{
+			nim::IMBotRobot robot;
+			nim::Talk::ParseBotRobotMessageAttach(msg, robot);
+			return !robot.out_msg_;
+		}
 		if (msg.receiver_accid_ == msg.sender_accid_)//给自己的其他端的消息
 		{
 			//nim::kNIMClientTypePCWindows
@@ -247,14 +253,16 @@ void GenerateUploadImage( const std::wstring &src, const std::wstring &dest )
 	}
 }
 
-void InsertFaceToEdit(ui::RichEdit* edit, const std::wstring &file_name, const std::wstring &tag)
+bool InsertFaceToEdit(ui::RichEdit* edit, const std::wstring &file_name, const std::wstring &tag)
 {
+	bool ret = false;
 	std::wstring file = QPath::GetAppPath();
 	file.append(L"res\\emoji\\" + file_name);
 	if (nbase::FilePathIsExist(file, false))
 	{
 		ITextServices* service = edit->GetTextServices();
-		if (!Re_InsertFace(service, file, tag))
+		ret = Re_InsertFace(service, file, tag);
+		if (!ret)
 		{
 			QLOG_ERR(L"insert emoj {0} {1} fail") << tag << file;
 		}
@@ -262,15 +270,16 @@ void InsertFaceToEdit(ui::RichEdit* edit, const std::wstring &file_name, const s
 	}
 	else
 	{
-		QLOG_ERR(L"emoj {0} {1} miss") << tag << file;
+		QLOG_ERR(L"emoj {0} {1} miss") << tag << file;		
 	}
+	return ret;
 }
 
-//处理可能内嵌的情况，"[[[大笑]"
-void _FindEmoji(ui::RichEdit* edit, const std::wstring &str)
+//处理可能内嵌的情况，"[[[大笑]" 有表情返回true
+bool _FindEmoji(ui::RichEdit* edit, const std::wstring &str)
 {
 	const wchar_t kCp = L'[';
-
+	bool ret = false;
 	std::wstring txt, emo, file;
 
 	size_t p = str.rfind(kCp);
@@ -285,16 +294,22 @@ void _FindEmoji(ui::RichEdit* edit, const std::wstring &str)
 
 	edit->ReplaceSel(txt, false);
 	if (emoji::GetEmojiFileByTag(emo, file))
-		InsertFaceToEdit(edit, file, emo);
+	{
+		ret = InsertFaceToEdit(edit, file, emo);
+	}		
 	else
+	{
 		edit->ReplaceSel(emo, false);
+		ret = false;
+	}		
+	return ret;
 }
 
 //表情格式 "[大笑]"
-void InsertTextToEdit(ui::RichEdit* edit, const std::wstring &str)
+int InsertTextToEdit(ui::RichEdit* edit, const std::wstring &str)
 {
 	const wchar_t kCp = L'[', kCq = L']';
-
+	int ret = 0;
 	size_t p1 = 0, p2 = 0, q = 0, len = str.size();
 	std::wstring emo, file, txt;
 	while (p1 < len)
@@ -325,12 +340,13 @@ void InsertTextToEdit(ui::RichEdit* edit, const std::wstring &str)
 			else
 			{
 				emo = str.substr(p2, q - p2 + 1);
-				_FindEmoji(edit, emo);
+				ret += _FindEmoji(edit, emo) ? 1 : 0;
 
 				p1 = q + 1;
 			}
 		}
 	}
+	return ret;
 }
 
 void InsertImageToEdit(ui::RichEdit* edit, const std::wstring& image_src, bool loading)
@@ -348,7 +364,7 @@ void InsertImageToEdit(ui::RichEdit* edit, const std::wstring& image_src, bool l
 	{
 		Re_GetSel(text_service, start_char, end_char);
 		Re_SetSel(text_service, end_char, end_char);
-		ret = Re_InsertImage(text_service, InsertCustomItemErrorCallback(), image_src, loading);
+		ret = Re_InsertImage(text_service, InsertCustomItemErrorCallback(), true, image_src, L"", loading);
 
 		text_service->Release();
 	}
@@ -471,7 +487,7 @@ bool IsNoticeMsg(const nim::IMMessage& msg)
 	if (msg.type_ == nim::kNIMMessageTypeCustom)
 	{
 		Json::Value json;
-		if (StringToJson(msg.attach_, json))
+		if (StringToJson(msg.attach_, json) && json.isObject())
 		{
 			int sub_type = json["type"].asInt();
 			if (sub_type == CustomMsgType_Rts)
@@ -488,7 +504,7 @@ void GetNotifyMsg(const std::string& msg_attach, const std::string& from_account
 	show_text.clear();
 
 	Json::Value json;
-	if (StringToJson(msg_attach, json))
+	if (StringToJson(msg_attach, json) && json.isObject())
 	{
 		nim::NIMNotificationId id = (nim::NIMNotificationId)json[nim::kNIMNotificationKeyId].asInt();
 
@@ -609,6 +625,10 @@ void GetNotifyMsg(const std::string& msg_attach, const std::string& from_account
 					show_text = nbase::StringPrintf(mls->GetStringViaID(L"STRID_SESSION_ITEM_MUTE_ALL").c_str(), from_name.c_str());
 				else
 					show_text = nbase::StringPrintf(mls->GetStringViaID(L"STRID_SESSION_ITEM_UNMUTE_ALL").c_str(), from_name.c_str());
+			}
+			else if (tinfo_json.isMember(nim::kNIMTeamInfoKeyIcon))
+			{
+				show_text = nbase::StringPrintf(mls->GetStringViaID(L"STRID_SESSION_ITEM_UPDATE_TEAM_ICON").c_str(), from_name.c_str());
 			}
 			else
 			{
@@ -763,7 +783,7 @@ std::wstring GetCustomMsg(const std::string &sender_accid, const std::string &ms
 	ui::MutiLanSupport* mls = ui::MutiLanSupport::GetInstance();
 	std::wstring show_text = mls->GetStringViaID(L"STRID_SESSION_ITEM_MSG_TYPE_CUSTOM_MSG");
 	Json::Value json;
-	if (StringToJson(msg_attach, json))
+	if (StringToJson(msg_attach, json) && json.isObject())
 	{
 		int sub_type = json["type"].asInt();
 		if (sub_type == CustomMsgType_Jsb) //finger
@@ -848,5 +868,71 @@ std::wstring GetRecallNotifyText(const std::string& session_id, nim::NIMSessionT
 
 	return show_text;
 }
+struct GetTeamMemberName
+{
+	GetTeamMemberName(const std::string& def_name) : def_name_(def_name){}
+	virtual const std::string operator() (const std::string& tid, const std::string& accid) const
+	{
+		if (!def_name_.empty())
+			return def_name_;
+		std::string name("");
+		auto info = nim::Team::QueryTeamMemberBlock(tid, accid);
+		if (name.empty())
+			name = info.GetNick();
+		if (name.empty())
+		{
+			nim::UserNameCard name_card;
+			UserService::GetInstance()->GetUserInfo(accid, name_card);
+			name = name_card.GetName();
+		}
+		return name;
+	}
+private:
+	const std::string& def_name_;
+};
+std::wstring GetRecallNotifyTextEx(const std::string& session_id, nim::NIMSessionType session_type, const std::string& msg_from_id, const std::string& msg_oprator_id, const std::string& msg_from_nick)
+{
+	ui::MutiLanSupport* mls = ui::MutiLanSupport::GetInstance();
+	std::wstring show_text;
+	if (session_type == nim::kNIMSessionTypeP2P)
+	{
+		if (msg_from_id == LoginManager::GetInstance()->GetAccount())
+			show_text = mls->GetStringViaID(L"STRID_SESSION_ITEM_MSG_I_RECALL_MSG");
+		else
+			show_text = mls->GetStringViaID(L"STRID_SESSION_ITEM_MSG_OTHER_RECALL_MSG");
+	}
+	else if (session_type == nim::kNIMSessionTypeTeam)
+	{
+		if (msg_oprator_id == LoginManager::GetInstance()->GetAccount())
+		{
+			if (msg_from_id == msg_oprator_id)
+				show_text = mls->GetStringViaID(L"STRID_SESSION_ITEM_MSG_I_RECALL_MSG");
+			else
+				show_text = mls->GetStringViaID(L"STRID_SESSION_ITEM_MSG_RECALL_BY_ME_MSG");
+		}
+		else
+		{
+			if (msg_from_id != msg_oprator_id)
+			{
+				auto info = nim::Team::QueryTeamMemberBlock(session_id, msg_oprator_id);
+				if (info.GetUserType() == nim::kNIMTeamUserTypeCreator)
+					show_text = nbase::StringPrintf(mls->GetStringViaID(L"STRID_SESSION_ITEM_MSG_RECALL_BY_CREATOR_MSG").c_str(), \
+					nbase::UTF8ToUTF16(GetTeamMemberName(/*msg_from_nick*/"")(session_id, msg_oprator_id)).c_str());
+				else if (info.GetUserType() == nim::kNIMTeamUserTypeManager)
+					show_text = nbase::StringPrintf(mls->GetStringViaID(L"STRID_SESSION_ITEM_MSG_RECALL_BY_ADMIN_MSG").c_str(), \
+					nbase::UTF8ToUTF16(GetTeamMemberName(/*msg_from_nick*/"")(session_id, msg_oprator_id)).c_str());
+				else
+					show_text = nbase::UTF8ToUTF16(GetTeamMemberName(/*msg_from_nick*/"")(session_id, msg_from_id)) + L" " + \
+					mls->GetStringViaID(L"STRID_SESSION_ITEM_MSG_RECALL_MSG");
 
+			}
+			else
+			{
+				show_text = nbase::UTF8ToUTF16(GetTeamMemberName(msg_from_nick)(session_id, msg_from_id)) + L" " + \
+					mls->GetStringViaID(L"STRID_SESSION_ITEM_MSG_RECALL_MSG");
+			}
+		}
+	}
+	return show_text;
+}
 }

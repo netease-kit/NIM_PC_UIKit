@@ -234,7 +234,7 @@ void VideoForm::OnControlModeChange(int64_t channel_id, nim::NIMVChatControlType
 
 		ClearBitmapControl(false);
 
-		if (!is_mode_changing_ && !camera_is_open_)
+		if (!is_mode_changing_ && !camera_is_open_ && current_video_mode_)
 		{
 			ChangeToAudio();
 
@@ -483,6 +483,12 @@ void VideoForm::OnLogin( bool success )
 {
 	if(success)
 	{
+		//QLOG_APP(L"old video frame scale {0}") << nim::VChat::GetVideoFrameScaleType();
+		std::string video_scale = GetConfigValue("video_scale");
+		if (!video_scale.empty())
+		{
+			nim::VChat::SetVideoFrameScaleType((nim::NIMVChatVideoFrameScaleType)atoi(video_scale.c_str()));
+		}
 		InitAudio();
 		{
 			if(is_self_)
@@ -588,7 +594,7 @@ void VideoForm::OnMissionCallback(MsgBoxRet ret)
 		}
 	}
 }
-void VideoForm::OnRecordSelFileCb(BOOL ret, std::wstring mp4_path, std::wstring audio_path)
+void VideoForm::OnRecordSelFileCb(BOOL ret, std::wstring mp4_path, std::wstring audio_path, std::wstring mp4_path2)
 {
 	if (ret)
 	{
@@ -602,11 +608,15 @@ void VideoForm::OnRecordSelFileCb(BOOL ret, std::wstring mp4_path, std::wstring 
 			//{
 			//	ShowRecordTip(L"仅录制你说话的内容");
 			//}
-			nim::VChat::StartRecord(nbase::UTF16ToUTF8(mp4_path), std::bind(&VideoForm::StartRecordCb, this, true, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
+			nim::VChat::StartRecord(nbase::UTF16ToUTF8(mp4_path), "", nbase::Bind(&VideoForm::StartRecordCb, this, true, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
+		}
+		if (!mp4_path2.empty())
+		{
+			nim::VChat::StartRecord(nbase::UTF16ToUTF8(mp4_path2), session_id_, nbase::Bind(&VideoForm::StartRecordCb, this, true, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
 		}
 		if (!audio_path.empty())
 		{
-			nim::VChat::StartAudioRecord(nbase::UTF16ToUTF8(audio_path), std::bind(&VideoForm::StartRecordCb, this, false, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
+			nim::VChat::StartAudioRecord(nbase::UTF16ToUTF8(audio_path), nbase::Bind(&VideoForm::StartRecordCb, this, false, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
 		}
 	}
 }

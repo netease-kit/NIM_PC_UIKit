@@ -1,5 +1,5 @@
 ﻿/** @file nim_global_def.h
-  * @brief NIM SDK提供的一些全局定义
+  * @brief 辅助能力 接口相关的常量函数等定义头文件
   * @copyright (c) 2015-2017, NetEase Inc. All rights reserved
   * @author Harrison
   * @date 2015/2/1
@@ -9,6 +9,7 @@
 #define NIM_SDK_DLL_EXPORT_HEADERS_NIM_GLOBAL_DEF_H_
 
 #include "../util/stdbool.h"
+#include "../util/nim_base_types.h"
 #include "../util/nim_build_config.h"
 
 #ifdef __cplusplus
@@ -36,10 +37,16 @@ enum NIMSDKLogLevel
 	kNIMSDKLogLevelError = 2,	/**< SDK Error级别Log*/
 	kNIMSDKLogLevelWarn = 3,	/**< SDK Warn级别Log*/
 	kNIMSDKLogLevelApp = 5,	/**< SDK应用级别Log，正式发布时为了精简sdk log，可采用此级别*/
-	kNIMSDKLogLevelPro = 6,	/**< SDK过程级别Log，更加详细，更有利于开发调试*/
+	kNIMSDKLogLevelPro = 6,	/**< SDK调试过程级别Log，更加详细，更有利于开发调试*/
 };
 
-/** @typedef void (*nim_sdk_log_cb_func)(const char *log)
+/** @enum NIMSDKException 异常 */
+enum NIMSDKException
+{
+	kNIMSDKExceptionSpaceEmpty = 1,	/**< 当前数据目录所在盘符空间紧张或用完, log: {"free_space" : %lf, "message":""}, free_space单位M*/
+};
+
+/** @typedef void (*nim_sdk_log_cb_func)(int log_level, const char *log, const void *user_data)
 * 输出sdk log回调
 * @param[out] log_level log级别，见NIMSDKLogLevel
 * @param[out] log log内容
@@ -48,7 +55,33 @@ enum NIMSDKLogLevel
 */
 typedef void(*nim_sdk_log_cb_func)(int log_level, const char *log, const void *user_data);
 
-#if NIMAPI_UNDER_WIN_DESKTOP_ONLY
+/** @typedef void (*nim_sdk_exception_cb_func)(enum NIMSDKException exception, const char *log, const void *user_data)
+* 输出当前环境异常回调
+* @param[out] exception 见NIMSDKException
+* @param[out] log 描述
+* @param[out] user_data APP的自定义用户数据，SDK只负责传回给回调函数，不做任何处理！
+* @return void 无返回值
+*/
+typedef void(*nim_sdk_exception_cb_func)(enum NIMSDKException exception, const char *log, const void *user_data);
+
+/** @typedef void (*nim_sdk_get_cache_file_info_cb_func)(const char *info, const void *user_data);
+* 获取sdk缓存文件信息回调
+* @param[out] info 信息
+* @param[out] user_data APP的自定义用户数据，SDK只负责传回给回调函数，不做任何处理！
+* @return void 无返回值
+*/
+typedef void(*nim_sdk_get_cache_file_info_cb_func)(const char *info, const void *user_data);
+
+/** @typedef void (*nim_sdk_del_cache_file_cb_func)(enum NIMResCode rescode, const void *user_data);
+* 删除sdk缓存文件回调
+* @param[out] rescode 错误码
+* @param[out] user_data APP的自定义用户数据，SDK只负责传回给回调函数，不做任何处理！
+* @return void 无返回值
+*/
+typedef void(*nim_sdk_del_cache_file_cb_func)(enum NIMResCode rescode, const void *user_data);
+
+
+#ifdef NIMAPI_UNDER_WIN_DESKTOP_ONLY
 /** @enum NIMProxyDetectStep 代理测试步骤 */
 enum NIMProxyDetectStep
 {
@@ -75,6 +108,24 @@ enum NIMProxyType
 	kNIMProxySocks4a	= 5,	/**< Socks4a Proxy*/
 	kNIMProxySocks5		= 6,	/**< Socks5 Proxy*/
 };
+
+/** @name 查询SDK文件缓存信息回调info结构定义
+  * @{
+  */
+static const char *kNIMCacheFileType			= "file_type";			/**< string,文件类型 */
+static const char *kNIMCacheFileCount			= "file_count";			/**< int,文件数量 */
+static const char *kNIMCacheFilePath			= "file_path";			/**< string,文件所在文件夹路径 */
+static const char *kNIMCacheFileTotalSize		= "total_size";			/**< int64,文件总大小KB */
+/** @}*/ //查询SDK文件缓存信息回调info结构定义
+
+/** @name 查询SDK文件缓存信息文件类型file_type
+  * @{
+  */
+static const char *kNIMCacheFileOther			= "res";			/**< 杂项文件缓存 */
+static const char *kNIMCacheFileImage			= "image";			/**< 图片消息缓存 */
+static const char *kNIMCacheFileAudio			= "audio";			/**< 语音消息缓存 */
+static const char *kNIMCacheFileVideo			= "video";			/**< 视频消息缓存 */
+/** @}*/ //查询SDK文件缓存信息文件类型file_type
 
 #ifdef __cplusplus
 };

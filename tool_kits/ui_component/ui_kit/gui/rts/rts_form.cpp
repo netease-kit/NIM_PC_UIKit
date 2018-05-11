@@ -280,8 +280,11 @@ void RtsForm::OnConnectNotifyCallback(const std::string& session_id, int channel
 		{
 			if (code == nim::kNIMRtsConnectStatusSuccess)
 			{
-				ShowTip(MutiLanSupport::GetInstance()->GetStringViaID(L"STRID_RTS_OTHER_CONNECT_OK"));
-				talking_ = true;
+				if (!talking_)
+				{
+					ShowTip(MutiLanSupport::GetInstance()->GetStringViaID(L"STRID_RTS_OTHER_CONNECT_OK"));
+					talking_ = true;
+				}
 			}
 			else
 			{
@@ -366,8 +369,16 @@ void RtsForm::ShowStartUI(bool creater)
 	{
 		bool data_record = atoi(GetConfigValue("rts_record").c_str()) > 0;
 		bool audio_record = atoi(GetConfigValue("audio_record").c_str()) > 0;
+		bool webrtc = VideoManager::GetInstance()->GetWebrtc();
+		nim::RtsStartInfo info;
+		info.apns_ = nbase::UTF16ToUTF8(MutiLanSupport::GetInstance()->GetStringViaID(L"STRID_RTS_INVITE_TEST"));
+		info.custom_info_ = "rts custom info";
+		info.data_record_ = data_record;
+		info.audio_record_ = audio_record;
+		info.webrtc_ = webrtc;
+		info.session_id_ = session_id_;
 		nim::Rts::StartChannelCallback cb = nbase::Bind(&RtsForm::OnStartRtsCb, this, session_id_, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4);
-		nim::Rts::StartChannel(type_, uid_, nbase::UTF16ToUTF8(MutiLanSupport::GetInstance()->GetStringViaID(L"STRID_RTS_INVITE_TEST")), "rts custom info", data_record, audio_record, cb);
+		nim::Rts::StartChannel(type_, uid_, info, cb);
 	}
 	auto closure = nbase::Bind(&RtsForm::NoActiveTimer, this);
 	nbase::ThreadManager::PostDelayedTask(kThreadUI, closure, nbase::TimeDelta::FromSeconds(40));

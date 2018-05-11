@@ -16,6 +16,7 @@ extern"C"
 enum NIMResCode
 {
 	//通用错误码
+	kNIMResError				= 0,		/**< 错误 */
 	kNIMResSuccess				= 200,		/**< 没有错误，一切正常 */
 	kNIMResVersionError			= 201,		/**< 客户端版本不正确 */
 	kNIMResUidPassError			= 302,		/**< 用户名或密码错误 */
@@ -46,6 +47,7 @@ enum NIMResCode
 	kNIMResTeamAlreadyIn		= 809,		/**< 已经在群里 */
 	kNIMResTeamInviteSuccess	= 810,		/**< 邀请成功 */
 	kNIMResForcePushCountLimit	= 811,		/**< 强推列表账号数量超限 */
+	kNIMResTeamMemberLimit		= 813,		/**< 操作成功，但部分成员的群数量超限 */
 	//数据解编错误代码
 	kNIMResInvalidProtocol		= 997,		/**< 协议已失效 */
 	kNIMResEUnpacket			= 998,		/**< 解包错误 */
@@ -87,6 +89,7 @@ enum NIMResCode
 	kNIMLocalResAPIErrorLoginUndone	= 20001,		/**< 还未登陆或登录未完成 */
 	kNIMLocalResAPIErrorLogined		= 20002,		/**< 已经登录 */
 	kNIMLocalResAPIErrorVersionError= 20003,		/**< SDK版本不对，可能会引发其他问题 */
+	kNIMLocalResAPIErrorChatroomMixError= 20004,		/**< 聊天室模式混用错误，不支持同时以登陆状态和匿名状态登陆聊天室 */
 };
 
 #ifdef __cplusplus

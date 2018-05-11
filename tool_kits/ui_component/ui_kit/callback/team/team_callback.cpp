@@ -1,9 +1,10 @@
 ﻿#include "team_callback.h"
 #include "module/session/session_manager.h"
-#include "module/msglog/msg_extend_db.h"
+#include "module/db/user_db.h"
 #include "gui/team_info/team_notify.h"
 #include "gui/main/team_event_form.h"
 #include "export/nim_ui_window_manager.h"
+#include "gui/session/unread_form.h"
 
 namespace nim_comp
 {
@@ -25,6 +26,19 @@ void TeamCallback::UITeamEventCallback(const nim::TeamEvent& info, const std::st
 		if (info.res_code_ == nim::kNIMResSuccess || info.res_code_ == nim::kNIMResTeamInviteSuccess) {
 			TeamService::GetInstance()->InvokeAddTeam(tid, team_info);
 			SessionManager::GetInstance()->OpenSessionBox(tid, nim::kNIMSessionTypeTeam);
+
+			if (!info.invalid_ids_.empty())
+			{
+				std::wstring ids;
+				for (auto id : info.invalid_ids_)
+				{
+					ids.append(nbase::UTF8ToUTF16(id));
+					ids.append(L",");
+				}
+				ids.pop_back();
+				std::wstring toast = nbase::StringPrintf(L"以下成员入群失败，原因是他们所有的群数量超限\r\n%s", ids.c_str());
+				nim_ui::ShowToast(toast, 5000);
+			}
 		}
 	}
 	else if (info.notification_id_ == nim::kNIMNotificationIdLocalUpdateMemberProperty || info.notification_id_ == nim::kNIMNotificationIdTeamApplyPass || info.notification_id_ == nim::kNIMNotificationIdTeamSyncUpdateMemberProperty)
@@ -36,7 +50,7 @@ void TeamCallback::UITeamEventCallback(const nim::TeamEvent& info, const std::st
 			}
 			if (info.notification_id_ == nim::kNIMNotificationIdLocalUpdateMemberProperty || info.notification_id_ == nim::kNIMNotificationIdTeamSyncUpdateMemberProperty)
 			{
-				SessionManager::GetInstance()->QueryMyTeamInfo(tid);
+				SessionManager::GetInstance()->QueryMyTeamMemberInfo(tid);
 				std::wstring session_id = nbase::UTF8ToUTF16(tid);
 				TeamInfoForm* team_info_form = (TeamInfoForm*)WindowsManager::GetInstance()->GetWindow\
 					(TeamInfoForm::kClassName, session_id);
@@ -103,7 +117,7 @@ void TeamCallback::UITeamEventCallback(const nim::TeamEvent& info, const std::st
 				}
 			};
 			nim::Team::QueryTeamMembersAsync(tid, cb);
-			SessionManager::GetInstance()->QueryMyTeamInfo(tid);
+			SessionManager::GetInstance()->QueryMyTeamMemberInfo(tid);
 		}
 	}
 	else if (info.notification_id_ == nim::kNIMNotificationIdLocalMuteMember || info.notification_id_ == nim::kNIMNotificationIdTeamMuteMember)
@@ -116,25 +130,62 @@ void TeamCallback::UITeamEventCallback(const nim::TeamEvent& info, const std::st
 			}
 		}
 	}
+	else if (info.notification_id_ == nim::kNIMNotificationIdTeamInvite)
+	{
+		QLOG_APP(L"UITeamEventCallback invite : {0}") << info.attach_;
+
+		if (info.res_code_ == nim::kNIMResSuccess)
+		{
+			TeamService::GetInstance()->InvokeAddTeam(tid, team_info);
+			for (auto& id : info.ids_)
+			{
+				nim::Team::QueryTeamMemberAsync(tid, id, [tid](const nim::TeamMemberProperty& team_member_info) {
+					TeamService::GetInstance()->InvokeAddTeamMember(tid, team_member_info);
+				});
+			}
+		}
+		else if (info.res_code_ == nim::kNIMResTeamMemberLimit)
+		{
+			std::wstring ids;
+			for (auto id : info.invalid_ids_)
+			{
+				ids.append(nbase::UTF8ToUTF16(id));
+				ids.append(L",");
+			}
+			ids.pop_back();
+			std::wstring toast = nbase::StringPrintf(L"以下成员入群失败，原因是他们所有的群数量超限\r\n%s", ids.c_str());
+			nim_ui::ShowToast(toast, 5000);
+		}
+		else if (info.res_code_ == nim::kNIMResTeamInviteSuccess)
+		{
+			std::wstring toast = L"邀请已发送,等待对方通过";
+			nim_ui::ShowToast(toast, 5000);
+		}
+	}
+	else if (info.notification_id_ == nim::kNIMNotificationIdLocalGetTeamMsgUnreadCount)
+	{
+		int sz = (int)info.src_data_.size();
+		for (auto i = 0; i < sz; i++)
+		{
+			Json::Value unread_info = info.src_data_[i];
+			SessionBox* session = SessionManager::GetInstance()->FindSessionBox(tid);
+			if (session)
+				session->UpdateUnreadCount(unread_info["client_msg_id"].asString(), unread_info["count"].asInt());
+			if (unread_info.isMember("read_accid"))
+			{
+				UnreadForm *form = (UnreadForm *)WindowsManager::GetInstance()->GetWindow(UnreadForm::kClassName, UnreadForm::kClassName);
+				if (form)
+					form->UpdateUnreadCount(unread_info["client_msg_id"].asString(), unread_info["count"].asInt(), unread_info["read_accid"].asString());
+			}
+		}
+	}
 	else
 	{
 		if (info.res_code_ == nim::kNIMResSuccess)
 		{
-			if (info.notification_id_ == nim::kNIMNotificationIdTeamInvite)
+			if (info.notification_id_ == nim::kNIMNotificationIdTeamKick)
 			{
-				QLOG_APP(L"UITeamEventCallback invite : {0}") << info.attach_;
-
-				TeamService::GetInstance()->InvokeAddTeam(tid, team_info);
-				for (auto& id : info.ids_)
-				{
-					nim::Team::QueryTeamMemberAsync(tid, id, [tid](const nim::TeamMemberProperty& team_member_info) {
-						TeamService::GetInstance()->InvokeAddTeamMember(tid, team_member_info);
-					});
-				}
-			}
-			else if (info.notification_id_ == nim::kNIMNotificationIdTeamKick)
-			{
-				QLOG_APP(L"UITeamEventCallback Kick : {0}") << info.attach_;
+				QLOG_APP(L"UITeamEventCallback Kick attach: {0}") << info.attach_;
 
 				for (auto& id : info.ids_)
 				{
@@ -243,6 +294,27 @@ void UIReceiveSysmsgCallback(nim::SysMessage& msg)
 							}
 							return;
 						}
+						else if (id == "100")
+						{
+							VideoManager::GetInstance()->InvokeReceiveCustomP2PMessage(json["content"], msg.sender_accid_);
+							return;
+						}
+					}
+				}
+			}
+			else if (msg.type_ == nim::kNIMSysMsgTypeCustomTeamMsg)
+			{
+				Json::Value json;
+				if (StringToJson(msg.attach_, json) && json.isObject())
+				{
+					if (json.isMember("id"))
+					{
+						std::string id = json["id"].asString();
+						if (id == "100")
+						{
+							VideoManager::GetInstance()->InvokeReceiveCustomTeamMessage(json["content"], msg.sender_accid_);
+							return;
+						}
 					}
 				}
 			}
@@ -256,7 +328,7 @@ void UIReceiveSysmsgCallback(nim::SysMessage& msg)
 			msg.status_ = nim::kNIMSysMsgStatusNone;
 		}
 		//bool add = true;
-		MsgExDB::GetInstance()->InsertMsgData(msg);
+		UserDB::GetInstance()->InsertMsgData(msg);
 		TeamEventForm* f = dynamic_cast<TeamEventForm*>(WindowsManager::GetInstance()->GetWindow(TeamEventForm::kClassName, TeamEventForm::kClassName));
 		if (f)
 		{
@@ -335,7 +407,7 @@ void UIReceiveSysmsgCallback(nim::SysMessage& msg)
 
 void TeamCallback::OnReceiveSysmsgCallback( const nim::SysMessage& msg )
 {
-	QLOG_PRO(L"OnReceiveSysmsgCallback: content: {0} - attach : {1}") << msg.content_ << msg.attach_;
+	QLOG_PRO(L"OnReceiveSysmsgCallback: type:{0} - content: {1} - attach : {2}") << msg.type_ << msg.content_ << msg.attach_;
 	StdClosure task = nbase::Bind(&UIReceiveSysmsgCallback, msg);
 	Post2UI(task);
 }

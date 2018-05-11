@@ -84,6 +84,7 @@ HRESULT SessionForm::DragEnter(IDataObject * pDataObject, DWORD grfKeyState, POI
 		if (NULL != active_session_box_)
 		{
 			active_session_box_->DragEnter(pDataObject, grfKeyState, pt, pdwEffect);
+			ActiveWindow();
 		}
 	}
 	else
@@ -258,17 +259,8 @@ HBITMAP SessionForm::GenerateSessionBoxBitmap(const UiRect &src_rect)
 	int src_width = src_rect.right - src_rect.left;
 	int src_height = src_rect.bottom - src_rect.top;
 
-	HDC hPaintDC = ::CreateCompatibleDC(this->GetPaintDC());
-	ASSERT(hPaintDC);
-	HBITMAP hOldPaintBitmap = (HBITMAP)::SelectObject(hPaintDC, this->GetBackgroundBitmap());
-
-	LPDWORD pDest = NULL;
-	HDC hCloneDC = ::CreateCompatibleDC(this->GetPaintDC());
-	HBITMAP hBitmap = RenderEngine::CreateDIBBitmap(this->GetPaintDC(), kDragImageWidth, kDragImageHeight, (LPVOID*)&pDest);
-	ASSERT(hCloneDC);
-	ASSERT(hBitmap);
-
-	if (hBitmap != NULL)
+	auto render = GlobalManager::CreateRenderContext();
+	if (render->Resize(kDragImageWidth, kDragImageHeight))
 	{
 		int dest_width = 0;
 		int dest_height = 0;
@@ -284,21 +276,11 @@ HBITMAP SessionForm::GenerateSessionBoxBitmap(const UiRect &src_rect)
 			dest_width = (int)(kDragImageHeight * (float)src_width / (float)src_height);
 		}
 
-		HBITMAP hOldBitmap = (HBITMAP) ::SelectObject(hCloneDC, hBitmap);
-		BLENDFUNCTION ftn = { AC_SRC_OVER, 0, 255, AC_SRC_ALPHA };
-		::AlphaBlend(hCloneDC, (kDragImageWidth - dest_width) / 2, 0, dest_width, dest_height, hPaintDC,
-			src_rect.left, src_rect.top, src_rect.right - src_rect.left, src_rect.bottom - src_rect.top, ftn);
-
-		::SelectObject(hCloneDC, hOldBitmap);
-		::DeleteDC(hCloneDC);
-		::GdiFlush();
+		render->AlphaBlend((kDragImageWidth - dest_width) / 2, 0, dest_width, dest_height, this->GetRenderContext()->GetDC(),
+			src_rect.left, src_rect.top, src_rect.right - src_rect.left, src_rect.bottom - src_rect.top);
 	}
 
-	// Cleanup
-	::SelectObject(hPaintDC, hOldPaintBitmap);
-	::DeleteDC(hPaintDC);
-
-	return hBitmap;
+	return render->DetachBitmap();
 }
 
 }

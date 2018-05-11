@@ -117,10 +117,13 @@ public:
 	*/
 	int GetFileSizeLimit() { return limit_file_size_; }
 
+	void SetTeamMsgAckUIEnabled(){ team_msg_ack_ = true; }
+	bool IsTeamMsgAckUIEnabled(){ return team_msg_ack_; }
+
 	/**
 	* 缓存登录错误码
 	* @param[in] error_code 登录错误码
-	* @return void
+	* @return void	无返回值
 	*/
 	void SetErrorCode(int error_code) { error_code_ = error_code; }
 
@@ -129,6 +132,24 @@ public:
 	* @return int 登录错误码
 	*/
 	int GetErrorCode() { return error_code_; }
+
+	/**
+	* 创建互斥量用于检测帐号重复登录
+	* @return void	无返回值
+	*/
+	void CreateSingletonRunMutex();
+
+	void ReleaseSingletonRunMutex();
+
+	/**
+	* 检查是否重复登录帐号
+	* @param[in] username 用户id
+	* @return bool	true：没有重复，false：重复
+	*/
+	bool CheckSingletonRun(const std::wstring& username);
+
+	void SetAnonymityDemoMode(){ anonymity_demo_mode_ = true; }
+	bool IsAnonymityDemoMode(){ return anonymity_demo_mode_; }
 
 private:
 
@@ -146,7 +167,10 @@ private:
 
 	LOG_LEVEL demo_log_level_ = LV_APP;
 	int limit_file_size_ = 15;
+	bool team_msg_ack_;
 
 	int error_code_ = 200;
+	bool anonymity_demo_mode_ = false;
+	HANDLE mutex_handle_ = nullptr;
 };
 }

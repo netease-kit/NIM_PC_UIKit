@@ -8,7 +8,8 @@ const std::string kAppServerAddress = "http://app.netease.im";
 enum FriendChangeType
 {
 	kChangeTypeAdd,
-	kChangeTypeDelete
+	kChangeTypeDelete,
+	kChangeTypeUpdate
 };
 
 //用户性别
@@ -34,11 +35,18 @@ const static char* g_AppKey = "kAppKey";
 * @return string 配置信息
 */
 std::string GetConfigValue(const std::string& key);
+
 /**
 * 获取应用的app key
 * @return string 配置信息app key
 */
 std::string GetConfigValueAppKey();
+
+/**
+* 应用的app key是否为网易云信Demo本身的app key
+* @return bool true:是,false:否
+*/
+bool IsNimDemoAppKey(const std::string& appkey);
 
 namespace nim_comp
 {
@@ -72,6 +80,20 @@ public:
 	void InvokeGetAllUserInfo(const OnGetUserInfoCallback& cb);
 
 	/**
+	* 向数据库和服务器获取指定用户以及近期获取过的用户信息
+	* @param[in] cb 回调函数
+	* @return void	无返回值
+	*/
+	void InvokeGetAllUserInfo(const std::list<std::string>& accids, const OnGetUserInfoCallback& cb);
+
+	/**
+	* 向数据库获取全部机器人以及近期获取过的机器人信息
+	* @param[in] cb 回调函数
+	* @return void	无返回值
+	*/
+	nim::RobotInfos InvokeGetAllRobotsInfoBlock();
+
+	/**
 	* 修改用户自己的个人信息
 	* @param[in] new_info 新的用户信息
 	* @param[in] cb 回调函数
@@ -94,12 +116,47 @@ public:
 	const std::map<std::string, nim::UserNameCard>& GetAllUserInfos();
 
 	/**
+	* 获取本地保存的所有好友信息
+	* @return std::map<std::string, nim::FriendProfile>& 好友信息列表
+	*/
+	const std::map<std::string, nim::FriendProfile>& GetAllFriendInfos();
+
+	/**
 	* 获取用户信息,如果查询不到则查询服务器
 	* @param[in] id 用户id
 	* @param[out] info 用户信息
 	* @return bool true 查询到，false 没有查询到
 	*/
 	bool GetUserInfo(const std::string &id, nim::UserNameCard &info);
+
+	/**
+	* 获取本地的机器人信息
+	* @param[in] id 机器人云信ID
+	* @param[out] info 机器人信息
+	* @return bool true 查询到，false 没有查询到
+	*/
+	bool GetRobotInfo(const std::string &id, nim::RobotInfo &info);
+
+	/**
+	* 获取本地的所有的机器人信息
+	* @param[out] info 机器人信息
+	* @return bool true 查询到，false 没有查询到
+	*/
+	bool GetAllRobotInfo(nim::RobotInfos &info);
+
+	/**
+	* 初始化聊天室的所有的机器人信息（匿名聊天室）
+	* @param[in] room_id 聊天室ID
+	* @return
+	*/
+	void InitChatroomRobotInfos(long long room_id);
+
+	/**
+	* 获取Id对应的用户是不是机器人
+	* @param[in] accid 机器人云信ID
+	* @return bool true 是，false 不是
+	*/
+	bool IsRobotAccount(const std::string &accid);
 
 	/**
 	* 获取用户信息,如果查询不到则查询服务器
@@ -139,6 +196,13 @@ public:
 	std::wstring GetUserName(const std::string &id, bool alias_prior = true);
 
 	/**
+	* 获取好友扩展字段
+	* @param[in] id 用户id
+	* @return Json::Value 用户扩展字段
+	*/
+	Json::Value GetUserCustom(const std::string &id);
+
+	/**
 	* 获取好友备注名
 	* @param[in] id 用户id
 	* @return wstring 用户备注名
@@ -151,6 +215,13 @@ public:
 	* @return UnregisterCallback 反注册对象
 	*/
 	UnregisterCallback RegFriendListChange(const OnFriendListChangeCallback& callback);
+
+	/**
+	* 注册机器人列表改变的回调
+	* @param[in] callback 回调函数
+	* @return UnregisterCallback 反注册对象
+	*/
+	UnregisterCallback RegRobotListChange(const nim::Robot::RobotChangedCallback& callback);
 
 	/**
 	* 注册用户名、头像改变的回调
@@ -193,6 +264,15 @@ public:
 	* @return void 无返回值
 	*/
 	void OnUserInfoChange(const std::list<nim::UserNameCard> &uinfo_list);
+
+	/**
+	* 响应机器人信息改变的回调函数
+	* @param[in] rescode 错误码
+	* @param[in] type 类型
+	* @param[in] robots 机器人列表
+	* @return void 无返回值
+	*/
+	void OnRobotChange(nim::NIMResCode rescode, nim::NIMRobotInfoChangeType type, const nim::RobotInfos& robots);
 private:
 	/**
 	* 向数据库和服务器获取指定id的用户信息
@@ -213,9 +293,11 @@ private:
 	std::map<std::string, nim::UserNameCard> all_user_; //好友+陌生人
 	std::set<std::string> post_ids_; //已经发出请求的id们
 	std::map<std::string, nim::FriendProfile> friend_list_; //好友列表
+	std::map<std::string, nim::RobotInfo> robot_list_; //机器人列表
 	std::map<int, std::unique_ptr<OnFriendListChangeCallback>> friend_list_change_cb_list_; //有好友增减回调列表
 	std::map<int, std::unique_ptr<OnUserInfoChangeCallback>> uinfo_change_cb_list_; //用户名、头像变化回调列表
 	std::map<int, std::unique_ptr<OnUserInfoChangeCallback>> misc_uinfo_change_cb_list_; //用户其他信息变化回调列表
+	std::map<int, std::unique_ptr<nim::Robot::RobotChangedCallback>> robot_change_cb_list_; //机器人变化回调列表
 
 	std::set<std::string> on_query_list_; //已经要求查询，但还未返回结果的
 };

@@ -229,6 +229,30 @@ void TeamService::InvokeMuteMember(const std::string& tid, const std::string& ui
 	}
 }
 
+UnregisterCallback TeamService::RegChangeTeamNotification(OnTeamNotificationModeChange mute)
+{
+	assert(nbase::MessageLoop::current()->ToUIMessageLoop());
+	OnTeamNotificationModeChange* new_cb = new OnTeamNotificationModeChange(mute);
+	int cb_id = (int)new_cb;
+	notification_change_cb_[cb_id].reset(new_cb);
+	auto unregister = ToWeakCallback([this, cb_id]() {
+		notification_change_cb_.erase(cb_id);
+	});
+	return unregister;
+}
+
+void TeamService::InvokeChangeNotificationMode(const std::string& tid, const int64_t bits)
+{
+	assert(nbase::MessageLoop::current()->ToUIMessageLoop());
+
+	QLOG_APP(L"invoke change team notification mode: tid={0} mode={1}") << tid << bits;
+
+	for (auto& it : notification_change_cb_)
+	{
+		(*it.second)(tid, bits);
+	}
+}
+
 void TeamService::OnTeamDataSyncCallback(nim::NIMDataSyncType sync_type, nim::NIMDataSyncStatus status, const std::string &data_sync_info)
 {
 	if (sync_type == nim::kNIMDataSyncTypeTeamInfo)
@@ -367,7 +391,10 @@ void TeamService::UIGetLocalTeamInfoCb(const std::string& tid, const nim::TeamIn
 
 	if (result.IsMemberValid())
 	{
-		if (cached_tinfo_.find(tid) == cached_tinfo_.end())
+		bool has_cached = cached_tinfo_.find(tid) != cached_tinfo_.end();
+		cached_tinfo_[tid] = result;
+
+		if (!has_cached)
 		{
 			InvokeAddTeam(tid, result);
 		}
@@ -378,8 +405,6 @@ void TeamService::UIGetLocalTeamInfoCb(const std::string& tid, const nim::TeamIn
 			if (!result.GetIcon().empty())
 				PhotoService::GetInstance()->DownloadTeamIcon(result);
 		}
-
-		cached_tinfo_[tid] = result;
 	}
 	else
 	{

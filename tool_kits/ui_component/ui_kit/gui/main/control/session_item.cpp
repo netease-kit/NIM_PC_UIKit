@@ -31,43 +31,26 @@ void SessionItem::InitCtrl()
 
 	label_name_ = (Label*) this->FindSubControl(L"label_name");
 	label_msg_ = (Label*) this->FindSubControl(L"label_msg");
+	label_online_state_ = (Label*) this->FindSubControl(L"online_state");
 	label_atme_ = (Label*) this->FindSubControl(L"at_me_label");
 	label_time_ = (Label*) this->FindSubControl(L"label_time");
 	box_unread_ = (Box*) this->FindSubControl(L"box_unread");
 	label_unread_ = (Label*) this->FindSubControl(L"label_unread");
 	head_image_ = (ButtonBox*)this->FindSubControl(L"head_image");
-	head_image_->AttachClick(nbase::Bind(&SessionItem::OnHeadImageClicked, this, std::placeholders::_1));
-}
-
-void SessionItem::InitUserProfile()
-{
-	if (msg_.type_ == nim::kNIMSessionTypeP2P)
-	{
-		if (LoginManager::GetInstance()->IsEqual(msg_.id_))
-		{
-			label_name_->SetText(MutiLanSupport::GetInstance()->GetStringViaID(L"STRID_MAINWINDOW_MY_MOBILEPHONE"));
-		}
-		else
-		{
-			label_name_->SetText(UserService::GetInstance()->GetUserName(msg_.id_));
-		}
-		head_image_->SetBkImage(PhotoService::GetInstance()->GetUserPhoto(msg_.id_));
-	}
-	else
-	{
-		std::wstring tname = TeamService::GetInstance()->GetTeamName(msg_.id_);
-		label_name_->SetText(tname);
-		head_image_->SetBkImage(PhotoService::GetInstance()->GetTeamPhoto(msg_.id_, false));
-	}
 }
 
 void SessionItem::InitMsg(const nim::SessionData &msg)
 {
 	msg_ = msg;
+	head_image_->AttachClick(nbase::Bind(&SessionItem::OnHeadImageClicked, this, msg_.is_robot_session_, std::placeholders::_1));
+
 	SetUTF8Name(msg_.id_);
 	SetUTF8DataID(msg_.id_);
 
-	InitUserProfile(); //设置用户名和头像
+	if (msg.is_robot_session_)
+		InitRobotProfile();
+	else
+		InitUserProfile(); //设置用户名和头像
 	UpdateMsgContent(); //更新消息内容
 	UpdateUnread(); //刷新未读条数	
 	ShowAtmeTip(true);
@@ -84,7 +67,7 @@ void SessionItem::InitMsg(const nim::SessionData &msg)
 
 	if (msg_.type_ == nim::kNIMSessionTypeTeam) // 需要先获得群里最近一条消息中所有人的昵称，再UpdateMsg
 	{
-		head_image_->SetMouseEnabled(false); //群头像不响应点击
+		//head_image_->SetMouseEnabled(false); //群头像不响应点击
 
 		relate_ids.clear();
 		relate_ids.insert(msg_.msg_sender_accid_);
@@ -113,6 +96,64 @@ void SessionItem::InitMsg(const nim::SessionData &msg)
 			UserService::GetInstance()->GetUserInfos(uids, uinfos);
 		}
 	}
+	else if (SubscribeEventManager::GetInstance()->IsEnabled())
+	{
+		EventDataEx data;
+		if (!msg_.is_robot_session_)
+			SubscribeEventManager::GetInstance()->GetEventData(nim::kNIMEventTypeOnlineState, msg.id_, data);
+		else
+			data.online_client_.online_client_type_.insert(nim::kNIMClientTypeDefault);
+		SetOnlineState(data);
+	}
+
+	if (msg_.type_ == nim::kNIMSessionTypeP2P)
+	{
+		SetMute(nim_comp::MuteBlackService::GetInstance()->IsInMuteList(msg_.id_));
+	}
+	else
+	{
+		SetMute(nim_comp::SessionManager::GetInstance()->IsTeamMsgMuteShown(msg_.id_, -1));
+	}
+}
+
+void SessionItem::InitRobotProfile()
+{
+	nim::RobotInfo info;
+	UserService::GetInstance()->GetRobotInfo(msg_.id_, info);
+	label_name_->SetText(nbase::UTF8ToUTF16(info.GetName()));
+	head_image_->SetBkImage(PhotoService::GetInstance()->GetUserPhoto(msg_.id_, true));
+}
+
+void SessionItem::SetMute(bool mute)
+{
+	FindSubControl(L"not_disturb")->SetVisible(mute);
+}
+
+void SessionItem::InitUserProfile()
+{
+	if (msg_.type_ == nim::kNIMSessionTypeP2P)
+	{
+		if (LoginManager::GetInstance()->IsEqual(msg_.id_))
+		{
+			label_name_->SetText(MutiLanSupport::GetInstance()->GetStringViaID(L"STRID_MAINWINDOW_MY_MOBILEPHONE"));
+		}
+		else
+		{
+			label_name_->SetText(UserService::GetInstance()->GetUserName(msg_.id_));
+		}
+		head_image_->SetBkImage(PhotoService::GetInstance()->GetUserPhoto(msg_.id_));
+	}
+	else
+	{
+		std::wstring tname = TeamService::GetInstance()->GetTeamName(msg_.id_);
+		label_name_->SetText(tname);
+		head_image_->SetBkImage(PhotoService::GetInstance()->GetTeamPhoto(msg_.id_, false));
+	}
+}
+
+void SessionItem::SetOnlineState(const EventDataEx& data)
+{
+	label_online_state_->SetText(OnlineStateEventHelper::GetOnlineState(data.online_client_, data.multi_config_, true));
 }
 
 void GetMsgContent(const nim::SessionData &msg, std::wstring &show_text)
@@ -158,6 +199,18 @@ void GetMsgContent(const nim::SessionData &msg, std::wstring &show_text)
 	{
 		show_text = mls->GetStringViaID(L"STRID_SESSION_ITEM_MSG_TYPE_UNDEFINED");
 	}
+	else if (msg.msg_type_ == nim::kNIMMessageTypeRobot)
+	{
+		bool out_msg = false;
+		Json::Value values;
+		Json::Reader reader;
+		if (reader.parse(msg.msg_attach_, values) && values.isObject())
+			out_msg = values[nim::kNIMBotRobotReceivedMsgKeyMsgOut].asBool();
+		if (!out_msg)
+			show_text = nbase::UTF8ToUTF16(msg.msg_content_);
+		else
+			show_text = mls->GetStringViaID(L"STRID_SESSION_ITEM_MSG_TYPE_ROBOT");
+	}
 	else
 	{
 		show_text = mls->GetStringViaID(L"STRID_SESSION_ITEM_MSG_TYPE_UNKNOWN");
@@ -191,7 +244,10 @@ void SessionItem::UpdateMsgContent(const std::string& id /*= ""*/)
 					need_prefix = false;
 					std::string from_id = values["notify_from"].asString();
 					std::string from_nick = values["from_nick"].asString();
-					show_text = GetRecallNotifyText(msg_.id_, msg_.type_, from_id, from_nick);
+					std::string operator_id = values["operator_id"].asString();
+					if (operator_id.empty())
+						operator_id = from_id;
+					show_text = GetRecallNotifyTextEx(msg_.id_, msg_.type_, from_id, operator_id,from_nick);
 				}
 			}
 		}
@@ -202,10 +258,31 @@ void SessionItem::UpdateMsgContent(const std::string& id /*= ""*/)
 				; // do nothing
 			else
 			{
-				std::wstring nick_name = UserService::GetInstance()->GetUserName(msg_.msg_sender_accid_);
-				if (!nick_name.empty())
+				if (msg_.msg_type_ != nim::kNIMMessageTypeRobot)
 				{
-					show_text = nick_name + L": " + show_text;
+					std::wstring nick_name = UserService::GetInstance()->GetUserName(msg_.msg_sender_accid_);
+					if (!nick_name.empty())
+					{
+						show_text = nick_name + L": " + show_text;
+					}
+				}
+				else
+				{
+					bool out_msg = false;
+					Json::Value values;
+					Json::Reader reader;
+					if (reader.parse(msg_.msg_attach_, values) && values.isObject())
+						out_msg = values[nim::kNIMBotRobotReceivedMsgKeyMsgOut].asBool();
+					if (out_msg)
+					{
+						std::string robot_id = values[nim::kNIMBotRobotMsgKeyRobotID].asString();
+						nim::RobotInfo info;
+						UserService::GetInstance()->GetRobotInfo(robot_id, info);
+						if (!info.GetName().empty())
+						{
+							show_text = nbase::UTF8ToUTF16(info.GetName()) + L": " + show_text;
+						}
+					}
 				}
 			}
 		}
@@ -269,6 +346,8 @@ void SessionItem::DeleteRecentSessionCb(nim::NIMResCode code, const nim::Session
 void SessionItem::BatchStatusDeleteCb(nim::NIMResCode res_code, const std::string& uid, nim::NIMSessionType to_type)
 {
 	QLOG_APP(L"batch delete msg, id={0} type={1} code={2}") << uid << to_type << res_code;
+	//if (res_code == nim::kNIMResSuccess)
+	//	nim::Session::SetUnreadCountZeroAsync(to_type, uid, nim::Session::SetUnreadCountZeroCallback());
 }
 
 void SessionItem::ShowAtmeTip(bool show)
@@ -331,12 +410,16 @@ bool SessionItem::DelSessionItemMenuItemClick(ui::EventArgs* param)
 	if (name == L"del_session_item")
 	{
 		nim::Session::DeleteRecentSession(msg_.type_, msg_.id_, nbase::Bind(&SessionItem::DeleteRecentSessionCb, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+		SubscribeEventManager::GetInstance()->UnSubscribeSessionEvent(msg_);
 
 		m_pWindow->SendNotify(this, ui::kEventNotify, SET_DELETE, 0);
 	}
 	else if (name == L"del_session_msg")
 	{
-		nim::MsgLog::BatchStatusDeleteAsync(msg_.id_, msg_.type_, nbase::Bind(&SessionItem::BatchStatusDeleteCb, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+		nim::Session::SetUnreadCountZeroAsync(msg_.type_, msg_.id_, ToWeakCallback([this](nim::NIMResCode res_code, const nim::SessionData&, int){
+			if (res_code == nim::kNIMResSuccess)
+			nim::MsgLog::BatchStatusDeleteAsync(msg_.id_, msg_.type_, nbase::Bind(&SessionItem::BatchStatusDeleteCb, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+		}));		
 	}
 	return true;
 }
@@ -355,9 +438,17 @@ bool SessionItem::OnSessionItemMenu(ui::EventArgs* arg)
 	return true;
 }
 
-bool SessionItem::OnHeadImageClicked(ui::EventArgs * arg)
+bool SessionItem::OnHeadImageClicked(bool is_robot, ui::EventArgs * arg)
 {
-	ProfileForm::ShowProfileForm(msg_.id_);
+	if (msg_.type_ == nim::kNIMSessionTypeTeam)
+	{
+		auto team_info = nim::Team::QueryTeamInfoBlock(msg_.id_);
+		TeamInfoForm::ShowTeamInfoForm(false, team_info.GetType(), msg_.id_, team_info);
+	}
+	else if (msg_.type_ == nim::kNIMSessionTypeP2P)
+	{
+		ProfileForm::ShowProfileForm(msg_.id_, is_robot);
+	}
 	return true;
 }
 

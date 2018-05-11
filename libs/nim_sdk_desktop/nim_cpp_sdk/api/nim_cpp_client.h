@@ -1,5 +1,5 @@
 ﻿/** @file nim_cpp_client.h
-  * @brief 全局管理功能；主要包括SDK初始化/清理、客户端登录/退出等功能
+  * @brief SDK接入,主要包括SDK初始化/清理、客户端登录/退出/重连/掉线/被踢等流程
   * @copyright (c) 2015-2017, NetEase Inc. All rights reserved
   * @author towik, Oleg, Harrison
   * @date 2015/09/21
@@ -20,7 +20,6 @@ namespace nim
 /** @class Client
   * @brief 全局管理功能；主要包括SDK初始化/清理、客户端登录/退出等功能
   */
-
 class Client
 {
 
@@ -37,7 +36,7 @@ public:
 	/** @fn bool Init(const std::string& app_data_dir, const std::string& app_install_dir, const SDKConfig &config)
 	* NIM SDK初始化
 	* @param[in] app_key 应用注册的APP KEY
-	* @param[in] app_data_dir 使用默认路径时只需传入单个目录名（不以反斜杠结尾)，使用自定义路径时需传入完整路径（以反斜杠结尾，并确保有正确的读写权限！）
+	* @param[in] app_data_dir 推荐用户目录放置在系统目录{AppData\Local}，默认只需要传入目录名，SDK会默认在系统目录下创建该级用户目录。如果要使用其他自定义路径，需传入绝对路径路径，并确保该目录有正确的读写权限。
 	* @param[in] app_install_dir SDK动态库所在的目录全路径（如果传入为空，则按照默认规则搜索该动态库）
 	* @param[in] config 初始化参数
 	* @return bool 返回值true: 成功， false: 失败
@@ -46,6 +45,12 @@ public:
 		, const std::string& app_data_dir
 		, const std::string& app_install_dir
 		, const SDKConfig &config);
+
+	/** @fn const SDKConfig& GetSDKConfig()
+	* NIM SDK初始化
+	* @return SDKConfig 返回值SDKConfig的引用 const类型，不可试图修改
+	*/
+	static const SDKConfig& GetSDKConfig();
 
 	/** @fn void Cleanup(const std::string& json_extension = "")
 	* NIM SDK清理

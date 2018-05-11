@@ -1,13 +1,14 @@
 ﻿#include "user_service.h"
 #include "module/local/local_helper.h"
-#include "shared/xml_util.h"
 #include "module/login/login_manager.h"
+#include "module/subscribe_event/subscribe_event_manager.h"
+#include "shared/xml_util.h"
 
 std::string GetConfigValue(const std::string& key)
 {
 	std::string value;
 	std::wstring server_conf_path = QPath::GetAppPath();
-	server_conf_path.append(L"server_conf.txt");
+	server_conf_path.append(L"global_conf.txt");
 	TiXmlDocument document;
 	if (shared::LoadXmlFromFile(document, server_conf_path))
 	{
@@ -24,6 +25,7 @@ std::string GetConfigValue(const std::string& key)
 
 	return value;
 }
+
 std::string GetConfigValueAppKey()
 {
 	std::string app_key = DEMO_GLOBAL_APP_KEY;
@@ -33,6 +35,14 @@ std::string GetConfigValueAppKey()
 		app_key = new_app_key;
 	}
 	return app_key;
+}
+
+bool IsNimDemoAppKey(const std::string& appkey)
+{
+	if (appkey == DEMO_GLOBAL_APP_KEY || appkey == DEMO_GLOBAL_TEST_APP_KEY)
+		return true;
+	
+	return false;
 }
 
 namespace nim_comp
@@ -45,6 +55,8 @@ UserService::UserService()
 
 	//向SDK注册监听用户名片变化
 	nim::User::RegUserNameCardChangedCb(nbase::Bind(&UserService::OnUserInfoChangeBySDK, this, std::placeholders::_1));
+
+	nim::Robot::RegChangedCallback(nbase::Bind(&UserService::OnRobotChange, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 }
 
 void UserService::InvokeRegisterAccount(const std::string &username, const std::string &password, const std::string &nickname, const OnRegisterAccountCallback& cb)
@@ -92,6 +104,16 @@ void UserService::InvokeRegisterAccount(const std::string &username, const std::
 	nim_http::PostRequest(request);
 }
 
+nim::RobotInfos UserService::InvokeGetAllRobotsInfoBlock()
+{
+	auto robot_infos = nim::Robot::QueryAllRobotInfosBlock("");
+	for (auto &info : robot_infos)
+	{
+		robot_list_[info.GetAccid()] = info;
+	}
+	return robot_infos;
+}
+
 void UserService::InvokeGetAllUserInfo(const OnGetUserInfoCallback& cb)
 {
 	nim::Friend::GetList(ToWeakCallback([this, cb](nim::NIMResCode res_code, const std::list<nim::FriendProfile>& user_profile_list)
@@ -112,6 +134,24 @@ void UserService::InvokeGetAllUserInfo(const OnGetUserInfoCallback& cb)
 	}));
 }
 
+void UserService::InvokeGetAllUserInfo(const std::list<std::string>& accids, const OnGetUserInfoCallback& cb)
+{
+	nim::User::GetUserNameCardOnline(accids, [this, cb](const std::list<nim::UserNameCard>& uinfos)
+	{
+		std::list<std::string> accids;
+		for (auto& it : uinfos)
+		{
+			nim::FriendProfile pro;
+			pro.SetAccId(it.GetAccId());
+			pro.SetRelationship(nim::kNIMFriendFlagNormal);
+			friend_list_[it.GetAccId()].Update(pro);
+			accids.push_back(it.GetAccId());
+		}
+		if (cb)
+			cb(uinfos);
+	});
+}
+
 void UserService::InvokeUpdateMyInfo(const nim::UserNameCard &new_info, const OnUpdateUserInfoCallback& cb)
 {
 	nim::UserNameCard info = new_info;
@@ -122,7 +162,7 @@ void UserService::InvokeUpdateMyInfo(const nim::UserNameCard &new_info, const On
 			assert(nbase::MessageLoop::current()->ToUIMessageLoop());
 			std::list<nim::UserNameCard> lst;
 			lst.push_back(info);
-			OnUserInfoChange(lst);
+			OnUserInfoChangeBySDK(lst);
 		}
 		if (cb != nullptr)
 			cb(res);
@@ -145,6 +185,12 @@ const std::map<std::string, nim::UserNameCard>& UserService::GetAllUserInfos()
 	return all_user_;
 }
 
+const std::map<std::string, nim::FriendProfile>& UserService::GetAllFriendInfos()
+{
+	assert(nbase::MessageLoop::current()->ToUIMessageLoop());
+	return friend_list_;
+}
+
 bool UserService::GetUserInfo(const std::string &id, nim::UserNameCard &info)
 {
 	auto iter = all_user_.find(id);
@@ -161,6 +207,63 @@ bool UserService::GetUserInfo(const std::string &id, nim::UserNameCard &info)
 			InvokeGetUserInfo(std::list<std::string>(1, id));
 		return false;
 	}
+}
+
+bool UserService::GetRobotInfo(const std::string &id, nim::RobotInfo &info)
+{
+	auto iter = robot_list_.find(id);
+	if (iter != robot_list_.cend())
+	{
+		info = iter->second;
+		return true;
+	}
+	info = nim::Robot::QueryRobotInfoByAccidBlock(id, "");
+	return true;
+}
+
+bool UserService::IsRobotAccount(const std::string &accid)
+{
+	return robot_list_.find(accid) != robot_list_.end();
+}
+
+bool UserService::GetAllRobotInfo(nim::RobotInfos &info)
+{
+	if (robot_list_.empty())
+		InvokeGetAllRobotsInfoBlock();
+	for (auto &robot : robot_list_)
+	{
+		info.push_back(robot.second);
+	}
+	return !info.empty();
+}
+
+void UserService::InitChatroomRobotInfos(long long room_id)
+{
+	if (!robot_list_.empty())
+		return;
+	auto task = [this](int rescode, const nim_chatroom::RobotInfos& infos)
+	{
+		auto ui_task = [this, infos]()
+		{
+			for (auto &info : infos)
+			{
+				if (!info.GetRobotID().empty())
+				{
+					nim::RobotInfo robot;
+					robot.SetAccid(info.GetAccid());
+					robot.SetCreateTime(info.GetCreateTime());
+					robot.SetIcon(info.GetIcon());
+					robot.SetIntro(info.GetIntro());
+					robot.SetName(info.GetName());
+					robot.SetRobotID(info.GetRobotID());
+					robot.SetUpdateTime(info.GetUpdateTime());
+					robot_list_[info.GetAccid()] = robot;
+				}
+			}
+		};
+		nbase::ThreadManager::PostTask(kThreadUI, ui_task);
+	};
+	nim_chatroom::ChatRoom::GetRobotInfoAsync(room_id, 0, task);
 }
 
 void UserService::GetUserInfos(const std::list<std::string>& ids, std::list<nim::UserNameCard>& uinfos)
@@ -250,6 +353,13 @@ std::wstring UserService::GetUserName(const std::string &id, bool alias_prior/* 
 	return nbase::UTF8ToUTF16(info.GetName());
 }
 
+Json::Value UserService::GetUserCustom(const std::string &id)
+{
+	nim::UserNameCard info;
+	GetUserInfo(id, info);
+	return info.GetExpand();
+}
+
 std::wstring UserService::GetFriendAlias(const std::string & id)
 {
 	auto iter = friend_list_.find(id);
@@ -266,6 +376,18 @@ UnregisterCallback UserService::RegFriendListChange(const OnFriendListChangeCall
 	friend_list_change_cb_list_[cb_id].reset(new_callback);
 	auto cb = ToWeakCallback([this, cb_id]() {
 		friend_list_change_cb_list_.erase(cb_id);
+	});
+	return cb;
+}
+
+UnregisterCallback UserService::RegRobotListChange(const nim::Robot::RobotChangedCallback& callback)
+{
+	nim::Robot::RobotChangedCallback* new_callback = new nim::Robot::RobotChangedCallback(callback);
+	int cb_id = (int)new_callback;
+	assert(nbase::MessageLoop::current()->ToUIMessageLoop());
+	robot_change_cb_list_[cb_id].reset(new_callback);
+	auto cb = ToWeakCallback([this, cb_id]() {
+		robot_change_cb_list_.erase(cb_id);
 	});
 	return cb;
 }
@@ -320,7 +442,14 @@ void UserService::OnFriendListChangeBySDK(const nim::FriendChangeEvent& change_e
 			// 此处根据accid获取该好友的FriendProfile，添加到friend_list_中。
 			nim::Friend::GetFriendProfileCallback cb = ToWeakCallback([this](const std::string& accid, const nim::FriendProfile& user_profile)
 			{
+				if (accid.empty() || user_profile.GetAccId().empty())
+				{
+					QLOG_ERR(L"UserService::OnFriendListChangeBySDK kNIMFriendChangeTypeRequest error, accid:{0}, profile_accid:{1}") << accid.c_str() << user_profile.GetAccId().c_str();
+					return;
+				}
+					
 				friend_list_[user_profile.GetAccId()] = user_profile;
+				SubscribeEventManager::GetInstance()->SubscribeFriendEvent(user_profile.GetAccId());
 				InvokeFriendListChangeCallback(kChangeTypeAdd, user_profile.GetAccId());
 			});
 			nim::Friend::GetFriendProfile(add_event.accid_, cb);
@@ -346,6 +475,9 @@ void UserService::OnFriendListChangeBySDK(const nim::FriendChangeEvent& change_e
 	default:
 		break;
 	}
+
+	SubscribeEventManager::GetInstance()->SubscribeFriendEvent(add_list);
+	SubscribeEventManager::GetInstance()->UnSubscribeFriendEvent(delete_list);
 
 	for each (const auto& id in add_list)
 		InvokeFriendListChangeCallback(kChangeTypeAdd, id);
@@ -398,6 +530,9 @@ void UserService::OnSyncFriendList(const nim::FriendChangeEvent& change_event)
 	// 避免创建好友列表项时，列表项控件查询用户信息而导致频繁调用用户信息获取接口
 	DoQueryUserInfos(add_list);
 	DoQueryUserInfos(update_list);
+
+	SubscribeEventManager::GetInstance()->SubscribeFriendEvent(add_list);
+	SubscribeEventManager::GetInstance()->UnSubscribeFriendEvent(delete_list);
 
 	for each (const auto& id in add_list)
 		InvokeFriendListChangeCallback(kChangeTypeAdd, id);
@@ -462,6 +597,20 @@ void UserService::OnUserInfoChange(const std::list<nim::UserNameCard> &uinfo_lis
 		(*(it.second))(misc_uinfo_list);
 }
 
+void UserService::OnRobotChange(nim::NIMResCode rescode, nim::NIMRobotInfoChangeType type, const nim::RobotInfos& robots)
+{
+	assert(nbase::MessageLoop::current()->ToUIMessageLoop());
+	robot_list_.clear();
+	for (auto &info : robots)
+	{
+		robot_list_[info.GetAccid()] = info;
+		if (!info.GetIcon().empty())
+			PhotoService::GetInstance()->DownloadRobotPhoto(info);
+	}
+	for (auto& it : robot_change_cb_list_)
+		(*(it.second))(rescode, type, robots);
+}
+
 void UserService::InvokeGetUserInfo(const std::list<std::string>& account_list)
 {
 	// 先在本地db中找
@@ -481,50 +630,60 @@ void UserService::InvokeGetUserInfo(const std::list<std::string>& account_list)
 			return;
 
 		// 有些信息本地db没有，再从服务器获取
-		nim::User::GetUserNameCardCallback cb2 = ToWeakCallback([this, not_get_set](const std::list<nim::UserNameCard> &json_result)
+		auto closure = [this](const std::list<std::string>& ids)
 		{
-			auto tmp_set = not_get_set;
-			for (auto& card : json_result)
-			{
-				all_user_[card.GetAccId()] = card; // 插入all_user
+			nim::User::GetUserNameCardOnline(ids,
+				this->ToWeakCallback([this, ids](const std::list<nim::UserNameCard> &json_result)
+				{
+					std::set<std::string> tmp_set(ids.cbegin(), ids.cend());
+					for (auto& card : json_result)
+					{
+						all_user_[card.GetAccId()] = card; // 插入all_user
 
-				if (card.ExistValue(nim::kUserNameCardKeyIconUrl))
-					PhotoService::GetInstance()->DownloadUserPhoto(card); // 下载头像
+						if (card.ExistValue(nim::kUserNameCardKeyIconUrl))
+							PhotoService::GetInstance()->DownloadUserPhoto(card); // 下载头像
 
-				on_query_list_.erase(card.GetAccId()); //已经查到，就从on_query_list_删除
-				tmp_set.erase(card.GetAccId());
-			}
+						on_query_list_.erase(card.GetAccId()); //已经查到，就从on_query_list_删除
+						tmp_set.erase(card.GetAccId());
+					}
 
-			//OnUserInfoChange(json_result); //sdk会自动触发此回调
+					//OnUserInfoChangeBySdk(json_result); //sdk会自动触发此回调
 
-			for (const auto& id : tmp_set) //从服务器也查不到的用户
-			{
-				QLOG_APP(L"Can't get user's name card from server. Account id: {0}.") << id;
-				on_query_list_.erase(id); //从on_query_list_删除，以免积压
-			}
-		});
-
-		//SDK限制一次服务器查询数量不超过150
+					for (const auto& id : tmp_set) //从服务器也查不到的用户
+					{
+						QLOG_APP(L"Can't get user's name card from server. Account id: {0}.") << id;
+						on_query_list_.erase(id); //从on_query_list_删除，以免积压
+					}
+			}));
+		};
+				
+		//SDK限制一次服务器查询数量不超过150	
+		std::list<std::string> ids;
 		if (not_get_set.size() > 150)
-		{
-			std::list<std::string> ids;
+		{			
 			for (auto iter = not_get_set.begin(); iter != not_get_set.end(); ++iter)
 			{
 				ids.push_back(*iter);
 				if (ids.size() == 150)
 				{
-					nim::User::GetUserNameCardOnline(ids, cb2);
+					closure(ids);
 					ids.clear();
 				}
 			}
 			if (!ids.empty())
 			{
-				nim::User::GetUserNameCardOnline(ids, cb2);
+				closure(ids);
 				ids.clear();
 			}
 		}
 		else
-			nim::User::GetUserNameCardOnline(std::list<std::string>(not_get_set.cbegin(), not_get_set.cend()), cb2);
+		{
+			for (auto iter = not_get_set.begin(); iter != not_get_set.end(); ++iter)
+			{
+				ids.push_back(*iter);
+			}
+			closure(ids);
+		}
 	});
 
 	for (const auto& id : account_list)
@@ -535,6 +694,9 @@ void UserService::InvokeGetUserInfo(const std::list<std::string>& account_list)
 
 void UserService::InvokeFriendListChangeCallback(FriendChangeType change_type, const std::string& accid)
 {
+	if (accid.empty())
+		return;
+
 	assert(nbase::MessageLoop::current()->ToUIMessageLoop());
 	for (auto& it : friend_list_change_cb_list_)
 	{

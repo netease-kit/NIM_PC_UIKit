@@ -1,5 +1,5 @@
 ﻿/** @file nim_cpp_nos.h
-  * @brief NIM SDK提供的NOS云存储服务接口
+  * @brief NOS云存储服务
   * @copyright (c) 2015-2017, NetEase Inc. All rights reserved
   * @author towik, Oleg
   * @date 2015/2/1
@@ -19,9 +19,6 @@
 */
 namespace nim
 {
-
-#include "nim_nos_def.h"
-#include "nim_res_code_def.h"
 
 /** @class NOS
   * @brief NIM SDK提供的NOS云存储服务接口
@@ -167,6 +164,12 @@ public:
 	*				其他:参见HTTP协议或CURL错误码
 	*/
 	static bool StopDownloadResourceEx(const std::string& task_id, const std::string& json_extension = "");
+
+	/** @fn void UnregNosCb()
+	* 反注册Nos提供的所有回调
+	* @return void 无返回值
+	*/
+	static void UnregNosCb();
 };
 
 } 

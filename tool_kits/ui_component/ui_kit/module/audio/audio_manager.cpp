@@ -8,10 +8,13 @@ AudioManager::AudioManager()
 
 }
 
-bool AudioManager::InitAudio(const std::string user_data_path)
+bool AudioManager::InitAudio(const std::wstring user_data_path)
 {	
-	bool ret = nim_audio::Audio::Init(user_data_path);
-	assert(ret);
+	if (init_)
+		return true;
+
+	init_ = nim_audio::Audio::Init(user_data_path);
+	assert(init_);
 
 	nim_audio::Audio::RegStartPlayCb(&AudioCallback::OnPlayAudioCallback);
 	nim_audio::Audio::RegStopPlayCb(&AudioCallback::OnStopAudioCallback);
@@ -21,14 +24,14 @@ bool AudioManager::InitAudio(const std::string user_data_path)
 	nim_audio::Audio::RegCancelAudioCb(&AudioCallback::OnCancelCaptureCallback);
 	nim_audio::Audio::RegEnumCaptureDeviceCb(&AudioCallback::OnEnumCaptureDeviceCallback);
 
-	return ret;
+	return init_;
 }
 
-bool AudioManager::PlayAudio(const std::string file_path, const std::string session_id, const std::string msg_id, nim_audio::nim_audio_type audio_format)
+bool AudioManager::PlayAudio(const std::string file_path, const std::string session_id, const std::string msg_id, nim_audio::nim_audio_type audio_format, int seek/* = 0*/)
 {
 	play_sid_ = session_id;
 	play_cid_ = msg_id;
-	return nim_audio::Audio::PlayAudio(file_path.c_str(), session_id.c_str(), msg_id.c_str(), audio_format);
+	return nim_audio::Audio::PlayAudio(nbase::UTF8ToUTF16(file_path).c_str(), session_id.c_str(), msg_id.c_str(), audio_format, seek);
 }
 
 bool AudioManager::StopPlayAudio(const std::string session_id)
@@ -47,7 +50,11 @@ bool AudioManager::IsPlaying()
 	return !play_sid_.empty();
 }
 
-bool AudioManager::StartCapture(const std::string session_id, const std::string msg_id, nim_audio::nim_audio_type audio_format /*= nim_audio::AAC*/, int volume /*= 180*/, int loudness /*= 0*/, const wchar_t* capture_device /*= nullptr*/)
+bool AudioManager::StartCapture(const std::string session_id, 
+	const std::string msg_id, 
+	nim_audio::nim_audio_type audio_format /*= nim_audio::AAC*/, 
+	int volume /*= 180*/, 
+	const wchar_t* capture_device /*= nullptr*/)
 {
 	// 如果当前已经在录制了，就无法调用录制接口
 	if (!capture_sid_.empty())
@@ -55,7 +62,7 @@ bool AudioManager::StartCapture(const std::string session_id, const std::string 
 
 	capture_sid_ = session_id;
 	capture_cid_ = msg_id;
-	return nim_audio::Audio::StartCapture(session_id.c_str(), msg_id.c_str(), audio_format, volume, loudness, capture_device);
+	return nim_audio::Audio::StartCapture(session_id.c_str(), msg_id.c_str(), audio_format, volume, capture_device);
 }
 
 bool AudioManager::StopCapture(const std::string session_id)
@@ -74,7 +81,7 @@ bool AudioManager::CancelCapture(const std::string session_id, const std::string
 	if (session_id == capture_sid_)
 	{
 		ClearCaptureId();
-		return nim_audio::Audio::CancelAudio(file_path.c_str());
+		return nim_audio::Audio::CancelAudio(nbase::UTF8ToUTF16(file_path).c_str());
 	}
 
 	return false;

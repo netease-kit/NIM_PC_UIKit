@@ -179,6 +179,19 @@ LRESULT SessionForm::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 		return TRUE;
 	}
+	else if (uMsg == WM_DROPFILES)
+	{
+		//Run desktop helper from 360 or tencent
+		QLOG_APP(L"##Receive dropfiles msg.");
+		POINT pt;
+		GetCursorPos(&pt);
+		POINTL ppt;
+		ppt.x = pt.x;
+		ppt.y = pt.y;
+		if (NULL != active_session_box_ && active_session_box_->CheckDropEnable(ppt))
+			active_session_box_->OnDropFile((HDROP)wParam);
+		return 0;
+	}
 
 	if (NULL != active_session_box_)
 	{
@@ -303,8 +316,8 @@ SessionBox* SessionForm::CreateSessionBox(const std::string &session_id, nim::NI
 	session_box->SetName(id);
 	session_box->InitSessionBox();
 	taskbar_manager_.RegisterTab(*session_box->GetTaskbarItem());
-	Button *btn_header_ = (Button*)session_box->FindSubControl(L"btn_header");
-	btn_header_->AttachAllEvents(nbase::Bind(&SessionForm::OnProcessSessionBoxHeaderDrag, this, std::placeholders::_1));
+	//Button *btn_header_ = (Button*)session_box->FindSubControl(L"btn_header");
+	//btn_header_->AttachAllEvents(nbase::Bind(&SessionForm::OnProcessSessionBoxHeaderDrag, this, std::placeholders::_1));
 
 	if (merge_list_->GetCount() <= 1)
 		active_session_box_ = session_box;
@@ -314,7 +327,7 @@ SessionBox* SessionForm::CreateSessionBox(const std::string &session_id, nim::NI
 	// 切换到新的会话盒子
 	// 如果merge_item处于隐藏状态，则无法顺利触发选择事件，所以这里直接切换到目标会话盒子
 	merge_item->Selected(true, false);
-	ChangeToSessionBox(id);
+	ChangeToSessionBox(id,false);
 	AdjustFormSize();
 
 	return session_box;
@@ -396,9 +409,9 @@ bool SessionForm::AttachSessionBox(SessionBox *session_box)
 	// Add函数会重新的修改session_box内所有子控件的m_pWindow为新的窗体指针
 	session_box_tab_->Add(session_box);
 	taskbar_manager_.RegisterTab(*session_box->GetTaskbarItem());
-	Button *btn_header_ = (Button*)session_box->FindSubControl(L"btn_header");
-	btn_header_->DetachEvent(kEventAll);
-	btn_header_->AttachAllEvents(nbase::Bind(&SessionForm::OnProcessSessionBoxHeaderDrag, this, std::placeholders::_1));
+	//Button *btn_header_ = (Button*)session_box->FindSubControl(L"btn_header");
+	//btn_header_->DetachEvent(kEventAll);
+	//btn_header_->AttachAllEvents(nbase::Bind(&SessionForm::OnProcessSessionBoxHeaderDrag, this, std::placeholders::_1));
 
 	if (merge_list_->GetCount() <= 1)
 		active_session_box_ = session_box;
@@ -499,7 +512,7 @@ int SessionForm::GetSessionBoxCount() const
 	return session_box_tab_->GetCount();
 }
 
-void SessionForm::OnBeforeDargSessionBoxCallback(const std::wstring &session_id)
+void SessionForm::OnBeforeDragSessionBoxCallback(const std::wstring &session_id)
 {
 	// 如果当前被拖拽的会话盒子所属的会话窗口只有一个会话盒子，则在拖拽时隐藏会话窗口
 	int box_count = this->GetSessionBoxCount();
@@ -655,7 +668,7 @@ MergeItem* SessionForm::FindMergeItem(const std::wstring &session_id)
 	return NULL;
 }
 
-bool SessionForm::ChangeToSessionBox(const std::wstring &session_id)
+bool SessionForm::ChangeToSessionBox(const std::wstring &session_id, bool active/* = true*/)
 {
 	if (session_id.empty())
 		return false;
@@ -669,8 +682,16 @@ bool SessionForm::ChangeToSessionBox(const std::wstring &session_id)
 	active_session_box_ = box_item;
 
 	// 根据当前激活的会话盒子，更新任务栏的图标和标题
-	active_session_box_->OnActivate();
+	if (active)
+	{		
+		active_session_box_->OnActivate();
+	}
+	else
+	{
+		active_session_box_->UpdateTaskbarInfo();
+	}
 
+	
 	return true;
 }
 

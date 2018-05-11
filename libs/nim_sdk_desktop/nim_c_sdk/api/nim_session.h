@@ -1,5 +1,5 @@
 ﻿/** @file nim_session.h
-  * @brief NIM SDK提供的session接口
+  * @brief 最近会话列表 接口头文件
   * @copyright (c) 2015-2017, NetEase Inc. All rights reserved
   * @author Oleg
   * @date 2015/2/1
@@ -72,6 +72,7 @@ NIM_SDK_DLL_API void nim_session_delete_all_recent_session_async(const char *jso
   */
 NIM_SDK_DLL_API void nim_session_set_unread_count_zero_async(enum NIMSessionType to_type, const char *id, const char *json_extension, nim_session_change_cb_func cb, const void *user_data);
 
+#ifdef NIMAPI_UNDER_WIN_DESKTOP_ONLY
 /** @fn void nim_session_set_top(enum NIMSessionType to_type, const char *id, bool top, const char *json_extension, nim_session_change_cb_func cb, const void *user_data)
   * 设置会话项是否置顶(置顶属性只保存在本地)
   * @param[in] to_type		会话类型
@@ -100,6 +101,18 @@ NIM_SDK_DLL_API void nim_session_set_top(enum NIMSessionType to_type, const char
   */
 NIM_SDK_DLL_API void nim_session_set_extend_data(enum NIMSessionType to_type, const char *id, const char *data, const char *json_extension, nim_session_change_cb_func cb, const void *user_data);
 
+/** @fn void nim_session_reset_all_unread_count_async(const char *json_extension, nim_session_change_cb_func cb, const void *user_data)
+  * 最近联系人项全部未读数清零
+  * @param[in] json_extension json扩展参数（备用，目前不需要）
+  * @param[in] cb			最近会话列表项变更的回调函数， nim_session_change_cb_func回调函数定义见nim_session_def.h
+  * @param[in] user_data	APP的自定义用户数据，SDK只负责传回给回调函数cb，不做任何处理！
+  * @return void 无返回值
+  * @note 错误码	200:成功
+  *				0:失败
+  */
+NIM_SDK_DLL_API void nim_session_reset_all_unread_count_async(const char *json_extension, nim_session_change_cb_func cb, const void *user_data);
+
+#endif
 #ifdef __cplusplus
 };
 #endif //__cplusplus

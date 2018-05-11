@@ -25,7 +25,7 @@ public:
 	* @param[in] user_data_path 语音文件缓存目录
 	* @return bool true 初始化成功，false 初始化失败
 	*/
-	bool InitAudio(const std::string user_data_path);
+	bool InitAudio(const std::wstring user_data_path);
 
 	/**
 	* 播放语音
@@ -33,9 +33,10 @@ public:
 	* @param[in] session_id 会话id
 	* @param[in] msd_id 消息id
 	* @param[in] audio_format 音频格式，AAC : 0， AMR : 1
+	* @param[in] seek 音频播放的起始位置(时间) 单位 ms
 	* @return bool true 调用成功，false 调用失败
 	*/
-	bool PlayAudio(const std::string file_path, const std::string session_id, const std::string msg_id, nim_audio::nim_audio_type audio_format);
+	bool PlayAudio(const std::string file_path, const std::string session_id, const std::string msg_id, nim_audio::nim_audio_type audio_format,int seek = 0);
 
 	/**
 	* 停止播放语音
@@ -56,11 +57,10 @@ public:
 	* @param[in] msd_id 消息id
 	* @param[in] audio_format 音频格式，AAC : 0， AMR : 1
 	* @param[in] volume 音量(0 - 255, 默认180)
-	* @param[in] loudness 默认0
 	* @param[in] capture_device 采集设备
 	* @return bool true 调用成功，false 调用失败
 	*/
-	bool StartCapture(const std::string session_id, const std::string msg_id, nim_audio::nim_audio_type audio_format = nim_audio::AAC, int volume = 180, int loudness = 0, const wchar_t* capture_device = nullptr);
+	bool StartCapture(const std::string session_id, const std::string msg_id, nim_audio::nim_audio_type audio_format = nim_audio::AAC, int volume = 180, const wchar_t* capture_device = nullptr);
 
 	/** 
 	* 停止录制语音
@@ -198,5 +198,7 @@ private:
 	std::map<int, std::unique_ptr<StopCaptureCallback>> stop_capture_cb_list_;
 	std::map<int, std::unique_ptr<CancelCaptureCallback>> cancel_capture_cb_list_;
 	std::map<int, std::unique_ptr<EnumCaptureDeviceCallback>> enum_device_cb_list_;
+
+	bool init_ = false;
 };
 }

@@ -19,6 +19,7 @@ public:
 
 class UILIB_API Control : public PlaceHolder
 {
+	typedef std::map<int, CEventSource> GifEventMap;
 public:
     Control();
     virtual ~Control();
@@ -134,16 +135,16 @@ public:
 
 	// 绘制操作
 	void GetImage(Image& duiImage) const;
-	bool DrawImage(HDC hDC, Image& duiImage, const std::wstring& strModify = L"", int nFade = DUI_NOSET_VALUE);
+	bool DrawImage(IRenderContext* pRender, Image& duiImage, const std::wstring& strModify = L"", int nFade = DUI_NOSET_VALUE);
 
-    void AlphaPaint(HDC hDC, const UiRect& rcPaint);
-	virtual void Paint(HDC hDC, const UiRect& rcPaint);
-    virtual void PaintBkColor(HDC hDC);
-    virtual void PaintBkImage(HDC hDC);
-	virtual void PaintStatusColor(HDC hDC);
-    virtual void PaintStatusImage(HDC hDC);
-	virtual void PaintText(HDC hDC);
-    virtual void PaintBorder(HDC hDC);
+    void AlphaPaint(IRenderContext* pRender, const UiRect& rcPaint);
+	virtual void Paint(IRenderContext* pRender, const UiRect& rcPaint);
+    virtual void PaintBkColor(IRenderContext* pRender);
+    virtual void PaintBkImage(IRenderContext* pRender);
+	virtual void PaintStatusColor(IRenderContext* pRender);
+    virtual void PaintStatusImage(IRenderContext* pRender);
+	virtual void PaintText(IRenderContext* pRender);
+    virtual void PaintBorder(IRenderContext* pRender);
 
 	void SetAlpha(int alpha);
 	int GetAlpha() const { return m_nAlpha;	}
@@ -158,10 +159,9 @@ public:
 	void SetRenderOffsetY(int renderOffsetY);
 
 	// Gif图片
-	void GifPlay();
-	void StopGifPlay(GifStopType type = kGifStopCurrent);
-	void StartGifPlayForUI(GifStopType type = kGifStopFirst);
-	void StopGifPlayForUI(GifStopType type = kGifStopCurrent);
+	void StartGifPlayForUI(int frame = kGifStopFirst,int playcount = -1);
+	void StopGifPlayForUI(bool transfer = false,int frame = kGifStopCurrent);
+	void AttachGifPlayStop(const EventCallback& callback){ OnGifEvent[m_nVirtualEventGifStop] += callback; };
 
 	// 动画管理
 	AnimationManager& GetAnimationManager()	{ return m_animationManager; }
@@ -186,10 +186,16 @@ public:
 protected:
 	friend WindowBuilder;
 	void AttachXmlEvent(EventType eventType, const EventCallback& callback) { OnXmlEvent[eventType] += callback; }
-
+	// Gif图片
+	void GifPlay();
+	void StopGifPlay(int frame = kGifStopCurrent);	
+private:
+	void BroadcastGifEvent(int nVirtualEvent);
+	int GetGifFrameIndex(int frame);
 protected:
 	EventMap OnXmlEvent;
 	EventMap OnEvent;
+	GifEventMap OnGifEvent;
 	std::unique_ptr<UserDataBase> m_pUserDataBase;
 	bool m_bMenuUsed;
 	bool m_bEnabled;
@@ -224,6 +230,7 @@ protected:
 	nbase::WeakCallbackFlag m_gifWeakFlag;
 	AnimationManager m_animationManager;
 	nbase::WeakCallbackFlag m_loadBkImageWeakFlag;
+	static const int m_nVirtualEventGifStop;
 };
 
 } // namespace ui

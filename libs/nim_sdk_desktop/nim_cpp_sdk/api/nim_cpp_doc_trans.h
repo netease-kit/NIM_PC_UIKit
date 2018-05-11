@@ -1,5 +1,5 @@
-﻿/** @file nim_cpp_cod_trans.h
-  * @brief NIM SDK提供的文档转换相关接口，其中文档上传下载,请使用nos接口nim_nos_upload_ex/nim_nos_download/nim_nos_download_ex
+﻿/** @file nim_cpp_doc_trans.h
+  * @brief 文档转换,其中文档上传下载,请使用NOS云存储服务提供的上传下载接口
   * @copyright (c) 2015-2017, NetEase Inc. All rights reserved
   * @author redrain
   * @date 2016/12/15
@@ -18,8 +18,6 @@
 */
 namespace nim
 {
-#include "nim_doc_trans_def.h"
-
 /** @class DocTrans
   * @brief NIM SDK提供的文档转换相关接口
   */

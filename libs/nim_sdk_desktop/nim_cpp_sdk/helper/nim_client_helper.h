@@ -12,6 +12,7 @@
 #include <functional>
 #include "json.h"
 #include "nim_base_types.h"
+#include "nim_sdk_defines.h"
 
 /**
 * @namespace nim
@@ -19,8 +20,6 @@
 */
 namespace nim
 {
-#include "nim_client_def.h"
-#include "nim_res_code_def.h"
 
 /** @brief SDK设置项 */
 struct SDKConfig
@@ -31,20 +30,30 @@ struct SDKConfig
 	int				preload_image_quality_;			/**< 预下载图片质量,选填,范围0-100 */
 	std::string		preload_image_resize_;			/**< 预下载图片基于长宽做内缩略,选填,比如宽100高50,则赋值为100x50,中间为字母小写x */
 	NIMSDKLogLevel	sdk_log_level_;					/**< 定义见NIMSDKLogLevel，选填，SDK默认的内置级别为kNIMSDKLogLevelPro */
-	bool			sync_session_ack_;				/**< bool，设置是否已读未读状态多端同步，默认true */
-	int				login_max_retry_times_;			/**< int，登录重试最大次数，如需设置建议设置大于3次，默认填0，SDK默认设置次数 */
-	int				custom_timeout_;				/**< int，自定义通讯超时时间，暂时不开放设置 */
-
-	//private_server_setting
-	bool			use_private_server_;			/**< 选填，是否使用私有服务器 */
+	bool			sync_session_ack_;				/**< 设置是否已读未读状态多端同步，默认true */
+	int				login_max_retry_times_;			/**< 登录重试最大次数，如需设置建议设置大于3次，默认填0，SDK默认设置次数 */
+	int				custom_timeout_;				/**< 自定义通讯超时时间，暂时不开放设置 */
+	bool			use_https_;						/**< 是否启用HTTPS协议，默认为false */
+	bool			team_notification_unread_count_;/**< 群通知是否计入未读数，默认为false */
+	bool			animated_image_thumbnail_enabled_;/**< 开启对动图缩略图的支持	，默认为false,开启后获取的缩略图为原格式，关闭后获取的缩略图为第一帧静态图 */
+	bool			client_antispam_;				/**< 客户端反垃圾，默认为false，如需开启请提前咨询技术支持或销售 */
+	bool			team_msg_ack_;					/**< 群消息已读功能开关， 默认为false，如需开启请提前咨询技术支持或销售  */
+	std::string		server_conf_file_path_;			/**< 私有云服务器相关地址配置文件本地绝对路径，如果不填默认执行文件目录下的server_conf.txt */
+	
+	//private_server_setting 私有服务器配置（设置方法有两种，一个是配置以下信息，一个是通过配置server_conf_file_path_地址，信息从文件中读取）
+	bool			use_private_server_;			/**< 是否使用私有服务器，如果使用私有服务器，则必须设置为true */
 	std::string		lbs_address_;					/**< lbs地址，如果选择使用私有服务器，则必填 */
 	std::string  	nos_lbs_address_;				/**< nos lbs地址，如果选择使用私有服务器，则必填 */
-	std::list<std::string>	default_link_address_;			/**< 默认link服务器地址，如果选择使用私有服务器，则必填 */
-	std::list<std::string>	default_nos_upload_address_;	/**< 默认nos 上传服务器地址，如果选择使用私有服务器，则必填 */
-	std::list<std::string>	default_nos_download_address_;	/**< 默认nos 下载服务器地址，如果选择使用私有服务器，则必填 */
-	std::list<std::string>	default_nos_access_address_;	/**< 默认nos access服务器地址，如果选择使用私有服务器，则必填 */
+	std::string		default_link_address_;			/**< 默认link服务器地址，如果选择使用私有服务器，则必填 */
+	std::string		default_nos_upload_address_;	/**< 默认nos 上传服务器地址，如果选择使用私有服务器，则必填 */
+	std::string		default_nos_upload_host_;		/**< 默认nos 上传服务器主机地址，仅 kNIMUseHttps设置为true 时有效，用作 https 上传时的域名校验及 http header host 字段填充 */
 	std::string		rsa_public_key_module_;			/**< RSA public key，如果选择使用私有服务器，则必填 */
 	int				rsa_version_;					/**< RSA version，如果选择使用私有服务器，则必填 */
+	std::string		nos_download_address_;			/**< nos 下载地址拼接模板，用于拼接最终得到的下载地址*/
+	std::string		nos_accelerate_host_;			/**< 需要被加速主机名*/
+	std::string		nos_accelerate_address_;		/**< nos 加速地址拼接模板，用于获得加速后的下载地址*/
+	std::string		ntserver_address_;				/**< 部分 IM 错误信息统计上报地址*/
+	bool upload_statistics_data_;					/**< 错误信息统计是否上报*/
 
 	/** 构造函数 */
 	SDKConfig() : preload_attach_(true)
@@ -54,7 +63,13 @@ struct SDKConfig
 				, rsa_version_(0) 
 				, sync_session_ack_(true)
 				, login_max_retry_times_(0)
-				, custom_timeout_(30){}
+				, custom_timeout_(30)
+				, use_https_(false)
+				, team_notification_unread_count_(false)
+				, animated_image_thumbnail_enabled_(false)
+				, upload_statistics_data_(true)
+				, client_antispam_(false)
+				, team_msg_ack_(false){}
 };
 
 /** @brief 多端登陆客户端信息 */

@@ -12,8 +12,10 @@ namespace ui
 {
 
 class CTxtWinHost;
-class UILIB_API RichEdit : public ScrollableBox, public IUIMessageFilter
+class UILIB_API RichEdit : public ScrollableBox
 {
+public:
+	typedef std::function<bool(LONG, LONG, CSize&)> FunGetNaturalSize;
 public:
     RichEdit();
     ~RichEdit();
@@ -135,17 +137,26 @@ public:
 	virtual CSize EstimateSize(CSize szAvailable) override;
 	virtual void SetPos(UiRect rc) override;
 	virtual void HandleMessage(EventArgs& event) override;
-	virtual void Paint(HDC hDC, const UiRect& rcPaint) override;
-	virtual void SetWindow(Window* pManager, Box* pParent, bool bInit = true) override;
+	void OnSetCursor(EventArgs& event);
+	void OnSetFocus(EventArgs& event);
+	void OnKillFocus(EventArgs& event);
+	void OnChar(EventArgs& event);
+	void OnKeyDown(EventArgs& event);
+	void OnImeStartComposition(EventArgs& event);
+	void OnImeEndComposition(EventArgs& event);
+	void OnMouseMessage(UINT uMsg, EventArgs& event);
+
+	virtual void Paint(IRenderContext* pRender, const UiRect& rcPaint) override;
 	virtual void SetAttribute(const std::wstring& pstrName, const std::wstring& pstrValue) override;
-	virtual LRESULT MessageHandler(UINT uMsg, WPARAM wParam, LPARAM lParam, bool& bHandled) override;
 
 	BOOL CreateCaret(INT xWidth, INT yHeight);
 	BOOL ShowCaret(BOOL fShow);
+	void SetCaretColor(const std::wstring& dwColor);
+	std::wstring GetCaretColor();
 	RECT GetCaretRect();
 	BOOL SetCaretPos(INT x, INT y);
 	void ChangeCaretVisiable();
-	void PaintCaret(HDC hDC, const UiRect& rcPaint);
+	void PaintCaret(IRenderContext* pRender, const UiRect& rcPaint);
 
 	void SetPromptMode(bool bPrompt);
 	std::wstring GetPromptText() const;
@@ -154,11 +165,11 @@ public:
 	void SetUTF8PromptText(const std::string& strText);
 	void SetPromptTextId(const std::wstring& strTextId);
 	void SetUTF8PromptTextId(const std::string& strTextId);
-	void PaintPromptText(HDC hDC);
+	void PaintPromptText(IRenderContext* pRender);
 
 	std::wstring GetFocusedImage();
 	void SetFocusedImage(const std::wstring& strImage);
-	virtual void PaintStatusImage(HDC hDC) override;
+	virtual void PaintStatusImage(IRenderContext* pRender) override;
 
 	void SetNoSelOnKillFocus(bool bOnSel);
 	void SetSelAllOnFocus(bool bSelAll);
@@ -166,6 +177,7 @@ public:
 
 	void AddColorText(const std::wstring &str, const std::wstring &color);
 	void AddLinkColorText(const std::wstring &str, const std::wstring &color, const std::wstring &linkInfo = L"");
+	void AddLinkInfo(const CHARRANGE cr, const std::wstring &linkInfo);
 	//根据point来hittest自定义link的数据，返回true表示在link上，info是link的自定义属性
 	bool HittestCustomLink(CPoint pt, std::wstring& info);
 
@@ -175,7 +187,7 @@ public:
 	void AttachTab(const EventCallback& callback) {	OnEvent[kEventTab] += callback;	}
 	void AttachTextChange(const EventCallback& callback) { OnEvent[kEventTextChange] += callback; }
 	void AttachCustomLinkClk(const EventCallback& callback)	{ OnEvent[kEventCustomLinkClick] += callback; }
-
+	void AttachGetNaturalSize(const FunGetNaturalSize& cb) { m_cbGetNaturalSize = cb; };
 protected:
     CTxtWinHost* m_pTwh;
     bool m_bVScrollBarFixing;
@@ -207,13 +219,15 @@ protected:
 	std::wstring m_sTextColor;
 	std::wstring m_sDisabledTextColor;
 	std::wstring m_sPromptColor;
+	std::wstring m_sCaretColor;
 	std::wstring m_sText;
 	std::wstring m_sPromptText;
 	std::wstring m_sPromptTextId;
 	nbase::WeakCallbackFlag m_drawCaretFlag;
 	std::weak_ptr<nbase::WeakFlag> m_windowFlag; //记录所属窗体的flag
+	FunGetNaturalSize m_cbGetNaturalSize;
 
-private:
+protected:
 	struct LinkInfo
 	{
 		CHARRANGE cr;

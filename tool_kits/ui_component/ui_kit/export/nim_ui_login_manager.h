@@ -21,8 +21,7 @@ class NIM_UI_DLL_API LoginManager
 {
 public:
 	SINGLETON_DEFINE(LoginManager);
-	LoginManager(){};
-	~LoginManager(){};
+
 public:
 	/**
 	* 进行登录操作
@@ -65,6 +64,13 @@ public:
 	bool IsLinkActive();
 
 	/**
+	* 检查是否重复登录帐号
+	* @param[in] username 用户id
+	* @return bool	true：没有重复，false：重复
+	*/
+	bool CheckSingletonRun(const std::wstring& username);
+
+	/**
 	* 注册登录窗体的回调函数，用来让UI组件控制登录窗体行为，登陆之前应该调用此函数注册相关回调
 	* @param[in] cb_result		通知登录错误并返回错误原因的回调函数
 	* @param[in] cb_cancel		通知取消登录的回调函数
@@ -79,6 +85,8 @@ public:
 		const OnDestroyWindow& cb_destroy,
 		const OnShowMainWindow& cb_show_main
 		);
+
+	void RegLoginOKCallback(const OnShowMainWindow& cb_show_main) { cb_show_main_window_ = cb_show_main; }
 public:
 	/**
 	* 通知显示主窗体
@@ -117,6 +125,9 @@ public:
 	*/
 	bool IsLoginFormValid();
 private:
+	LoginManager(){};
+	~LoginManager(){};
+
 	OnLoginError cb_login_error_;
 	OnCancelLogin cb_cancel_login_;
 	OnHideWindow cb_hide_window_;

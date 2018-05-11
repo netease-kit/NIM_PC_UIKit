@@ -58,6 +58,7 @@ public:
 	BYTE bFade;
 	bool bTiledX;
 	bool bTiledY;
+	int nPlayCount;//如果是GIF可以指定播放次数 -1 ：一直播放，缺省值。
 };
 
 class UILIB_API Image
@@ -76,13 +77,17 @@ public:
 	void SetCurrentFrame(int nCurrentFrame);
 	HBITMAP GetCurrentHBitmap();
 	int GetCurrentInterval();
-
+	int GetCurrentFrameIndex();
+	int GetCycledCount();
+	void ClearCycledCount();
+	bool ContinuePlay();
 	ImageAttribute imageAttribute;
 	std::shared_ptr<ImageInfo> imageCache;
 
 private:
 	int m_nCurrentFrame;
 	bool m_bPlaying;
+	int m_nCycledCount;//播放次数
 };
 
 class UILIB_API StateImage
@@ -93,7 +98,7 @@ public:
 	void SetControl(Control* control) {	m_pControl = control; }
 	Image& operator[](ControlStateType stateType) {	return m_stateImageMap[stateType]; }
 
-	bool PaintStatusImage(HDC hDC, ControlStateType stateType, const std::wstring& sImageModify = L"");
+	bool PaintStatusImage(IRenderContext* pRender, ControlStateType stateType, const std::wstring& sImageModify = L"");
 	Image* GetEstimateImage();
 	void ClearCache();
 
@@ -112,7 +117,7 @@ public:
 	void SetImage(StateImageType stateImageType, ControlStateType stateType, const std::wstring& strImagePath);
 	std::wstring GetImagePath(StateImageType stateImageType, ControlStateType stateType);
 
-	bool PaintStatusImage(HDC hDC, StateImageType stateImageType, ControlStateType stateType, const std::wstring& sImageModify = L"");
+	bool PaintStatusImage(IRenderContext* pRender, StateImageType stateImageType, ControlStateType stateType, const std::wstring& sImageModify = L"");
 	Image* GetEstimateImage(StateImageType stateImageType);
 
 	void ClearCache();
@@ -129,7 +134,7 @@ public:
 	void SetControl(Control* control);
 	std::wstring& operator[](ControlStateType stateType) { return m_stateColorMap[stateType]; }
 
-	void PaintStatusColor(HDC hDC, UiRect rcPaint, ControlStateType stateType);
+	void PaintStatusColor(IRenderContext* pRender, UiRect rcPaint, ControlStateType stateType);
 
 private:
 	Control* m_pControl;

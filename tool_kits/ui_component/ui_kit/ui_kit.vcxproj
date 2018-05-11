@@ -93,7 +93,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;__WINDOWS__;__i386__;__SUPPORT_XP__;_LIB;WITH_ENCRYPT;TIXML_USE_STL;NIM_WIN_DESKTOP_ONLY_SDK;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>.\;..\;..\..\;..\..\..\;..\..\cef\cef_wrapper\;..\..\..\third_party\;..\..\..\third_party\jsoncpp\include\json\;..\..\..\third_party\libyuv\include\;..\..\..\libs\nim_sdk_desktop\nim_cpp_sdk\;..\..\..\libs\nim_sdk_desktop\nim_cpp_sdk\api\;..\..\..\libs\nim_sdk_desktop\nim_cpp_sdk\util\;..\..\..\libs\nim_sdk_desktop\nim_cpp_sdk\helper\;..\..\..\libs\nim_sdk_desktop\nim_tools_cpp_sdk\nim_audio_cpp\;..\..\..\libs\nim_sdk_desktop\nim_tools_cpp_sdk\nim_http_cpp\;..\..\..\libs\nim_sdk_desktop\nim_c_sdk\include\;..\..\..\libs\nim_sdk_desktop\nim_c_sdk\util\</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\;..\;..\..\;..\..\..\;..\..\cef\cef_wrapper\;..\..\..\third_party\;..\..\..\third_party\jsoncpp\include\json\;..\..\..\third_party\libyuv\include\;..\..\..\libs\nim_sdk_desktop\nim_chatroom_cpp_sdk\;..\..\..\libs\nim_sdk_desktop\nim_chatroom_cpp_sdk\api\;..\..\..\libs\nim_sdk_desktop\nim_chatroom_cpp_sdk\util\;..\..\..\libs\nim_sdk_desktop\nim_chatroom_cpp_sdk\helper\;..\..\..\libs\nim_sdk_desktop\nim_cpp_sdk\;..\..\..\libs\nim_sdk_desktop\nim_cpp_sdk\api\;..\..\..\libs\nim_sdk_desktop\nim_cpp_sdk\util\;..\..\..\libs\nim_sdk_desktop\nim_cpp_sdk\helper\;..\..\..\libs\nim_sdk_desktop\nim_tools_cpp_sdk\nim_audio_cpp\;..\..\..\libs\nim_sdk_desktop\nim_tools_cpp_sdk\nim_http_cpp\;..\..\..\libs\nim_sdk_desktop\nim_chatroom_c_sdk\include\;..\..\..\libs\nim_sdk_desktop\nim_chatroom_c_sdk\util\;..\..\..\libs\nim_sdk_desktop\nim_c_sdk\include\;..\..\..\libs\nim_sdk_desktop\nim_c_sdk\util\</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>stdafx.h</ForcedIncludeFiles>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
@@ -114,7 +114,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;__WINDOWS__;__i386__;__SUPPORT_XP__;_LIB;WITH_ENCRYPT;TIXML_USE_STL;NIM_WIN_DESKTOP_ONLY_SDK;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>.\;..\;..\..\;..\..\..\;..\..\cef\cef_wrapper\;..\..\..\third_party\;..\..\..\third_party\jsoncpp\include\json\;..\..\..\third_party\libyuv\include\;..\..\..\libs\nim_sdk_desktop\nim_cpp_sdk\;..\..\..\libs\nim_sdk_desktop\nim_cpp_sdk\api\;..\..\..\libs\nim_sdk_desktop\nim_cpp_sdk\util\;..\..\..\libs\nim_sdk_desktop\nim_cpp_sdk\helper\;..\..\..\libs\nim_sdk_desktop\nim_tools_cpp_sdk\nim_audio_cpp\;..\..\..\libs\nim_sdk_desktop\nim_tools_cpp_sdk\nim_http_cpp\;..\..\..\libs\nim_sdk_desktop\nim_c_sdk\include\;..\..\..\libs\nim_sdk_desktop\nim_c_sdk\util\</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\;..\;..\..\;..\..\..\;..\..\cef\cef_wrapper\;..\..\..\third_party\;..\..\..\third_party\jsoncpp\include\json\;..\..\..\third_party\libyuv\include\;..\..\..\libs\nim_sdk_desktop\nim_chatroom_cpp_sdk\;..\..\..\libs\nim_sdk_desktop\nim_chatroom_cpp_sdk\api\;..\..\..\libs\nim_sdk_desktop\nim_chatroom_cpp_sdk\util\;..\..\..\libs\nim_sdk_desktop\nim_chatroom_cpp_sdk\helper\;..\..\..\libs\nim_sdk_desktop\nim_cpp_sdk\;..\..\..\libs\nim_sdk_desktop\nim_cpp_sdk\api\;..\..\..\libs\nim_sdk_desktop\nim_cpp_sdk\util\;..\..\..\libs\nim_sdk_desktop\nim_cpp_sdk\helper\;..\..\..\libs\nim_sdk_desktop\nim_tools_cpp_sdk\nim_audio_cpp\;..\..\..\libs\nim_sdk_desktop\nim_tools_cpp_sdk\nim_http_cpp\;..\..\..\libs\nim_sdk_desktop\nim_chatroom_c_sdk\include\;..\..\..\libs\nim_sdk_desktop\nim_chatroom_c_sdk\util\;..\..\..\libs\nim_sdk_desktop\nim_c_sdk\include\;..\..\..\libs\nim_sdk_desktop\nim_c_sdk\util\</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>stdafx.h</ForcedIncludeFiles>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
@@ -137,7 +137,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;__WINDOWS__;__i386__;__SUPPORT_XP__;_LIB;WITH_ENCRYPT;TIXML_USE_STL;NIM_WIN_DESKTOP_ONLY_SDK;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>.\;..\;..\..\;..\..\..\;..\..\cef\cef_wrapper\;..\..\..\third_party\;..\..\..\third_party\jsoncpp\include\json\;..\..\..\third_party\libyuv\include\;..\..\..\libs\nim_sdk_desktop\nim_cpp_sdk\;..\..\..\libs\nim_sdk_desktop\nim_cpp_sdk\api\;..\..\..\libs\nim_sdk_desktop\nim_cpp_sdk\util\;..\..\..\libs\nim_sdk_desktop\nim_cpp_sdk\helper\;..\..\..\libs\nim_sdk_desktop\nim_tools_cpp_sdk\nim_audio_cpp\;..\..\..\libs\nim_sdk_desktop\nim_tools_cpp_sdk\nim_http_cpp\;..\..\..\libs\nim_sdk_desktop\nim_c_sdk\include\;..\..\..\libs\nim_sdk_desktop\nim_c_sdk\util\</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\;..\;..\..\;..\..\..\;..\..\cef\cef_wrapper\;..\..\..\third_party\;..\..\..\third_party\jsoncpp\include\json\;..\..\..\third_party\libyuv\include\;..\..\..\libs\nim_sdk_desktop\nim_chatroom_cpp_sdk\;..\..\..\libs\nim_sdk_desktop\nim_chatroom_cpp_sdk\api\;..\..\..\libs\nim_sdk_desktop\nim_chatroom_cpp_sdk\util\;..\..\..\libs\nim_sdk_desktop\nim_chatroom_cpp_sdk\helper\;..\..\..\libs\nim_sdk_desktop\nim_cpp_sdk\;..\..\..\libs\nim_sdk_desktop\nim_cpp_sdk\api\;..\..\..\libs\nim_sdk_desktop\nim_cpp_sdk\util\;..\..\..\libs\nim_sdk_desktop\nim_cpp_sdk\helper\;..\..\..\libs\nim_sdk_desktop\nim_tools_cpp_sdk\nim_audio_cpp\;..\..\..\libs\nim_sdk_desktop\nim_tools_cpp_sdk\nim_http_cpp\;..\..\..\libs\nim_sdk_desktop\nim_chatroom_c_sdk\include\;..\..\..\libs\nim_sdk_desktop\nim_chatroom_c_sdk\util\;..\..\..\libs\nim_sdk_desktop\nim_c_sdk\include\;..\..\..\libs\nim_sdk_desktop\nim_c_sdk\util\</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <ForcedIncludeFiles>stdafx.h</ForcedIncludeFiles>
     </ClCompile>
@@ -164,7 +164,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;__WINDOWS__;__i386__;__SUPPORT_XP__;_LIB;WITH_ENCRYPT;TIXML_USE_STL;NIM_WIN_DESKTOP_ONLY_SDK;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>.\;..\;..\..\;..\..\..\;..\..\cef\cef_wrapper\;..\..\..\third_party\;..\..\..\third_party\jsoncpp\include\json\;..\..\..\third_party\libyuv\include\;..\..\..\libs\nim_sdk_desktop\nim_cpp_sdk\;..\..\..\libs\nim_sdk_desktop\nim_cpp_sdk\api\;..\..\..\libs\nim_sdk_desktop\nim_cpp_sdk\util\;..\..\..\libs\nim_sdk_desktop\nim_cpp_sdk\helper\;..\..\..\libs\nim_sdk_desktop\nim_tools_cpp_sdk\nim_audio_cpp\;..\..\..\libs\nim_sdk_desktop\nim_tools_cpp_sdk\nim_http_cpp\;..\..\..\libs\nim_sdk_desktop\nim_c_sdk\include\;..\..\..\libs\nim_sdk_desktop\nim_c_sdk\util\</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\;..\;..\..\;..\..\..\;..\..\cef\cef_wrapper\;..\..\..\third_party\;..\..\..\third_party\jsoncpp\include\json\;..\..\..\third_party\libyuv\include\;..\..\..\libs\nim_sdk_desktop\nim_chatroom_cpp_sdk\;..\..\..\libs\nim_sdk_desktop\nim_chatroom_cpp_sdk\api\;..\..\..\libs\nim_sdk_desktop\nim_chatroom_cpp_sdk\util\;..\..\..\libs\nim_sdk_desktop\nim_chatroom_cpp_sdk\helper\;..\..\..\libs\nim_sdk_desktop\nim_cpp_sdk\;..\..\..\libs\nim_sdk_desktop\nim_cpp_sdk\api\;..\..\..\libs\nim_sdk_desktop\nim_cpp_sdk\util\;..\..\..\libs\nim_sdk_desktop\nim_cpp_sdk\helper\;..\..\..\libs\nim_sdk_desktop\nim_tools_cpp_sdk\nim_audio_cpp\;..\..\..\libs\nim_sdk_desktop\nim_tools_cpp_sdk\nim_http_cpp\;..\..\..\libs\nim_sdk_desktop\nim_chatroom_c_sdk\include\;..\..\..\libs\nim_sdk_desktop\nim_chatroom_c_sdk\util\;..\..\..\libs\nim_sdk_desktop\nim_c_sdk\include\;..\..\..\libs\nim_sdk_desktop\nim_c_sdk\util\</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <ForcedIncludeFiles>stdafx.h</ForcedIncludeFiles>
     </ClCompile>
@@ -191,6 +191,7 @@
     <ClInclude Include="callback\multiport\multiport_push_callback.h" />
     <ClInclude Include="callback\rts\rts_callback.h" />
     <ClInclude Include="callback\session\session_callback.h" />
+    <ClInclude Include="callback\subscribe_event\subscribe_event_callback.h" />
     <ClInclude Include="callback\team\team_callback.h" />
     <ClInclude Include="callback\vchat\vchat_callback.h" />
     <ClInclude Include="export\nim_ui_all.h" />
@@ -199,9 +200,11 @@
     <ClInclude Include="export\nim_ui_init_manager.h" />
     <ClInclude Include="export\nim_ui_login_manager.h" />
     <ClInclude Include="export\nim_ui_muteblack_manager.h" />
+    <ClInclude Include="export\nim_ui_notify_center.h" />
     <ClInclude Include="export\nim_ui_photo_manager.h" />
     <ClInclude Include="export\nim_ui_session_list_manager.h" />
     <ClInclude Include="export\nim_ui_session_manager.h" />
+    <ClInclude Include="export\nim_ui_subscribe_event_manager.h" />
     <ClInclude Include="export\nim_ui_team_manager.h" />
     <ClInclude Include="export\nim_ui_user_config.h" />
     <ClInclude Include="export\nim_ui_user_manager.h" />
@@ -212,6 +215,7 @@
     <ClInclude Include="gui\contact_select_form\contact_select_form.h" />
     <ClInclude Include="gui\emoji\emoji_form.h" />
     <ClInclude Include="gui\link\link_form.h" />
+    <ClInclude Include="gui\main\control\custom_button_box.h" />
     <ClInclude Include="gui\main\control\custom_msg.h" />
     <ClInclude Include="gui\main\control\event_item.h" />
     <ClInclude Include="gui\main\control\friend_item.h" />
@@ -239,6 +243,7 @@
     <ClInclude Include="gui\session\control\bubbles\bubble_item.h" />
     <ClInclude Include="gui\session\control\bubbles\bubble_location.h" />
     <ClInclude Include="gui\session\control\bubbles\bubble_notice.h" />
+    <ClInclude Include="gui\session\control\bubbles\bubble_robot.h" />
     <ClInclude Include="gui\session\control\bubbles\bubble_snapchat.h" />
     <ClInclude Include="gui\session\control\bubbles\bubble_sticker.h" />
     <ClInclude Include="gui\session\control\bubbles\bubble_text.h" />
@@ -248,6 +253,7 @@
     <ClInclude Include="gui\session\control\merge_item.h" />
     <ClInclude Include="gui\session\control\custom_layout.h" />
     <ClInclude Include="gui\session\control\team_item.h" />
+    <ClInclude Include="gui\session\control\unread_item.h" />
     <ClInclude Include="gui\session\custom_msg_form.h" />
     <ClInclude Include="gui\session\dragdrop\bitmap_control.h" />
     <ClInclude Include="gui\session\dragdrop\drag_form.h" />
@@ -256,6 +262,7 @@
     <ClInclude Include="gui\session\session_form.h" />
     <ClInclude Include="gui\session\taskbar\dwm_util.h" />
     <ClInclude Include="gui\session\taskbar\taskbar_manager.h" />
+    <ClInclude Include="gui\session\unread_form.h" />
     <ClInclude Include="gui\team_info\member_manager.h" />
     <ClInclude Include="gui\team_info\team_info.h" />
     <ClInclude Include="gui\team_info\team_notify.h" />
@@ -267,19 +274,21 @@
     <ClInclude Include="gui\video\helper\ui_barrage_control.h" />
     <ClInclude Include="gui\video\helper\ui_bitmap_control.h" />
     <ClInclude Include="gui\video\helper\yuv_image.h" />
+    <ClInclude Include="gui\video\multi_video_form.h" />
+    <ClInclude Include="gui\video\multi_video_invite.h" />
     <ClInclude Include="gui\video\record_select.h" />
     <ClInclude Include="gui\video\screen_capture_tool.h" />
     <ClInclude Include="gui\video\video_form.h" />
     <ClInclude Include="gui\video\video_setting.h" />
     <ClInclude Include="gui\video\window_select.h" />
     <ClInclude Include="module\audio\audio_manager.h" />
+    <ClInclude Include="module\db\user_db.h" />
     <ClInclude Include="module\dragdrop\drag_drop.h" />
     <ClInclude Include="module\emoji\emoji_info.h" />
     <ClInclude Include="module\emoji\richedit_olecallback.h" />
     <ClInclude Include="module\emoji\richedit_util.h" />
     <ClInclude Include="module\local\local_helper.h" />
     <ClInclude Include="module\login\login_manager.h" />
-    <ClInclude Include="module\msglog\msg_extend_db.h" />
     <ClInclude Include="module\rts\rts_manager.h" />
     <ClInclude Include="module\service\http_service.h" />
     <ClInclude Include="module\service\mute_black_service.h" />
@@ -291,6 +300,8 @@
     <ClInclude Include="module\session\ring.h" />
     <ClInclude Include="module\session\session_manager.h" />
     <ClInclude Include="module\session\session_util.h" />
+    <ClInclude Include="module\subscribe_event\online_state_event_helper.h" />
+    <ClInclude Include="module\subscribe_event\subscribe_event_manager.h" />
     <ClInclude Include="module\video\audio_frame_mng.h" />
     <ClInclude Include="module\video\video_frame_mng.h" />
     <ClInclude Include="module\video\video_manager.h" />
@@ -310,6 +321,7 @@
     <ClCompile Include="callback\multiport\multiport_push_callback.cpp" />
     <ClCompile Include="callback\rts\rts_callback.cpp" />
     <ClCompile Include="callback\session\session_callback.cpp" />
+    <ClCompile Include="callback\subscribe_event\subscribe_event_callback.cpp" />
     <ClCompile Include="callback\team\team_callback.cpp" />
     <ClCompile Include="callback\vchat\vchat_callback.cpp" />
     <ClCompile Include="export\nim_ui_contacts_list_manager.cpp" />
@@ -317,9 +329,11 @@
     <ClCompile Include="export\nim_ui_init_manager.cpp" />
     <ClCompile Include="export\nim_ui_login_manager.cpp" />
     <ClCompile Include="export\nim_ui_muteblack_manager.cpp" />
+    <ClCompile Include="export\nim_ui_notify_center.cpp" />
     <ClCompile Include="export\nim_ui_photo_manager.cpp" />
     <ClCompile Include="export\nim_ui_session_list_manager.cpp" />
     <ClCompile Include="export\nim_ui_session_manager.cpp" />
+    <ClCompile Include="export\nim_ui_subscribe_event_manager.cpp" />
     <ClCompile Include="export\nim_ui_team_manager.cpp" />
     <ClCompile Include="export\nim_ui_user_config.cpp" />
     <ClCompile Include="export\nim_ui_user_manager.cpp" />
@@ -331,6 +345,7 @@
     <ClCompile Include="gui\contact_select_form\contact_select_form_ui.cpp" />
     <ClCompile Include="gui\emoji\emoji_form.cpp" />
     <ClCompile Include="gui\link\link_form.cpp" />
+    <ClCompile Include="gui\main\control\custom_button_box.cpp" />
     <ClCompile Include="gui\main\control\custom_msg.cpp" />
     <ClCompile Include="gui\main\control\event_item.cpp" />
     <ClCompile Include="gui\main\control\friend_item.cpp" />
@@ -359,6 +374,7 @@
     <ClCompile Include="gui\session\control\bubbles\bubble_item.cpp" />
     <ClCompile Include="gui\session\control\bubbles\bubble_location.cpp" />
     <ClCompile Include="gui\session\control\bubbles\bubble_notice.cpp" />
+    <ClCompile Include="gui\session\control\bubbles\bubble_robot.cpp" />
     <ClCompile Include="gui\session\control\bubbles\bubble_snapchat.cpp" />
     <ClCompile Include="gui\session\control\bubbles\bubble_sticker.cpp" />
     <ClCompile Include="gui\session\control\bubbles\bubble_text.cpp" />
@@ -368,6 +384,7 @@
     <ClCompile Include="gui\session\control\merge_item.cpp" />
     <ClCompile Include="gui\session\control\custom_layout.cpp" />
     <ClCompile Include="gui\session\control\team_item.cpp" />
+    <ClCompile Include="gui\session\control\unread_item.cpp" />
     <ClCompile Include="gui\session\custom_msg_form.cpp" />
     <ClCompile Include="gui\session\dragdrop\bitmap_control.cpp" />
     <ClCompile Include="gui\session\dragdrop\drag_form.cpp" />
@@ -384,6 +401,7 @@
     <ClCompile Include="gui\session\session_form_dragdrop.cpp" />
     <ClCompile Include="gui\session\taskbar\dwm_util.cpp" />
     <ClCompile Include="gui\session\taskbar\taskbar_manager.cpp" />
+    <ClCompile Include="gui\session\unread_form.cpp" />
     <ClCompile Include="gui\team_info\member_manager.cpp" />
     <ClCompile Include="gui\team_info\team_info.cpp" />
     <ClCompile Include="gui\team_info\team_notify.cpp" />
@@ -395,6 +413,8 @@
     <ClCompile Include="gui\video\helper\ui_barrage_control.cpp" />
     <ClCompile Include="gui\video\helper\ui_bitmap_control.cpp" />
     <ClCompile Include="gui\video\helper\yuv_image.cpp" />
+    <ClCompile Include="gui\video\multi_video_form.cpp" />
+    <ClCompile Include="gui\video\multi_video_invite.cpp" />
     <ClCompile Include="gui\video\record_select.cpp" />
     <ClCompile Include="gui\video\screen_capture_tool.cpp" />
     <ClCompile Include="gui\video\video_form.cpp" />
@@ -402,13 +422,13 @@
     <ClCompile Include="gui\video\video_setting.cpp" />
     <ClCompile Include="gui\video\window_select.cpp" />
     <ClCompile Include="module\audio\audio_manager.cpp" />
+    <ClCompile Include="module\db\user_db.cpp" />
     <ClCompile Include="module\dragdrop\drag_drop.cpp" />
     <ClCompile Include="module\emoji\emoji_info.cpp" />
     <ClCompile Include="module\emoji\richedit_olecallback.cpp" />
     <ClCompile Include="module\emoji\richedit_util.cpp" />
     <ClCompile Include="module\local\local_helper.cpp" />
     <ClCompile Include="module\login\login_manager.cpp" />
-    <ClCompile Include="module\msglog\msg_extend_db.cpp" />
     <ClCompile Include="module\rts\rts_manager.cpp" />
     <ClCompile Include="module\service\http_service.cpp" />
     <ClCompile Include="module\service\mute_black_service.cpp" />
@@ -421,6 +441,8 @@
     <ClCompile Include="module\session\session_manager.cpp" />
     <ClCompile Include="module\session\session_manager_dragdrop.cpp" />
     <ClCompile Include="module\session\session_util.cpp" />
+    <ClCompile Include="module\subscribe_event\online_state_event_helper.cpp" />
+    <ClCompile Include="module\subscribe_event\subscribe_event_manager.cpp" />
     <ClCompile Include="module\video\audio_frame_mng.cpp" />
     <ClCompile Include="module\video\video_frame_mng.cpp" />
     <ClCompile Include="module\video\video_manager.cpp" />

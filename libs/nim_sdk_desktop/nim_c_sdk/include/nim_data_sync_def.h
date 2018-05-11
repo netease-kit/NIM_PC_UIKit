@@ -1,5 +1,5 @@
 ﻿/** @file nim_data_sync_def.h
-  * @brief data sync define
+  * @brief 数据同步 接口相关的常量函数等定义头文件
   * @copyright (c) 2015-2017, NetEase Inc. All rights reserved
   * @author Harrison
   * @date 2015/2/1
@@ -19,10 +19,7 @@ enum NIMDataSyncType
 	kNIMDataSyncTypeTeamInfo		= 3,		/**< 所有群的信息同步, json_attachment为同步到的team_info json array*/
 	kNIMDataSyncTypeRoamMsg			= 7,		/**< 漫游消息同步,每个会话同步到漫游消息都会触发该类通知*/
 	kNIMDataSyncTypeTeamUserList	= 1000,		/**< 群成员列表同步, json_attachment为同步到的tid*/
-
-#if NIMAPI_UNDER_WIN_DESKTOP_ONLY
 	kNIMDataSyncTypeAllTeamUserList	= 1001,		/**< 所有群的成员列表同步完毕, json_attachment为空*/
-#endif
 };
 
 /** @enum NIMDataSyncStatus 数据同步状态 */

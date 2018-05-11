@@ -9,7 +9,10 @@
 
 namespace nim_chatroom
 {
-
+	std::vector<NIMChatRoomMsgType> ChatRoomGetMsgHistoryParameters::kMsg_Types_List;
+	const char * ChatRoomPlatformConfig::kPlatformConfigToken = "platform_config_token";//平台配置标签
+	const char * ChatRoomPlatformConfig::kNtserverAddress = "nt_server";//部分 IM 错误信息统计上报地址,
+	const char * ChatRoomPlatformConfig::kUploadStatisticsData = "is_upload_statistics_data";//错误信息统计是否上报,私有化如果不上传相应数据，此项配置应为false
 bool ParseChatRoomEnterCallbackResultInfo(const std::string& result, ChatRoomInfo& room_info, ChatRoomMemberInfo& my_info)
 {
 	Json::Value values;
@@ -59,4 +62,39 @@ bool ParseChatRoomMsgs(const std::string& msgs_json_str, std::list<ChatRoomMessa
 	return false;
 }
 
+bool ParseRobotInfosStringToRobotInfos(const std::string &infos_json, RobotInfos &infos)
+{
+	Json::Reader reader;
+	Json::Value values;
+	if (reader.parse(infos_json, values) && values.isArray())
+	{
+		int len = values.size();
+		for (int i = 0; i < len; i++)
+		{
+			RobotInfo info;
+			if (ParseRobotInfoStringToRobotInfo(values[i].asString(), info))
+				infos.push_back(info);
+		}
+		return true;
+	}
+	return false;
+}
+
+bool ParseRobotInfoStringToRobotInfo(const std::string &info_json, RobotInfo &info)
+{
+	Json::Reader reader;
+	Json::Value value;
+	if (reader.parse(info_json, value) && value.isObject())
+	{
+		info.SetAccid(value[kNIMRobotInfoKeyAccid].asString());
+		info.SetName(value[kNIMRobotInfoKeyName].asString());
+		info.SetIcon(value[kNIMRobotInfoKeyIcon].asString());
+		info.SetIntro(value[kNIMRobotInfoKeyIntro].asString());
+		info.SetRobotID(value[kNIMRobotInfoKeyRobotId].asString());
+		info.SetCreateTime(value[kNIMRobotInfoKeyCreateTime].asUInt64());
+		info.SetUpdateTime(value[kNIMRobotInfoKeyUpdateTime].asUInt64());
+		return true;
+	}
+	return false;
+}
 }

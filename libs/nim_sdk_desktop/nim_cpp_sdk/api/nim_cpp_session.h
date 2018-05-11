@@ -1,5 +1,5 @@
 ﻿/** @file nim_cpp_session.h
-  * @brief 会话列表管理功能；主要包括查询会话列表、删除会话列表等功能
+  * @brief 最近会话列表
   * @copyright (c) 2015-2017, NetEase Inc. All rights reserved
   * @author towik, Oleg
   * @date 2015/2/1
@@ -18,10 +18,6 @@
 */
 namespace nim
 {
-
-#include "nim_session_def.h"
-#include "nim_res_code_def.h"
-#include "nim_msglog_def.h"
 
 /** @class Session
   * @brief 会话列表管理功能；主要包括查询会话列表、删除会话列表等功能
@@ -87,7 +83,7 @@ public:
 	*				0:失败
 	*/
 	static bool SetUnreadCountZeroAsync(nim::NIMSessionType to_type, const std::string& id, const SetUnreadCountZeroCallback& cb, const std::string& json_extension = "");
-
+#ifdef NIMAPI_UNDER_WIN_DESKTOP_ONLY
 	/** @fn static bool SetSessionTop(enum NIMSessionType to_type, const std::string& id, bool top, const ChangeCallback& cb, const std::string& json_extension = "");
 	* 设置会话项是否置顶(置顶属性只保存在本地)
 	* @param[in] to_type		会话类型
@@ -114,6 +110,16 @@ public:
 	*/
 	static bool SetSessionExtendData(enum NIMSessionType to_type, const std::string& id, const std::string& data, const ChangeCallback& cb, const std::string& json_extension = "");
 
+	/** @fn static bool SetAllUnreadCountZeroAsync(const SetUnreadCountZeroCallback& cb, const std::string& json_extension = "")
+	* 最近联系人项全部未读数清零
+	* @param[in] json_extension json扩展参数（备用，目前不需要）
+	* @param[in] cb			最近会话列表项变更的回调函数
+	* @return bool 检查参数如果不符合要求则返回失败
+	* @note 错误码	200:成功
+	*				0:失败
+	*/
+	static bool SetAllUnreadCountZeroAsync(const SetUnreadCountZeroCallback& cb, const std::string& json_extension = "");
+#endif
 	/** @fn void UnregSessionCb()
 	* 反注册Session提供的所有回调
 	* @return void 无返回值

@@ -10,6 +10,8 @@ enum BubbleEventType
 	BET_SHOWPROFILE,//显示资料
 	BET_RETWEET,	//转发
 	BET_RECALL,		//撤回
+	BET_MENUATTA,	//右键菜单at
+	BET_UNREAD_COUNT,	//未读列表
 };
 
 namespace nim_comp
@@ -28,7 +30,7 @@ class MsgBubbleItem : public ui::ListContainerElement
 public:
 	MsgBubbleItem();
 	virtual ~MsgBubbleItem();
-
+	typedef std::function<const std::map<std::string,nim::TeamMemberProperty>&()> TeamMemberGetter;
 	/**
 	* 初始化控件内部指针
 	* @param[in] bubble_right 是否显示到右侧
@@ -80,7 +82,7 @@ public:
 	* 获取消息发送者id
 	* @return string 用户id
 	*/
-	std::string GetSenderId();
+	virtual std::string GetSenderId();
 
 	/**
 	* 获取消息类型
@@ -106,7 +108,7 @@ public:
 	* 显示消息发送者的头像
 	* @return void 无返回值
 	*/
-	void SetShowHeader();
+	virtual void SetShowHeader();
 
 	/**
 	* 设置是否显示消息发送者的名字（或昵称）
@@ -114,7 +116,7 @@ public:
 	* @param[in] from_nick 指定要显示的名字
 	* @return void 无返回值
 	*/
-	void SetShowName(bool show, const std::string& from_nick);
+	virtual void SetShowName(bool show, const std::string& from_nick);
 
 	/**
 	* 设置此消息项的发送状态图标（发送中、发送失败等）
@@ -172,6 +174,12 @@ public:
 	*/
 	bool IsMyMsg() { return my_msg_; }
 
+public:
+	void SetUnreadCount(int count);
+	/**
+	* 设置获取群成员接口，当是群消息时可用 
+	*/
+	void SetTeamMemberGetter(const TeamMemberGetter& getter) { team_member_getter_ = getter; }
 protected:
 	/** 
 	* 弹出右键菜单
@@ -206,6 +214,11 @@ protected:
 	* @return void 无返回值
 	*/
 	virtual void OnMenuTransform();
+	/**
+	* 此条消息是否展示右键菜单的撤回按钮，点对点：自己发送的消息。群：身为群主或管理员，可以撤回其他人发送的消息
+	* @return bool
+	*/
+	virtual bool IsShowRecallButton();
 private:
 
 	/** 
@@ -215,24 +228,32 @@ private:
 	*/
 	bool OnClicked(ui::EventArgs* arg);
 
+	/**
+	* 响应此消息项里包含的按钮的右键单击消息
+	*@param[in] param 被单击的按钮的相关信息
+	* @return bool 返回值true: 继续传递控件消息， false: 停止传递控件消息
+	*/
+	bool OnRightClick(ui::EventArgs* param); //右击了某条消息的头像
+
 	/** 
 	* 隐藏此消息项的所有发送状态或者所有接收状态图标
 	* @param[in] type 1:隐藏所有发送状态图标; 2:隐藏所有接收状态图标; 0:隐藏所有状态图标	
 	* @return void 无返回值
 	*/
 	void HideAllStatus(int type); 
-
 protected:
 	ui::Box*		bubble_box_;
 	ui::Button*		status_resend_;
+	ui::Button*		msg_header_button_;
+
 private:
 	ui::Label*		msg_time_;
-	ui::Button*		msg_header_button_;
 	ui::Label*		sender_name_;
 
 	ui::Control*	status_sending_;
 	ui::Control*	status_loading_;
 	ui::Button*		status_reload_;
+	ui::Button*		status_read_count_ = nullptr;
 	ui::Control*	status_send_failed_;
 	ui::Control*	status_load_failed_;
 	ui::Label*		status_receipt_;
@@ -245,5 +266,6 @@ protected:
 	
 	bool			action_menu_;
 	bool			my_msg_;
+	TeamMemberGetter team_member_getter_;
 };
 }

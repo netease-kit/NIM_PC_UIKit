@@ -9,7 +9,6 @@
 
 namespace nim
 {
-#include "nim_nos_def.h"
 
 bool ParseUploadResult( const std::string& url, const std::string& json, UploadMediaResult& res )
 {
@@ -19,8 +18,10 @@ bool ParseUploadResult( const std::string& url, const std::string& json, UploadM
 	Json::Reader reader;
 	if (reader.parse(json, values) && values.isObject())
 	{
+#ifdef NIMAPI_UNDER_WIN_DESKTOP_ONLY
 		if (values.isMember(kNIMNosCallId))
 			res.call_id_ = values[kNIMNosCallId].asString();
+#endif
 		res.res_id_ = values[kNIMNosResId].asString();
 	}
 

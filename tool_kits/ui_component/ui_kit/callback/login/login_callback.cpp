@@ -5,9 +5,10 @@
 #include "module/login/login_manager.h"
 #include "module/session/session_manager.h"
 #include "module/session/force_push_manager.h"
+#include "module/subscribe_event/subscribe_event_manager.h"
 #include "module/service/user_service.h"
 #include "module/audio/audio_manager.h"
-//#include "cef/cef_module/cef_manager.h"
+#include "cef/cef_module/cef_manager.h"
 #include "util/user.h"
 #include "shared/xml_util.h"
 #include "nim_cpp_client.h"
@@ -16,9 +17,10 @@ namespace nim_comp
 {
 void _InitUserFolder()
 {
-	nbase::CreateDirectory( GetUserDataPath() );
-	nbase::CreateDirectory( GetUserImagePath() );
-	nbase::CreateDirectory( GetUserAudioPath() );
+	nbase::CreateDirectory(GetUserDataPath());
+	nbase::CreateDirectory(GetUserImagePath());
+	nbase::CreateDirectory(GetUserAudioPath());
+	nbase::CreateDirectory(GetUserOtherResPath());
 }
 
 void _InitLog()
@@ -46,10 +48,10 @@ void _DoAfterLogin()
 {
 	QLOG_APP(L"-----{0} account login-----") << LoginManager::GetInstance()->GetAccount();
 
-	std::string res_audio_path = nbase::UTF16ToUTF8(GetUserDataPath());
-	bool ret = AudioManager::GetInstance()->InitAudio(res_audio_path);
+	bool ret = AudioManager::GetInstance()->InitAudio(GetUserDataPath());
 	assert(ret);
 
+	LoginManager::GetInstance()->CreateSingletonRunMutex();
 	TeamService::GetInstance()->QueryAllTeamInfo();
 
 	ForcePushManager::GetInstance()->Load();
@@ -177,6 +179,7 @@ void LoginCallback::UILoginCallback(const nim::LoginRes& login_res)
 			{
 				nim_ui::LoginManager::GetInstance()->InvokeHideWindow();
 				_DoAfterLogin();
+				nim_ui::LoginManager::GetInstance()->InvokeLoginError(login_res.res_code_);
 				// 登录成功，显示主界面
 				nim_ui::LoginManager::GetInstance()->InvokeShowMainForm();
 				nim_ui::LoginManager::GetInstance()->InvokeDestroyWindow();
@@ -254,8 +257,7 @@ void LoginCallback::UILogoutCallback()
 	}
 	else
 	{
-		//nim_cef::CefManager::GetInstance()->PostQuitMessage(0);
-		::PostQuitMessage(0);
+		nim_cef::CefManager::GetInstance()->PostQuitMessage(0);
 		_DoBeforeAppExit();
 	}
 }
@@ -278,6 +280,7 @@ void LoginCallback::OnKickoutCallback(const nim::KickoutRes& res)
 void LoginCallback::OnDisconnectCallback()
 {
 	QLOG_APP(L"OnDisconnectCallback");
+	LoginManager::GetInstance()->SetLinkActive(false);
 }
 
 void LoginCallback::OnReLoginCallback(const nim::LoginRes& login_res)

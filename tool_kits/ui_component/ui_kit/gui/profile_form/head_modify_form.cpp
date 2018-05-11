@@ -6,6 +6,7 @@
 #include "module/login/login_manager.h"
 
 using namespace ui;
+using namespace Gdiplus;
 
 namespace nim_comp
 {
@@ -54,7 +55,10 @@ HeadModifyForm::~HeadModifyForm()
 
 std::wstring HeadModifyForm::GetWindowId() const
 {
-	return kClassName;
+	if (uid_.empty())
+		return kClassName;
+	else
+		return nbase::UTF8ToUTF16(uid_);
 }
 
 ui::Control* HeadModifyForm::CreateControl(const std::wstring& pstrClass)

@@ -72,7 +72,7 @@ void SessionManager::AddNewMsg(const nim::IMMessage &msg)
 	bool msg_notify = true;
 	if (msg.session_type_ == nim::kNIMSessionTypeTeam)
 	{
-		if (!IsTeamMsgNotify(id))
+		if (!IsTeamMsgNotify(id, msg.sender_accid_))
 			msg_notify = false;
 	}
 	else
@@ -158,7 +158,9 @@ nim_comp::SessionBox* SessionManager::CreateSessionBox(const std::string &sessio
 		else
 		{
 			session_form = new SessionForm;
-			HWND hwnd = session_form->Create(NULL, L"Session", UI_WNDSTYLE_FRAME, 0);
+			//去掉了窗口创建时的WS_VISIBLE属性，不想在创建窗口时触发WM_ACTIVE事件
+			//展示窗口时主动调用ShowWindow/ActiveWindow接口来展示窗口
+			HWND hwnd = session_form->Create(NULL, L"Session", WS_OVERLAPPEDWINDOW/*UI_WNDSTYLE_FRAME*/, 0);
 			if (hwnd == NULL)
 			{
 				session_form = NULL;
@@ -199,9 +201,9 @@ void SessionManager::ResetUnread(const std::string &id)
 	nim_ui::SessionListManager::GetInstance()->InvokeResetSessionUnread(id);
 }
 
-void SessionManager::QueryMyTeamInfo(const std::string& tid)
+void SessionManager::QueryMyTeamMemberInfo(const std::string& tid)
 {
-	nim::Team::QueryTeamMemberAsync(tid, LoginManager::GetInstance()->GetAccount(), nbase::Bind(&SessionManager::OnQueryMyTeamInfo, this, tid, std::placeholders::_1));
+	nim::Team::QueryTeamMemberAsync(tid, LoginManager::GetInstance()->GetAccount(), nbase::Bind(&SessionManager::OnQueryMyTeamMemberInfo, this, tid, std::placeholders::_1));
 }
 
 void SessionManager::QueryMyAllTeamMemberInfos()
@@ -209,8 +211,12 @@ void SessionManager::QueryMyAllTeamMemberInfos()
 	nim::Team::QueryMyAllMemberInfosAsync(nbase::Bind(&SessionManager::OnQueryMyAllTeamMemberInfos, this, std::placeholders::_1, std::placeholders::_2));
 }
 
-void SessionManager::OnQueryMyTeamInfo(const std::string& tid, const nim::TeamMemberProperty& team_member_info)
+void SessionManager::OnQueryMyTeamMemberInfo(const std::string& tid, const nim::TeamMemberProperty& team_member_info)
 {
+	if (team_list_bits_[tid] != team_member_info.GetBits())
+	{
+		TeamService::GetInstance()->InvokeChangeNotificationMode(tid, team_member_info.GetBits());
+	}
 	team_list_bits_[tid] = team_member_info.GetBits();
 }
 
@@ -218,18 +224,51 @@ void SessionManager::OnQueryMyAllTeamMemberInfos(int count, const std::list<nim:
 {
 	for (auto it : all_my_member_info_list)
 	{		
+		if (team_list_bits_[it.GetTeamID()] != it.GetBits())
+		{
+			TeamService::GetInstance()->InvokeChangeNotificationMode(it.GetTeamID(), it.GetBits());
+		}
 		team_list_bits_[it.GetTeamID()] = it.GetBits();
 	}
 }
 
-bool SessionManager::IsTeamMsgNotify(const std::string& tid)
+bool SessionManager::IsTeamMsgNotify(const std::string& tid, const std::string& sender_id)
 {
 	auto it = team_list_bits_.find(tid);
 	if (it != team_list_bits_.end())
 	{
-		return (it->second & nim::kNIMTeamBitsConfigMaskMuteNotify) == 0;
+		if ((it->second & nim::kNIMTeamBitsConfigMaskMuteNotify) == nim::kNIMTeamBitsConfigMaskMuteNotify)
+		{
+			return false;
+		}
+		else if ((it->second & nim::kNIMTeamBitsConfigMaskOnlyAdmin) == nim::kNIMTeamBitsConfigMaskOnlyAdmin)
+		{
+			if (!sender_id.empty())
+			{
+				auto prop = nim::Team::QueryTeamMemberBlock(tid, sender_id);
+				return prop.GetUserType() > nim::kNIMTeamUserTypeNomal;
+			}
+			return false;
+		}
 	}
 	return true;
+}
+
+bool SessionManager::IsTeamMsgMuteShown(const std::string& tid, int64_t bits)
+{
+	if (bits < 0)
+	{
+		auto it = team_list_bits_.find(tid);
+		if (it == team_list_bits_.end())
+			return false;
+		bits = it->second;
+	}
+	if ((bits & nim::kNIMTeamBitsConfigMaskMuteNotify) == nim::kNIMTeamBitsConfigMaskMuteNotify
+		|| (bits & nim::kNIMTeamBitsConfigMaskOnlyAdmin) == nim::kNIMTeamBitsConfigMaskOnlyAdmin)
+	{
+		return true;
+	}
+	return false;
 }
 
 }

@@ -1,5 +1,5 @@
 ﻿/** @file nim_msglog_def.h
-  * @brief msglog define
+  * @brief 消息历史 接口相关的常量函数等定义头文件
   * @copyright (c) 2015-2017, NetEase Inc. All rights reserved
   * @author Oleg
   * @date 2015/02/12
@@ -133,6 +133,7 @@ enum NIMMessageType
 	kNIMMessageTypeNotification	= 5,		/**< 系统类型通知（包括入群出群通知等） NIMNotificationId*/
 	kNIMMessageTypeFile		 = 6,			/**< 文件类型消息*/
 	kNIMMessageTypeTips		 = 10,			/**< 提醒类型消息,Tip内容根据格式要求填入消息结构中的kNIMMsgKeyServerExt字段*/
+	kNIMMessageTypeRobot	 = 11,			/**< 波特机器人消息*/
 	kNIMMessageTypeCustom    = 100,			/**< 自定义消息*/
 
 	kNIMMessageTypeUnknown	 = 1000,		/**< 未知类型消息，本地使用，发送时勿使用，作为默认值*/
@@ -161,6 +162,7 @@ enum NIMMsgLogStatus
 	kNIMMsgLogStatusReceipt		= 7,			/**< 对方已读发送的内容*/ 
 	kNIMMsgLogStatusDraft		= 8,			/**< 草稿*/
 	kNIMMsgLogStatusSendCancel	= 9,			/**< 发送取消*/
+	kNIMMsgLogStatusRefused = 10, /**< 被对方拒绝,比如被对方加入黑名单等等*/
 };
 
 /** @enum NIMNotificationId 通知类型 */
@@ -196,6 +198,10 @@ enum NIMNotificationId
 	kNIMNotificationIdLocalGetTeamInfo		= 2006,			/**< 本地操作获取群信息 {"team_info":team_info} //群组信息(Keys SEE MORE `nim_team_def.h` 『群组信息 Json Keys』)*/
 	kNIMNotificationIdLocalGetTeamList		= 2007,			/**< 本地操作获取群成员信息结束*/
 	kNIMNotificationIdLocalMuteMember		= 2008,			/**< 本地操作对群成员禁言 {"id":"a1", "mute":1-禁言,0-解禁} */
+	kNIMNotificationIdLocalMute				= 2009,			/**< 本地操作对群禁言 {} */
+	kNIMNotificationIdLocalGetTeamMsgUnreadCount = 2010,	/**< 获取群消息未读数 {[{"client_msg_id":"", "count":int, "read_accid":"当前已读成员的accid"},...]}*/
+	kNIMNotificationIdLocalGetTeamMsgUnreadList = 2011,		/**< 获取群消息未读列表 {"client_msg_id":"", "read":["id1",...], "unread":["id2",...]}*/
+
 	//Netcall本地操作通知
 	kNIMNotificationIdLocalNetcallReject	= 3103,			/**< 拒绝电话,{"calltype":1,"channel":6146078138783760761,"from":"id1","ids":["id1","id2"],"time":1430995380471}*/
 	kNIMNotificationIdLocalNetcallNoResponse= 3104,			/**< 无应答，未接通电话,{"calltype":1,"channel":6146078138783760761,"from":"id1","ids":["id1","id2"],"time":1430995380471}*/
@@ -216,10 +222,10 @@ enum NIMMsgLogSubStatus
   */
 static const char *kNIMMsglogQueryJsonExtensionKeyDirection		= "direction"; /**< NIMMsglogSearchDirection，默认为kForward */
 static const char *kNIMMsglogQueryJsonExtensionKeyReverse		= "reverse"; /**< bool，返回的消息历史排序正序(false)/逆序(true),默认为false */
-static const char *kNIMMsglogQueryJsonExtensionKeyEndTime		= "endtime"; /**< __int64，查询消息的截止时间，如果direction为kForward，则截止时间应小于anchor_msg_time，否则大于anchor_msg_time,默认为0代表不限制截止时间 */
+static const char *kNIMMsglogQueryJsonExtensionKeyEndTime		= "endtime"; /**< int64_t，查询消息的截止时间，如果direction为kForward，则截止时间应小于anchor_msg_time，否则大于anchor_msg_time,默认为0代表不限制截止时间 */
 /** @}*/ //接口nim_msglog_query_msg_async扩展参数json key定义
 
-#if NIMAPI_UNDER_WIN_DESKTOP_ONLY
+#ifdef NIMAPI_UNDER_WIN_DESKTOP_ONLY
 /** @name 接口nim_msglog_query_msg_online_async扩展参数json_extension key定义
 * @{
 */
@@ -256,6 +262,7 @@ enum NIMMsgLogQueryRange
 static const char *kNIMNotificationKeyId		= "id";				/**< int, 见NIMNotificationId */
 static const char *kNIMNotificationKeyData		= "data";			/**< json object 包含以下5种可能的数据结构*/
 static const char *kNIMNotificationKeyDataIds	= "ids";			/**< string array */
+static const char *kNIMNotificationKeyDataInvalidIds	= "invalid_ids";		/**< string array */
 static const char *kNIMNotificationKeyDataId	= "id";				/**< string */
 static const char *kNIMNotificationKeyDataLeave = "leave";			/**< bool */
 static const char *kNIMNotificationKeyDataMute	= "mute";			/**< int */

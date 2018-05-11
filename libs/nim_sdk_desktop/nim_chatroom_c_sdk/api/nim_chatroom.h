@@ -1,5 +1,5 @@
 ﻿/** @file nim_chatroom.h
-  * @brief NIM 聊天室 SDK提供的接口
+  * @brief 聊天室 接口头文件，在需要使用聊天室 SDK 的地方包含该头文件即可
   * @copyright (c) 2015-2017, NetEase Inc. All rights reserved
   * @author Oleg, Harrison
   * @date 2015/12/28
@@ -8,14 +8,15 @@
 #ifndef NIM_CHATROOM_SDK_API_NIM_CHATROOM_H_
 #define NIM_CHATROOM_SDK_API_NIM_CHATROOM_H_
 
-#include "nim_chatroom_sdk_dll.h"
-#include "nim_chatroom_def.h"
+#include "../nim_chatroom_sdk_dll.h"
+#include "../export_headers/nim_chatroom_def.h"
 #include "../util/stdbool.h"
 
 #ifdef __cplusplus
 extern"C"
 {
 #endif
+
 /** @fn void nim_chatroom_reg_enter_cb(const char *json_extension, nim_chatroom_enter_cb_func cb, const void *user_data)
   * 注册全局进入聊天室的回调
   * @param[in] json_extension json扩展参数（备用，目前不需要）
@@ -85,11 +86,28 @@ NIM_SDK_DLL_API void nim_chatroom_reg_receive_msg_cb(const char *json_extension,
 NIM_SDK_DLL_API void nim_chatroom_reg_receive_notification_cb(const char *json_extension, nim_chatroom_receive_notification_cb_func cb, const void *user_data);
 
 /** @fn void nim_chatroom_init(const char *json_extension)
-  * 聊天室模块初始化
+  * 聊天室模块初始化(SDK初始化时调用一次)
   * @param[in] json_extension	  json扩展参数（备用，目前不需要）
   * @return void
   */
 NIM_SDK_DLL_API void nim_chatroom_init(const char *json_extension);
+
+/** @fn void nim_chatroom_cleanup(const char *json_extension)
+  * 聊天室模块清理(SDK卸载前调用一次)
+  * @param[in] json_extension	  json扩展参数（备用，目前不需要）
+  * @return void 无返回值
+  */
+NIM_SDK_DLL_API void nim_chatroom_cleanup(const char *json_extension);
+
+/** @fn bool nim_chatroom_enter_with_anoymity(const int64_t room_id, const char *anonymity_info, const char *enter_info, const char *json_extension)
+  * 聊天室匿名进入
+  * @param[in] room_id			  聊天室ID
+  * @param[in] anonymity_info	  匿名登录所需的信息
+  * @param[in] enter_info		  聊天室进入信息
+  * @param[in] json_extension	  json扩展参数（备用，目前不需要）
+  * @return bool 进入信息是否正确,返回失败则不会触发进入回调
+  */
+NIM_SDK_DLL_API bool nim_chatroom_enter_with_anoymity(const int64_t room_id, const char *anonymity_info, const char *enter_info, const char *json_extension);
 
 /** @fn bool nim_chatroom_enter(const int64_t room_id, const char *request_enter_data, const char *enter_info, const char *json_extension)
   * 聊天室进入
@@ -116,13 +134,6 @@ NIM_SDK_DLL_API void nim_chatroom_exit(const int64_t room_id, const char *json_e
   * @return int 登录状态
   */
 NIM_SDK_DLL_API int nim_chatroom_get_login_state(const int64_t room_id, const char *json_extension);
-
-/** @fn void nim_chatroom_cleanup(const char *json_extension)
-  * 聊天室模块清理
-  * @param[in] json_extension	  json扩展参数（备用，目前不需要）
-  * @return void 无返回值
-  */
-NIM_SDK_DLL_API void nim_chatroom_cleanup(const char *json_extension);
 
 /** @fn void nim_chatroom_send_msg(const int64_t room_id, const char *msg, const char *json_extension)
   * 发送消息
@@ -242,7 +253,7 @@ NIM_SDK_DLL_API void nim_chatroom_set_proxy(enum NIMChatRoomProxyType type, cons
 NIM_SDK_DLL_API void nim_chatroom_temp_mute_member_async(const int64_t room_id, const char *accid, const int64_t duration, bool need_notify, const char *notify_ext, const char *json_extension, nim_chatroom_temp_mute_member_cb_func cb, const void *user_data);
 
 /** @fn void nim_chatroom_update_room_info_async(const int64_t room_id, const char *room_info_json_str, bool need_notify, const char *notify_ext, const char *json_extension, nim_chatroom_update_room_info_cb_func cb, const void *user_data)
-  * 更新聊天室信息，目前只支持更新kNIMChatRoomInfoKeyName,kNIMChatRoomInfoKeyAnnouncement,kNIMChatRoomInfoKeyBroadcastUrl,kNIMChatRoomInfoKeyExt四个字段
+  * 更新聊天室信息，目前只支持更新kNIMChatRoomInfoKeyName,kNIMChatRoomInfoKeyAnnouncement,kNIMChatRoomInfoKeyBroadcastUrl,kNIMChatRoomInfoKeyExt,kNIMChatRoomInfoKeyQueuelevel五个字段
   * @param[in] room_id				聊天室ID
   * @param[in] room_info_json_str	聊天室信息
   * @param[in] need_notify			是否聊天室内广播通知
@@ -260,7 +271,7 @@ NIM_SDK_DLL_API void nim_chatroom_update_room_info_async(const int64_t room_id, 
   * @param[in] role_info_json_str	我的信息
   * @param[in] need_notify			是否聊天室内广播通知
   * @param[in] notify_ext			通知中的自定义字段，长度限制2048
-  * @param[in] json_extension		json扩展参数（备用，目前不需要）
+  * @param[in] json_extension		json扩展参数，针对固定成员，可配置更新的信息是否需要持久化，默认不持久化，{"need_save" : false}
   * @param[in] cb					回调函数, 定义见nim_chatroom_def.h
   * @param[in] user_data			APP的自定义用户数据，SDK只负责传回给回调函数cb，不做任何处理！
   * @return void 无返回值
@@ -268,7 +279,7 @@ NIM_SDK_DLL_API void nim_chatroom_update_room_info_async(const int64_t room_id, 
 NIM_SDK_DLL_API void nim_chatroom_update_my_role_async(const int64_t room_id, const char *role_info_json_str, bool need_notify, const char *notify_ext, const char *json_extension, nim_chatroom_update_my_role_cb_func cb, const void *user_data);
 
 /** @fn void nim_chatroom_queue_offer_async(const int64_t room_id, const char *element_key, const char *element_value, const char *json_extension, nim_chatroom_queue_offer_cb_func cb, const void *user_data)
-  * (聊天室管理员权限)新加(更新)麦序队列元素,如果element_key对应的元素已经在队列中存在了，那就是更新操作，如果不存在，就放到队列尾部 
+  * 新加(更新)麦序队列元素,如果element_key对应的元素已经在队列中存在了，那就是更新操作，如果不存在，就放到队列尾部 
   * @param[in] room_id				聊天室ID
   * @param[in] element_key			新元素的UniqKey,长度限制128字节 
   * @param[in] element_value		新元素内容，长度限制4096字节 
@@ -283,7 +294,7 @@ NIM_SDK_DLL_API void nim_chatroom_update_my_role_async(const int64_t room_id, co
 NIM_SDK_DLL_API void nim_chatroom_queue_offer_async(const int64_t room_id, const char *element_key, const char *element_value, const char *json_extension, nim_chatroom_queue_offer_cb_func cb, const void *user_data);
 
 /** @fn void nim_chatroom_queue_poll_async(const int64_t room_id, const char *element_key, const char *json_extension, nim_chatroom_queue_poll_cb_func cb, const void *user_data)
-  * (聊天室管理员权限)取出麦序头元素 
+  * 取出麦序头元素 
   * @param[in] room_id				聊天室ID
   * @param[in] element_key			需要取出的元素的UniqKey,长度限制128字节,传空传表示取出第一个元素
   * @param[in] json_extension		json扩展参数（备用，目前不需要）
@@ -305,6 +316,17 @@ NIM_SDK_DLL_API void nim_chatroom_queue_poll_async(const int64_t room_id, const 
   * @return void 无返回值
   */
 NIM_SDK_DLL_API void nim_chatroom_queue_list_async(const int64_t room_id, const char *json_extension, nim_chatroom_queue_list_cb_func cb, const void *user_data);
+    
+#ifdef NIMAPI_UNDER_WIN_DESKTOP_ONLY
+/** @fn void nim_chatroom_queue_header_async(const int64_t room_id, const char *json_extension, nim_chatroom_queue_header_cb_func cb, const void *user_data)
+  * 查看麦序头元素 
+  * @param[in] room_id				聊天室ID
+  * @param[in] json_extension		json扩展参数（备用，目前不需要）
+  * @param[in] cb					回调函数, 定义见nim_chatroom_def.h
+  * @param[in] user_data			APP的自定义用户数据，SDK只负责传回给回调函数cb，不做任何处理！
+  * @return void 无返回值
+  */
+NIM_SDK_DLL_API void nim_chatroom_queue_header_async(const int64_t room_id, const char *json_extension, nim_chatroom_queue_header_cb_func cb, const void *user_data);
 
 /** @fn void nim_chatroom_queue_drop_async(const int64_t room_id, const char *json_extension, nim_chatroom_queue_drop_cb_func cb, const void *user_data)
   * (聊天室管理员权限)删除麦序队列
@@ -316,6 +338,34 @@ NIM_SDK_DLL_API void nim_chatroom_queue_list_async(const int64_t room_id, const 
   */
 NIM_SDK_DLL_API void nim_chatroom_queue_drop_async(const int64_t room_id, const char *json_extension, nim_chatroom_queue_drop_cb_func cb, const void *user_data);
 
+/** @fn void nim_chatroom_get_robots_async(const int64_t room_id, int64_t timetag, const char *json_extension, nim_chatroom_query_robots_cb_func cb, const void *user_data)
+  * 获取全部机器人信息
+  * @param[in] room_id				聊天室ID
+  * @param[in] timetag 时间戳
+  * @param[in] json_extension json扩展参数（备用，目前不需要）
+  * @param[in] cb 回调函数 回调函数定义见nim_robot_def.h
+  * @param[in] user_data APP的自定义用户数据，SDK只负责传回给回调函数cb，不做任何处理！
+  * @return void
+  */
+NIM_SDK_DLL_API void nim_chatroom_get_robots_async(const int64_t room_id, int64_t timetag, const char *json_extension, nim_chatroom_query_robots_cb_func cb, const void *user_data);
+
+/** @fn char *nim_chatroom_query_all_robots_block(const int64_t room_id, const char *json_extension)
+  * 获取全部机器人信息(同步接口，堵塞NIM内部线程)
+  * @param[in] room_id				聊天室ID
+  * @param[in] json_extension json扩展参数（备用，目前不需要）
+  * @return char 机器人信息 json string array
+  */
+NIM_SDK_DLL_API char *nim_chatroom_query_all_robots_block(const int64_t room_id, const char *json_extension);
+
+/** @fn char *nim_chatroom_query_robot_by_accid_block(const int64_t room_id, const char *accid, const char *json_extension)
+  * 获取指定机器人信息(同步接口，堵塞NIM内部线程)
+  * @param[in] room_id				聊天室ID
+  * @param[in] accid 机器人accid
+  * @param[in] json_extension json扩展参数（备用，目前不需要）
+  * @return char 机器人信息 json string
+  */
+NIM_SDK_DLL_API char *nim_chatroom_query_robot_by_accid_block(const int64_t room_id, const char *accid, const char *json_extension);
+#endif
 #ifdef __cplusplus
 };
 #endif //__cplusplus

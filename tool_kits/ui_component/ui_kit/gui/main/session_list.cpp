@@ -1,6 +1,7 @@
 ﻿#include "session_list.h"
 #include "module/session/session_manager.h"
 #include "gui/main/team_event_form.h"
+#include "duilib/Utils/MultiLangSupport.h"
 
 namespace nim_comp
 {
@@ -34,6 +35,34 @@ SessionList::SessionList(ui::ListBox* session_list)
 	unregister_cb.Add(PhotoService::GetInstance()->RegPhotoReady(cb2));
 	auto cb3 = nbase::Bind(&SessionList::OnTeamNameChange, this, std::placeholders::_1);
 	unregister_cb.Add(TeamService::GetInstance()->RegChangeTeamName(cb3));
+	auto receive_event_cb = nbase::Bind(&SessionList::OnReceiveEvent, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
+	unregister_cb.Add(SubscribeEventManager::GetInstance()->RegReceiveEventCallback(receive_event_cb));
+
+	auto robot_list_change_cb = nbase::Bind(&SessionList::OnRobotChange, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
+	unregister_cb.Add(UserService::GetInstance()->RegRobotListChange(robot_list_change_cb));
+
+	unregister_cb.Add(MuteBlackService::GetInstance()->RegSyncSetMuteCallback(nbase::Bind(&SessionList::OnNotifyChangeCallback, this, std::placeholders::_1, std::placeholders::_2)));
+	unregister_cb.Add(TeamService::GetInstance()->RegChangeTeamNotification(nbase::Bind(&SessionList::OnTeamNotificationModeChangeCallback, this, std::placeholders::_1, std::placeholders::_2)));
+
+	auto friend_list_change_cb = nbase::Bind(&SessionList::OnFriendListChange, this, std::placeholders::_1, std::placeholders::_2);
+	unregister_cb.Add(UserService::GetInstance()->RegFriendListChange(friend_list_change_cb));
+
+	session_list_->AttachBubbledEvent(kEventReturn, nbase::Bind(&SessionList::OnReturnEventsClick, this, std::placeholders::_1));
+}
+
+bool SessionList::OnReturnEventsClick(ui::EventArgs* param)
+{
+	if (param->Type == kEventReturn)
+	{
+		SessionItem* item = dynamic_cast<SessionItem*>(param->pSender);
+		assert(item);
+		if (item)
+		{
+			SessionManager::GetInstance()->OpenSessionBox(item->GetUTF8DataID(), item->GetIsTeam() ? nim::kNIMSessionTypeTeam : nim::kNIMSessionTypeP2P);
+		}
+	}
+
+	return true;
 }
 
 int SessionList::AdjustMsg(const nim::SessionData &msg)
@@ -47,9 +76,24 @@ int SessionList::AdjustMsg(const nim::SessionData &msg)
 			if (msg.msg_timetag_ == 0 || msg.msg_timetag_ > item->GetMsgTime())
 				return i;
 		}
-
 	}
 	return -1;
+}
+
+void SessionList::OnTeamNotificationModeChangeCallback(const std::string &tid, const int64_t bits)
+{
+	std::wstring wid = nbase::UTF8ToUTF16(tid);
+	SessionItem* item = dynamic_cast<SessionItem*>(session_list_->FindSubControl(wid));
+	if (item && item->GetIsTeam())
+		item->SetMute(SessionManager::GetInstance()->IsTeamMsgMuteShown(tid, bits));
+}
+
+void SessionList::OnNotifyChangeCallback(std::string id, bool mute)
+{
+	std::wstring wid = nbase::UTF8ToUTF16(id);
+	SessionItem* item = dynamic_cast<SessionItem*>(session_list_->FindSubControl(wid));
+	if (item && !item->GetIsTeam())
+		item->SetMute(mute);
 }
 
 SessionItem* SessionList::AddSessionItem(const nim::SessionData &item_data)
@@ -89,6 +133,13 @@ SessionItem* SessionList::AddSessionItem(const nim::SessionData &item_data)
 	}
 	
 	InvokeUnreadCountChange();
+	return item;
+}
+
+SessionItem* SessionList::GetSessionItem(const std::string &session_id)
+{
+	std::wstring wid = nbase::UTF8ToUTF16(session_id);
+	SessionItem* item = dynamic_cast<SessionItem*>(session_list_->FindSubControl(wid));
 	return item;
 }
 
@@ -264,6 +315,30 @@ void SessionList::UpdateMultispotUI()
 	{
 		if (map_multispot_infos_.size() > 0)
 		{
+			ui::Label *multi_des = (ui::Label*)session_list_->GetWindow()->FindControl(L"multi_des");
+			std::wstring show_tip = ui::MutiLanSupport::GetInstance()->GetStringViaID(L"STRID_MAINWINDOW_USING_NIM_ON_MOBILEPHONE");
+			std::wstring client_des;
+			switch (map_multispot_infos_.begin()->second.client_type_) 
+			{
+			case nim::kNIMClientTypeAndroid:
+				client_des = MutiLanSupport::GetInstance()->GetStringViaID(L"STRID_MULTISPOT_NIM_AOS");
+				break;
+			case nim::kNIMClientTypeiOS:
+				client_des = MutiLanSupport::GetInstance()->GetStringViaID(L"STRID_MULTISPOT_NIM_IOS");
+				break;
+			case nim::kNIMClientTypePCWindows:
+			case nim::kNIMClientTypeMacOS:
+				client_des = MutiLanSupport::GetInstance()->GetStringViaID(L"STRID_MULTISPOT_NIM_PC");
+				break;
+			case nim::kNIMClientTypeWeb:
+				client_des = MutiLanSupport::GetInstance()->GetStringViaID(L"STRID_MULTISPOT_NIM_WEB");
+				break;		
+			default:
+				client_des = nbase::UTF8ToUTF16(map_multispot_infos_.begin()->second.client_os_);
+				break;
+			}
+			show_tip = nbase::StringPrintf(show_tip.c_str(), client_des.c_str());
+			multi_des->SetText(show_tip);
 			//std::wstring show_tip = L"登录帐号设备";
 			//for (auto& it : map_multispot_infos_)
 			//{
@@ -307,13 +382,19 @@ void SessionList::OnSessionChangeCallback(nim::NIMResCode rescode, const nim::Se
 	switch (data.command_)
 	{
 	case nim::kNIMSessionCommandAdd:
+	{
+		SubscribeEventManager::GetInstance()->SubscribeSessionEvent(data);
+	}
+	// break; // 不要break，继续执行
 	case nim::kNIMSessionCommandUpdate:
 	case nim::kNIMSessionCommandMsgDeleted:
 	{
 		if (data.last_updated_msg_)
 		{
+			SubscribeEventManager::GetInstance()->SubscribeSessionEvent(data);
 			AddSessionItem(data);
-			if (SessionManager::GetInstance()->IsSessionBoxActive(data.id_))
+			if (data.unread_count_ == 0
+				|| SessionManager::GetInstance()->IsSessionBoxActive(data.id_))
 			{
 				ResetUnreadCount(data.id_);
 			}
@@ -321,15 +402,42 @@ void SessionList::OnSessionChangeCallback(nim::NIMResCode rescode, const nim::Se
 	}
 	break;
 	case nim::kNIMSessionCommandRemoveAll:
+	{
+		std::list<nim::SessionData> unsubscribe_list;
+		for (int i = session_list_->GetCount() - 1; i >= 0; i--)
+		{
+			SessionItem* item = dynamic_cast<SessionItem*>(session_list_->GetItemAt(i));
+			if (item && !item->GetIsTeam())
+			{
+				unsubscribe_list.push_back(item->GetSessionData());
+			}
+		}
+		SubscribeEventManager::GetInstance()->UnSubscribeSessionEvent(unsubscribe_list);
 		RemoveAllSessionItem();
-		break;
+	}	
+	break;
 	case nim::kNIMSessionCommandRemoveAllP2P:
+	{		
+		std::list<nim::SessionData> unsubscribe_list;
+		for (int i = session_list_->GetCount() - 1; i >= 0; i--)
+		{
+			SessionItem* item = dynamic_cast<SessionItem*>(session_list_->GetItemAt(i));
+			if (item && !item->GetIsTeam())
+			{
+				unsubscribe_list.push_back(item->GetSessionData());
+				session_list_->RemoveAt(i);
+			}
+		}
+		SubscribeEventManager::GetInstance()->UnSubscribeSessionEvent(unsubscribe_list);
+		InvokeUnreadCountChange();
+	}
+	break;
 	case nim::kNIMSessionCommandRemoveAllTeam:
 	{
 		for (int i = session_list_->GetCount() - 1; i >= 0; i--)
 		{
 			SessionItem* item = dynamic_cast<SessionItem*>(session_list_->GetItemAt(i));
-			if (item && (item->GetIsTeam() == (data.command_ == nim::kNIMSessionCommandRemoveAllTeam)))
+			if (item && item->GetIsTeam())
 			{
 				session_list_->RemoveAt(i);
 			}
@@ -358,15 +466,38 @@ void SessionList::OnSessionChangeCallback(nim::NIMResCode rescode, const nim::Se
 	}
 }
 
+void SessionList::OnRobotChange(nim::NIMResCode rescode, nim::NIMRobotInfoChangeType type, const nim::RobotInfos& robots)
+{
+	if (rescode == nim::kNIMResSuccess)
+	{
+		for (auto &robot : robots)
+		{
+			SessionItem* session_item = dynamic_cast<SessionItem*>(session_list_->FindSubControl(nbase::UTF8ToUTF16(robot.GetAccid())));
+			if (session_item != NULL)
+				session_item->InitRobotProfile();
+		}
+	}
+}
+
 void SessionList::OnUserInfoChange(const std::list<nim::UserNameCard>& uinfos)
 {
 	for (auto iter = uinfos.cbegin(); iter != uinfos.cend(); iter++)
 		UpdateSessionInfo(*iter);
 }
 
+void SessionList::OnFriendListChange(FriendChangeType change_type, const std::string& accid)
+{
+	if (change_type == kChangeTypeUpdate)
+	{
+		SessionItem* session_item = dynamic_cast<SessionItem*>(session_list_->FindSubControl(nbase::UTF8ToUTF16(accid)));
+		if (session_item != NULL)
+			session_item->InitUserProfile();
+	}
+}
+
 void SessionList::OnUserPhotoReady(PhotoType type, const std::string& accid, const std::wstring &photo_path)
 {
-	if (type == kUser || type == kTeam)
+	if (type == kUser || type == kTeam || type == kRobot)
 	{
 		SessionItem* item = (SessionItem*)session_list_->FindSubControl(nbase::UTF8ToUTF16(accid));
 		if (item)
@@ -379,6 +510,17 @@ void SessionList::OnTeamNameChange(const nim::TeamInfo& team_info)
 	SessionItem* item = (SessionItem*)session_list_->FindSubControl(nbase::UTF8ToUTF16(team_info.GetTeamID()));
 	if (item)
 		((Label*)item->FindSubControl(L"label_name"))->SetUTF8Text(team_info.GetName());
+}
+
+void SessionList::OnReceiveEvent(int event_type, const std::string &accid, const EventDataEx &data)
+{
+	if (event_type == nim::kNIMEventTypeOnlineState)
+	{
+		SessionItem* item = (SessionItem*)session_list_->FindSubControl(nbase::UTF8ToUTF16(accid));
+		if (item == NULL || item->GetIsTeam())
+			return;
+		item->SetOnlineState(data);
+	}
 }
 
 bool SessionList::OnEventsClick(ui::EventArgs* param)

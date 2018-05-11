@@ -1,6 +1,8 @@
 ﻿#include "session_form.h"
 #include "gui/session/atlist/at_list_form.h"
 #include "module/session/session_manager.h"
+#include "gui/profile_form/profile_form.h"
+#include "gui/contact_select_form/contact_select_form.h"
 
 using namespace ui;
 
@@ -46,7 +48,7 @@ void SessionBox::OnGetTeamInfoCallback(const std::string& tid, const nim::TeamIn
 	{
 		session_form_->AdjustFormSize();
 		Json::Value json;
-		if (StringToJson(team_info_.GetAnnouncement(), json))
+		if (StringToJson(team_info_.GetAnnouncement(), json) && json.isArray())
 		{
 			UpdateBroad(json);
 		}
@@ -57,13 +59,16 @@ void SessionBox::OnGetTeamInfoCallback(const std::string& tid, const nim::TeamIn
 		CheckTeamType(nim::kNIMTeamTypeAdvanced);
 	}
 
-	if (team_info_.ExistValue(nim::kNIMTeamInfoKeyMuteAll))
+	if (team_info_.ExistValue(nim::kNIMTeamInfoKeyMuteAll)
+		|| team_info_.ExistValue(nim::kNIMTeamInfoKeyMuteType))
 	{
-		bool new_mute_all_status = team_info_.IsAllMemberMute();
+		bool new_mute_all_status = team_info_.GetMuteType() != nim::kNIMTeamMuteTypeNone;
 		mute_all_ = new_mute_all_status;
 	}
 
 	is_header_enable_ = true;
+
+	ResetNewBroadButtonVisible();
 }
 
 void SessionBox::InvokeGetTeamMember()
@@ -89,8 +94,7 @@ void SessionBox::OnGetTeamMemberCallback(const std::string& tid, int count, cons
 	btn_refresh_member_->SetEnabled(true);
 	member_list_->RemoveAll();
 	label_member_->SetText(nbase::StringPrintf(MutiLanSupport::GetInstance()->GetStringViaID(L"STRID_SESSION_MEMBER_NUM_EX").c_str(), team_member_info_list_.size()));
-	bool set_new_broad_visible = team_info_.GetUpdateInfoMode() == nim::kNIMTeamUpdateCustomModeEveryone;
-	btn_new_broad_->SetVisible(set_new_broad_visible);
+	//btn_new_broad_->SetVisible(set_new_broad_visible);
 
 	// 提前批量查询群用户信息,优化用户查询
 	UserService::GetInstance()->DoQueryUserInfos(account_set); 
@@ -128,12 +132,16 @@ void SessionBox::OnGetTeamMemberCallback(const std::string& tid, int count, cons
 
 		RefreshMsglistShowname(uid); //刷新消息列表中显示的名字
 
+		bool set_new_broad_visible = team_info_.GetUpdateInfoMode() == nim::kNIMTeamUpdateCustomModeEveryone;
 		if (!set_new_broad_visible)
 		{
 			if (LoginManager::GetInstance()->IsEqual(tm_info.second.GetAccountID()))
 			{
 				if (tm_info.second.GetUserType() == nim::kNIMTeamUserTypeCreator || tm_info.second.GetUserType() == nim::kNIMTeamUserTypeManager)
+				{
 					btn_new_broad_->SetVisible(true);
+					btn_new_broad_->SetEnabled(true);
+				}
 				set_new_broad_visible = true;
 			}
 		}
@@ -145,8 +153,50 @@ void SessionBox::OnGetTeamMemberCallback(const std::string& tid, int count, cons
 				SetTeamMuteUI(true);
 			else
 				SetTeamMuteUI(tm_info.second.IsMute());
+
+			auto bits = tm_info.second.GetBits();
+			InvokeSetTeamNotificationMode(bits);
 		}
 	}
+}
+
+void SessionBox::InvokeSetTeamNotificationMode(const int64_t bits)
+{
+	FindSubControl(L"not_disturb")->SetVisible(SessionManager::GetInstance()->IsTeamMsgMuteShown(session_id_, bits));
+}
+
+void SessionBox::OnTeamNotificationModeChangeCallback(const std::string& id, int64_t bits)
+{
+	if (session_id_ == id)
+		InvokeSetTeamNotificationMode(bits);
+}
+
+void SessionBox::ResetNewBroadButtonVisible()
+{
+	if (team_info_.GetUpdateInfoMode() != nim::kNIMTeamUpdateCustomModeEveryone)
+	{
+		for (const auto &tm_info : team_member_info_list_)
+		{
+			if (LoginManager::GetInstance()->IsEqual(tm_info.second.GetAccountID()))
+			{
+				if (tm_info.second.GetUserType() == nim::kNIMTeamUserTypeCreator || tm_info.second.GetUserType() == nim::kNIMTeamUserTypeManager)
+				{
+					btn_new_broad_->SetVisible(true);
+					btn_new_broad_->SetEnabled(true);
+				}					
+				else
+				{
+					btn_new_broad_->SetVisible(false);
+				}					
+				break;
+			}
+		}
+	}
+	else
+	{
+		btn_new_broad_->SetVisible(true);
+		btn_new_broad_->SetEnabled(true);
+	}		
 }
 
 nim::TeamMemberProperty SessionBox::GetTeamMemberInfo(const std::string& uid)
@@ -247,8 +297,10 @@ void SessionBox::OnTeamAdminSet(const std::string& tid, const std::string& uid, 
 {
 	if(tid == session_id_)
 	{
-		std::wstring wid = nbase::UTF8ToUTF16(uid);
-
+		//更新数据
+		if (team_member_info_list_.find(uid) != team_member_info_list_.end())
+			team_member_info_list_[uid].SetUserType(admin ? nim::kNIMTeamUserTypeManager : nim::kNIMTeamUserTypeNomal);
+		std::wstring wid = nbase::UTF8ToUTF16(uid);		
 		TeamItem* item = dynamic_cast<TeamItem*>(member_list_->FindSubControl(wid));
 		if(item)
 		{
@@ -258,6 +310,7 @@ void SessionBox::OnTeamAdminSet(const std::string& tid, const std::string& uid, 
 		if (team_info_.GetUpdateInfoMode() != nim::kNIMTeamUpdateCustomModeEveryone && LoginManager::GetInstance()->IsEqual(uid))
 		{
 			btn_new_broad_->SetVisible(admin);
+			btn_new_broad_->SetEnabled(admin);
 		}
 	}
 }
@@ -279,8 +332,18 @@ void SessionBox::OnTeamOwnerChange(const std::string& tid, const std::string& ui
 {
 	if (tid == session_id_)
 	{
-		std::wstring wid = nbase::UTF8ToUTF16(uid);
+		for (auto& it_member : team_member_info_list_)
+		{
+			if (it_member.second.GetUserType() == nim::kNIMTeamUserTypeCreator && it_member.second.GetAccountID() != uid)
+				it_member.second.SetUserType(nim::kNIMTeamUserTypeNomal);
+		}
+		auto team_member = team_member_info_list_.find(uid);
+		if (team_member != team_member_info_list_.end())
+		{
+			team_member->second.SetUserType(nim::kNIMTeamUserTypeCreator);
+		}
 
+		std::wstring wid = nbase::UTF8ToUTF16(uid);
 		for (int i = 0; i < member_list_->GetCount(); i++)
 		{
 			TeamItem* item = dynamic_cast<TeamItem*>(member_list_->GetItemAt(i));
@@ -302,7 +365,11 @@ void SessionBox::OnTeamOwnerChange(const std::string& tid, const std::string& ui
 		if (item)
 			item->SetOwner(true);
 		if (LoginManager::GetInstance()->IsEqual(nbase::UTF16ToUTF8(wid)))
+		{
 			btn_new_broad_->SetVisible(true);
+			btn_new_broad_->SetEnabled(true);
+		}
+			
 	}
 }
 
@@ -321,6 +388,16 @@ void SessionBox::OnTeamRemove(const std::string& tid)
 	if (tid == session_id_)
 	{
 		HandleLeaveTeamEvent();
+	}
+}
+
+void SessionBox::OnTeamAdd(const std::string& tid, const std::string& tname, nim::NIMTeamType ttype)
+{
+	//只处理这种场景 lty 20170807
+	if (!is_team_valid_ && tid == session_id_)
+	{
+		InvokeGetTeamMember();
+		InvokeGetTeamInfo();
 	}
 }
 
@@ -439,13 +516,13 @@ void SessionBox::CheckTeamType(nim::NIMTeamType type)
 	split->SetVisible(show);
 	Control* frame_right = FindSubControl(L"frame_right");
 	frame_right->SetVisible(show);
+	FindSubControl(L"btn_team_ack_msg")->SetVisible(LoginManager::GetInstance()->IsTeamMsgAckUIEnabled() && show);
 }
 
 bool SessionBox::IsAdvancedTeam()
 {
 	return (session_type_ == nim::kNIMSessionTypeTeam && team_info_.GetType() == nim::kNIMTeamTypeAdvanced);
 }
-
 
 void SessionBox::HandleEnterTeamEvent()
 {
@@ -457,6 +534,8 @@ void SessionBox::HandleEnterTeamEvent()
 	btn_send_->SetEnabled(true);
 	FindSubControl(L"btn_custom_msg")->SetEnabled(true);
 	FindSubControl(L"btn_msg_record")->SetEnabled(true);
+	ResetNewBroadButtonVisible();
+	
 }
 
 void SessionBox::HandleLeaveTeamEvent()
@@ -470,6 +549,13 @@ void SessionBox::HandleLeaveTeamEvent()
 	FindSubControl(L"bottom_panel")->SetEnabled(false);
 	btn_new_broad_->SetEnabled(false);
 	btn_refresh_member_->SetEnabled(false);
+
+/*
+	ContactSelectForm *contact_select_form = (ContactSelectForm *)WindowsManager::GetInstance()->GetWindow\
+		(ContactSelectForm::kClassName, nbase::UTF8ToUTF16(session_id_));
+	if (contact_select_form)
+		contact_select_form->Close();
+*/
 }
 
 void SessionBox::HandleDismissTeamEvent()
@@ -483,6 +569,55 @@ void SessionBox::HandleDismissTeamEvent()
 	FindSubControl(L"bottom_panel")->SetEnabled(false);
 	btn_new_broad_->SetEnabled(false);
 	btn_refresh_member_->SetEnabled(false);
+
+/*
+	ContactSelectForm *contact_select_form = (ContactSelectForm *)WindowsManager::GetInstance()->GetWindow\
+		(ContactSelectForm::kClassName, nbase::UTF8ToUTF16(session_id_));
+	if (contact_select_form)
+		contact_select_form->Close();
+*/
 }
 
+void SessionBox::UpdateUnreadCount(const std::string &msg_id, const int unread)
+{
+	auto iter = cached_msgs_bubbles_.rbegin();
+	for (; iter != cached_msgs_bubbles_.rend(); ++iter)
+	{
+		MsgBubbleItem* item = (MsgBubbleItem*)(*iter);
+		if (item)
+		{
+			nim::IMMessage msg = item->GetMsg();
+			if (msg.client_msg_id_ == msg_id)
+			{
+				item->SetUnreadCount(unread);
+				break;
+			}
+		}
+	}
+}
+
+void SessionBox::InvokeSetRead(const std::list<nim::IMMessage> &msgs)
+{
+	nim::Team::TeamMsgAckRead(session_id_, msgs, nim::Team::TeamEventCallback());
+	new_msgs_need_to_send_mq_.clear();
+}
+
+
+void SessionBox::SendTeamReceiptIfNeeded(bool auto_detect/* = false*/)
+{
+	//发送已读回执目前只支持Tea,会话
+	if (session_type_ != nim::kNIMSessionTypeTeam)
+		return;
+
+	if (auto_detect)
+	{
+		if (!session_form_->IsActiveSessionBox(this) || msg_list_ == nullptr || !msg_list_->IsAtEnd())
+		{
+			return;
+		}
+	}
+
+	if (!new_msgs_need_to_send_mq_.empty())
+		InvokeSetRead(new_msgs_need_to_send_mq_);
+}
 }

@@ -2,6 +2,7 @@
 #include "callback/audio/audio_callback.h"
 #include "module/service/photo_service.h"
 #include "module/session/force_push_manager.h"
+#include "module/subscribe_event/subscribe_event_manager.h"
 #include "gui/session/control/bubbles/bubble_text.h"
 #include "gui/session/control/bubbles/bubble_image.h"
 #include "gui/session/control/bubbles/bubble_snapchat.h"
@@ -14,6 +15,7 @@
 #include "gui/session/control/bubbles/bubble_file.h"
 #include "gui/session/control/bubbles/bubble_sticker.h"
 #include "gui/session/control/bubbles/bubble_video.h"
+#include "gui/session/control/bubbles/bubble_robot.h"
 #include "gui/session/control/team_item.h"
 #include "gui/emoji/emoji_form.h"
 #include "gui/team_info/team_info.h"
@@ -272,7 +274,12 @@ private:
 	* @return void	无返回值
 	*/
 	virtual void SetWindow(ui::Window* pManager, ui::Box* pParent, bool bInit) override;
-
+	/**
+	* 加载指定条数的消息
+	* @param[in] count 要加载的消息条数
+	* @return void 无返回值
+	*/
+	void InvokeShowSpecifiedCountMsgs(unsigned count);
 	/** 
 	* 执行截图操作		
 	* @return void 无返回值
@@ -468,8 +475,21 @@ private:
 	* @return void 无返回值
 	*/
 	void ShowCustomMsgForm();
+	/**
+	* 当发送消息被拒绝时发送该消息自己，该消息不漫游、不存云端、不多端同步、不离线
+	* @param[in] tip 提示内容
+	* @return void	无返回值
+	*/
+	void SendRefusedTip(const std::wstring &tip);
 #pragma endregion UI
 
+#pragma region TaskBar
+	/**
+	* 更新任务栏展示信息
+	* @return void	无返回值
+	*/
+	void UpdateTaskbarInfo();
+#pragma endregion TaskBar
 	//////////////////////////////////////////////////////////////////////////
 	//拖拽相关的操作
 #pragma region DragDrop
@@ -608,7 +628,7 @@ private:
 	* @param[in] uid 被选择的用户id
 	* @return void	无返回值
 	*/
-	void OnSelectAtItemCallback(const std::string& uid);
+	void OnSelectAtItemCallback(const std::string& uid, bool is_robot);
 
 	/**
 	* 获取最近发消息的5个人（不包括自己）,最新发言的在列表最前
@@ -640,7 +660,7 @@ private:
 	* @param[in] text 文本内容
 	* @return void	无返回值
 	*/
-	void SendText(const std::string &text);
+	void SendText(const std::string &text, bool team_msg_need_ack = false);
 
 	/**
 	* 发送一条图片消息
@@ -765,7 +785,7 @@ private:
 	std::wstring GetRecallNotifyText(const std::string& msg_from_id, const std::string& msg_from_nick);
 
 	/** 
-	* 根据会话的信息，设置投降
+	* 根据会话的信息，设置头像
 	* @return void 无返回值
 	*/
 	void CheckHeader();
@@ -782,6 +802,12 @@ private:
 	* @return bool 返回值true: 是， false: 否
 	*/ 
 	bool IsFileTransPhone();
+
+	/**
+	* 根据事件信息，设置在线状态
+	* @return void 无返回值
+	*/
+	void SetOnlineState(const EventDataEx &data);
 
 	/**
 	* 设置会话盒子的标题
@@ -830,12 +856,31 @@ private:
 	void OnUserInfoChange(const std::list<nim::UserNameCard> &uinfos);
 
 	/**
+	* 响应机器人信息改变的回调函数
+	* @param[in] rescode 错误码
+	* @param[in] type 类型
+	* @param[in] robots 机器人列表
+	* @return void 无返回值
+	*/
+	void OnRobotChange(nim::NIMResCode rescode, nim::NIMRobotInfoChangeType type, const nim::RobotInfos& robots);
+
+	/**
 	* 会话框中某人的头像下载完成的回调函数
 	* @param[in] accid 头像下载完成的用户id
 	* @param[in] photo_path 头像本地路径
 	* @return void 无返回值
 	*/
 	void OnUserPhotoReady(PhotoType type, const std::string& accid, const std::wstring &photo_path);
+
+	/**
+	* 响应接收事件的回调函数
+	* @param[in] event_type 事件类型
+	* @param[in] accid 用户id
+	* @param[in] data 事件信息
+	* @return void 无返回值
+	*/
+	void OnReceiveEvent(int event_type, const std::string &accid, const EventDataEx &data);
+
 #pragma endregion Logic
 
 	//////////////////////////////////////////////////////////////////////////
@@ -883,6 +928,8 @@ public:
 	* @return bool true 有效，false 无效
 	*/
 	bool IsTeamValid() { return is_team_valid_; };
+	
+	void UpdateUnreadCount(const std::string &msg_id, const int unread);
 private:
 	/** 
 	* 有群成员增加的回调函数
@@ -949,6 +996,15 @@ private:
 	void OnTeamRemove(const std::string& tid);
 
 	/**
+	* 入群的回调函数
+	* @param[in] tid 群id
+	* @param[in] tname 群名称
+	* @param[in] ttype 群类型
+	* @return void 无返回值
+	*/
+	void OnTeamAdd(const std::string& tid, const std::string& tname, nim::NIMTeamType ttype);
+
+	/**
 	* 判断用户类型是否可以显示在群成员中
 	* @param[in] user_type 用户信息
 	* @return void 无返回值
@@ -961,6 +1017,13 @@ private:
 	* @return void	无返回值
 	*/
 	void SendReceiptIfNeeded(bool auto_detect = false);
+
+	/**
+	* 发送群组消息已读回执
+	* @param[in] auto_detect 是否检测当前需要不需要发送回执，如果设置为true则只有会话盒子在激活状态并且消息列表处于末端才发送绘制，如果设置为false则直接发送回执
+	* @return void	无返回值
+	*/
+	void SendTeamReceiptIfNeeded(bool auto_detect = false);
 
 	/**
 	* 刷新消息列表中的名字
@@ -1023,6 +1086,26 @@ private:
 	* @return void	无返回值
 	*/
 	void HandleDismissTeamEvent();
+
+	/**
+	* 重置新建公告入口
+	* @return void 无返回值
+	*/
+	void ResetNewBroadButtonVisible();	
+
+	/**
+	* 响应用户列表改变的回调函数
+	* @param[in] change_type 好友变化类型
+	* @param[in] accid 用户id
+	* @return void 无返回值
+	*/
+	void OnFriendListChange(FriendChangeType change_type, const std::string& accid);
+
+	void InvokeSetRead(const std::list<nim::IMMessage> &msgs);
+	void InvokeSetTeamNotificationMode(const int64_t bits);
+	void OnTeamNotificationModeChangeCallback(const std::string& id, int64_t bits);
+
+	void OnNotifyChangeCallback(std::string id, bool mute);
 #pragma endregion Team
 
 public:
@@ -1033,6 +1116,7 @@ private:
 	ui::Button*		btn_max_restore_;
 	ui::Label*		label_title_;
 	ui::Label*		label_tid_;
+	ui::Label*		label_online_state_;
 	bool			is_header_enable_;	// 因为拖拽效果的需要，现在头像按钮一直可用，通过这个变量记录是否响应头像的单击事件
 	ui::Button*		btn_header_;
 	ui::Button*		btn_invite_;
@@ -1062,7 +1146,13 @@ private:
 	bool					scroll_top_;			//单击@me消息滚动的方向
 
 	AtMeView				*atme_view_;			//@我 消息预览
-	std::map<std::string, std::string>	uid_at_someone_;//当前输入框被@的人的昵称和uid
+
+	struct AtSomeone
+	{
+		std::string uid_;
+		bool is_robot_ = false;
+	};
+	std::map<std::string, AtSomeone>	uid_at_someone_;//当前输入框被@的人的昵称和uid
 
 	// 语音录制相关变量
 	AudioCaptureView		*audio_capture_view_;	//语音录制界面
@@ -1072,6 +1162,8 @@ private:
 private:
 	SessionForm*	session_form_;
 	std::string		session_id_;
+	bool			is_robot_session_ = false;
+	nim::RobotInfo	robot_info_;
 	nim::NIMSessionType session_type_;
 	nim::TeamInfo	team_info_;
 	bool			is_team_valid_;
@@ -1093,5 +1185,7 @@ private:
 	std::list<MsgBubbleItem*> cached_msgs_bubbles_; //记录消息前后顺序
 
 	AutoUnregister	unregister_cb;
+
+	std::list<nim::IMMessage> new_msgs_need_to_send_mq_;
 };
 }

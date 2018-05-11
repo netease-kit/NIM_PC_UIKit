@@ -583,14 +583,15 @@ bool VideoForm::OnClicked( ui::EventArgs* arg )
 		auto sel = nim_comp::WindowsManager::SingletonShow<nim_comp::RecordSelectForm>(nim_comp::RecordSelectForm::kClassName);
 		if (sel)
 		{
-			sel->SetSelFileCb(std::bind(&VideoForm::OnRecordSelFileCb, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+			sel->SetSelFileCb(current_video_mode_, nbase::Bind(&VideoForm::OnRecordSelFileCb, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
 		}
 
 	}
 	else if (name == L"record_stop")
 	{
-		nim::VChat::StopRecord(std::bind(&VideoForm::StopRecordCb, this, true, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
-		nim::VChat::StopAudioRecord(std::bind(&VideoForm::StopRecordCb, this, false, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
+		nim::VChat::StopRecord("", nbase::Bind(&VideoForm::StopRecordCb, this, true, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
+		nim::VChat::StopRecord(session_id_, nbase::Bind(&VideoForm::StopRecordCb, this, true, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
+		nim::VChat::StopAudioRecord(nbase::Bind(&VideoForm::StopRecordCb, this, false, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
 	}
 	else if (name == L"rotate")
 	{

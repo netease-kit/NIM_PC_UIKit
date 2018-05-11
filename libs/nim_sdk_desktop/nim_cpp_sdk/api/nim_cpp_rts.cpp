@@ -1,13 +1,12 @@
 ﻿/** @file nim_cpp_rts.cpp
   * @brief NIM Rts提供的相关接口
-  * @copyright (c) 2015-2016, NetEase Inc. All rights reserved
+  * @copyright (c) 2015-2017, NetEase Inc. All rights reserved
   * @author gq
   * @date 2015/7/3
   */
 
 #include "nim_cpp_rts.h"
 #include "nim_sdk_util.h"
-#include "nim_json_util.h"
 #include "nim_cpp_win32_demo_helper.h"
 #include "nim_string_util.h"
 
@@ -15,6 +14,7 @@ namespace nim
 {
 
 //发起相关
+#ifdef NIM_SDK_DLL_IMPORT
 typedef	void (*nim_rts_start)(int channel_type, const char* uid, const char *json_extension, nim_rts_start_cb_func cb, const void *user_data);
 typedef	void (*nim_rts_set_start_notify_cb_func)(nim_rts_start_notify_cb_func cb, const void *user_data);
 typedef void (*nim_rts_create_conf)(const char *name, const char *custom_info, const char *json_extension, nim_rts_create_cb_func cb, const void *user_data);
@@ -31,6 +31,9 @@ typedef	void (*nim_rts_hangup)(const char *session_id, const char *json_extensio
 typedef	void (*nim_rts_set_hangup_notify_cb_func)(nim_rts_hangup_notify_cb_func cb, const void *user_data);
 typedef	void (*nim_rts_send_data)(const char *session_id, int channel_type, const char* data, unsigned int size, const char *json_extension);
 typedef	void (*nim_rts_set_rec_data_cb_func)(nim_rts_rec_data_cb_func cb, const void *user_data);
+#else
+#include "nim_rts.h"
+#endif
 
 void StartChannelCallbackWrapper(int code, const char *session_id, int channel_type, const char* uid, const char *json_extension, const void *user_data)
 {
@@ -88,7 +91,7 @@ void JoinConfCallbackWrapper(int code, const char *session_id, const char *json_
 		Rts::JoinConfCallback* cb_pointer = (Rts::JoinConfCallback*)user_data;
 		if (*cb_pointer)
 		{
-			__int64 channel_id = 0;
+			int64_t channel_id = 0;
 			std::string custom_info;
 			Json::Value values;
 			Json::Reader reader;
@@ -164,8 +167,15 @@ void MemberNotifyCallbackWrapper(const char *session_id, int channel_type, int t
 		Rts::MemberNotifyCallback* cb_pointer = (Rts::MemberNotifyCallback*)user_data;
 		if (*cb_pointer)
 		{
-			PostTaskToUIThread(std::bind((*cb_pointer), PCharToString(session_id), channel_type, PCharToString(uid), type));
-
+			int32_t leave_type = kNIMRtsMemberLeftNormal;
+			Json::Value values;
+			Json::Reader reader;
+			std::string json = PCharToString(json_extension);
+			if (reader.parse(json, values) && values.isObject())
+			{
+				leave_type = values[kNIMRtsLeaveType].asInt();
+			}
+			PostTaskToUIThread(std::bind((*cb_pointer), PCharToString(session_id), channel_type, PCharToString(uid), type, leave_type));
 			//(*cb_pointer)(PCharToString(session_id), channel_type, PCharToString(uid), type);
 		}
 	}
@@ -242,21 +252,14 @@ void RecDataCallbackWrapper(const char *session_id, int channel_type, const char
 
 //发起相关
 //NIM 创建rts会话，传入的JSON参数定义见nim_rts_def.h
-void Rts::StartChannel(int channel_type, const std::string& uid, const std::string& apns, const std::string& custom_info, bool data_record, bool audio_record, const StartChannelCallback& cb)
+void Rts::StartChannel(int channel_type, const std::string& uid, RtsStartInfo info, const StartChannelCallback& cb)
 {
 	StartChannelCallback* cb_pointer = nullptr;
 	if (cb)
 	{
 		cb_pointer = new StartChannelCallback(cb);
 	}
-	std::string json;
-	Json::Value values_temp;
-	values_temp[nim::kNIMRtsCreateCustomInfo] = custom_info;
-	values_temp[nim::kNIMRtsApnsText] = apns;
-	values_temp[nim::kNIMRtsDataRecord] = data_record ? 1 : 0;
-	values_temp[nim::kNIMRtsAudioRecord] = audio_record ? 1 : 0;
-	Json::FastWriter fs;
-	json = fs.write(values_temp);
+	std::string json = info.GetJsonStr();
 	return NIM_SDK_GET_FUNC(nim_rts_start)(channel_type, uid.c_str(), json.c_str(), &StartChannelCallbackWrapper, cb_pointer);
 }
 
@@ -284,7 +287,7 @@ void Rts::CreateConf(const std::string& name, const std::string& custom_info, co
 }
 
 //NIM 加入多人rts会话
-void Rts::JoinConf(const std::string& name, bool record, const JoinConfCallback& cb)
+void Rts::JoinConf(const std::string& name, const std::string& session_id, bool record, const JoinConfCallback& cb)
 {
 	JoinConfCallback* cb_pointer = nullptr;
 	if (cb)
@@ -294,6 +297,7 @@ void Rts::JoinConf(const std::string& name, bool record, const JoinConfCallback&
 	std::string json;
 	Json::Value values_temp;
 	values_temp[nim::kNIMRtsDataRecord] = record ? 1 : 0;
+	values_temp[nim::kNIMRtsSessionId] = session_id;
 	Json::FastWriter fs;
 	json = fs.write(values_temp);
 	return NIM_SDK_GET_FUNC(nim_rts_join_conf)(name.c_str(), json.c_str(), &JoinConfCallbackWrapper, cb_pointer);

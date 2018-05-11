@@ -1,30 +1,36 @@
 /** @file nim_cpp_talk.cpp
   * @brief 聊天功能；主要包括发送消息、接收消息等功能
-  * @copyright (c) 2015-2016, NetEase Inc. All rights reserved
-  * @author towik, Oleg
+  * @copyright (c) 2015-2017, NetEase Inc. All rights reserved
+  * @author towik, Oleg, Harrison
   * @date 2015/2/1
   */
 
 #include "nim_cpp_talk.h"
 #include "nim_sdk_util.h"
 #include "nim_json_util.h"
+#include "nim_string_util.h"
 #include "nim_cpp_global.h"
 #include "nim_cpp_win32_demo_helper.h"
-#include "nim_string_util.h"
 
 namespace nim
 {
-
+#ifdef NIM_SDK_DLL_IMPORT
 typedef void(*nim_talk_reg_ack_cb)(const char *json_extension, nim_talk_ack_cb_func cb, const void *user_data);
 typedef void(*nim_talk_send_msg)(const char* json_msg, const char *json_extension, nim_nos_upload_prg_cb_func prg_cb, const void *prg_user_data);
 typedef void(*nim_talk_stop_send_msg)(const char *json_msg, const char *json_extension);
 typedef void(*nim_talk_reg_receive_cb)(const char *json_extension, nim_talk_receive_cb_func cb, const void* user_data);
 typedef void(*nim_talk_reg_receive_msgs_cb)(const char *json_extension, nim_talk_receive_cb_func cb, const void* user_data);
 typedef void(*nim_talk_reg_notification_filter_cb)(const char *json_extension, nim_talk_team_notification_filter_func cb, const void *user_data);
-typedef char*(*nim_talk_create_retweet_msg)(const char* src_msg_json, const char* client_msg_id, const NIMSessionType retweet_to_session_type, const char* retweet_to_session_id, const char* msg_setting, __int64 timetag);
+typedef char*(*nim_talk_create_retweet_msg)(const char* src_msg_json, const char* client_msg_id, const NIMSessionType retweet_to_session_type, const char* retweet_to_session_id, const char* msg_setting, int64_t timetag);
 typedef void(*nim_talk_recall_msg)(const char *json_msg, const char *notify, const char *json_extension, nim_talk_recall_msg_func cb, const void *user_data);
 typedef void(*nim_talk_reg_recall_msg_cb)(const char *json_extension, nim_talk_recall_msg_func cb, const void *user_data);
 typedef char*(*nim_talk_get_attachment_path_from_msg)(const char *json_msg);
+typedef void(*nim_talk_reg_receive_broadcast_cb)(const char *json_extension, nim_talk_receive_broadcast_cb_func cb, const void *user_data);
+typedef void(*nim_talk_reg_receive_broadcast_msgs_cb)(const char *json_extension, nim_talk_receive_broadcast_cb_func cb, const void *user_data);
+
+#else
+#include "nim_talk.h"
+#endif
 
 static void CallbackSendMsgAck(const char *result, const void *callback)
 {
@@ -82,7 +88,7 @@ static void CallbackReceiveMessages(const char *content, const char *json_extens
 	}
 }
 
-static void CallbackFileUploadProcess(__int64 uploaded_size, __int64 file_size, const char *json_extension, const void *callback)
+static void CallbackFileUploadProcess(int64_t uploaded_size, int64_t file_size, const char *json_extension, const void *callback)
 {
 	if (callback)
 	{
@@ -174,7 +180,7 @@ std::string Talk::CreateTextMessage(const std::string& receiver_id
 	, const std::string& client_msg_id
 	, const std::string& content
 	, const MessageSetting& msg_setting
-	, __int64 timetag/* = 0*/)
+	, int64_t timetag/* = 0*/)
 {
 	Json::Value values;
 	values[kNIMMsgKeyToAccount] = receiver_id;
@@ -199,7 +205,7 @@ std::string Talk::CreateImageMessage(const std::string& receiver_id
 	, const IMImage& image
 	, const std::string& file_path
 	, const MessageSetting& msg_setting
-	, __int64 timetag/* = 0*/)
+	, int64_t timetag/* = 0*/)
 {
 	Json::Value values;
 	values[kNIMMsgKeyToAccount] = receiver_id;
@@ -226,7 +232,7 @@ std::string Talk::CreateFileMessage(const std::string& receiver_id
 	, const IMFile& file
 	, const std::string& file_path
 	, const MessageSetting& msg_setting
-	, __int64 timetag/* = 0*/)
+	, int64_t timetag/* = 0*/)
 {
 	Json::Value values;
 	values[kNIMMsgKeyToAccount] = receiver_id;
@@ -253,7 +259,7 @@ std::string Talk::CreateAudioMessage(const std::string& receiver_id
 	, const IMAudio& audio
 	, const std::string& file_path
 	, const MessageSetting& msg_setting
-	, __int64 timetag/* = 0*/)
+	, int64_t timetag/* = 0*/)
 {
 	Json::Value values;
 	values[kNIMMsgKeyToAccount] = receiver_id;
@@ -280,7 +286,7 @@ std::string Talk::CreateVideoMessage(const std::string& receiver_id
 	, const IMVideo& video
 	, const std::string& file_path
 	, const MessageSetting& msg_setting
-	, __int64 timetag/* = 0*/)
+	, int64_t timetag/* = 0*/)
 {
 	Json::Value values;
 	values[kNIMMsgKeyToAccount] = receiver_id;
@@ -306,7 +312,7 @@ std::string Talk::CreateLocationMessage(const std::string& receiver_id
 	, const std::string& client_msg_id
 	, const IMLocation& location
 	, const MessageSetting& msg_setting
-	, __int64 timetag/* = 0*/)
+	, int64_t timetag/* = 0*/)
 {
 	Json::Value values;
 	values[kNIMMsgKeyToAccount] = receiver_id;
@@ -330,7 +336,7 @@ std::string Talk::CreateTipMessage(const std::string& receiver_id
 	, const std::string& client_msg_id
 	, const std::string& tip_content
 	, const MessageSetting& msg_setting
-	, __int64 timetag/* = 0*/)
+	, int64_t timetag/* = 0*/)
 {
 	Json::Value values;
 	values[kNIMMsgKeyToAccount] = receiver_id;
@@ -349,12 +355,38 @@ std::string Talk::CreateTipMessage(const std::string& receiver_id
 	return GetJsonStringWithNoStyled(values);
 }
 
+std::string Talk::CreateBotRobotMessage(const std::string& receiver_id
+	, const NIMSessionType session_type
+	, const std::string& client_msg_id
+	, const std::string& content
+	, const IMBotRobot& bot_msg
+	, const MessageSetting& msg_setting
+	, int64_t timetag/* = 0*/)
+{
+	Json::Value values;
+	values[kNIMMsgKeyToAccount] = receiver_id;
+	values[kNIMMsgKeyToType] = session_type;
+	values[kNIMMsgKeyClientMsgid] = client_msg_id;
+	values[kNIMMsgKeyBody] = content;
+	values[kNIMMsgKeyType] = kNIMMessageTypeRobot;
+	values[kNIMMsgKeyLocalTalkId] = receiver_id;
+	values[kNIMMsgKeyAttach] = bot_msg.ToJsonString();
+
+	msg_setting.ToJsonValue(values);
+
+	//选填
+	if (timetag > 0)
+		values[kNIMMsgKeyTime] = timetag;
+
+	return GetJsonStringWithNoStyled(values);
+}
+
 std::string Talk::CreateRetweetMessage(const std::string& src_msg_json
 	, const std::string& client_msg_id
 	, const NIMSessionType retweet_to_session_type
 	, const std::string& retweet_to_session_id
 	, const MessageSetting& msg_setting
-	, __int64 timetag/* = 0*/)
+	, int64_t timetag/* = 0*/)
 {
 	Json::Value setting;
 	msg_setting.ToJsonValue(setting);
@@ -484,6 +516,25 @@ bool Talk::ParseLocationMessageAttach(const IMMessage& msg, IMLocation& location
 	return false;
 }
 
+bool Talk::ParseBotRobotMessageAttach(const IMMessage& msg, IMBotRobot& robot_msg)
+{
+	if (msg.type_ != kNIMMessageTypeRobot)
+		return false;
+
+	Json::Value values;
+	Json::Reader reader;
+	if (reader.parse(msg.attach_, values) && values.isObject())
+	{
+		robot_msg.robot_accid_ = values[kNIMBotRobotMsgKeyRobotID].asString();
+		robot_msg.related_msg_id_ = values[kNIMBotRobotReceivedMsgKeyClientMsgID].asString();
+		robot_msg.out_msg_ = values[kNIMBotRobotReceivedMsgKeyMsgOut].asBool();
+		robot_msg.robot_msg_flag_ = values[kNIMBotRobotReceivedMsgKeyRobotMsg][kNIMBotRobotReceivedMsgKeyRobotMsgFlag].asString();
+		robot_msg.robot_msg_content_ = values[kNIMBotRobotReceivedMsgKeyRobotMsg][kNIMBotRobotReceivedMsgKeyRobotMsgMessage];
+		return true;
+	}
+	return false;
+}
+
 static Talk::TeamNotificationFilter* g_team_notification_filter_ = nullptr;
 void Talk::RegTeamNotificationFilter(const TeamNotificationFilter& filter, const std::string& json_extension/* = ""*/)
 {
@@ -557,6 +608,80 @@ std::string Talk::GetAttachmentPathFromMsg(const IMMessage& msg)
 	return out_path;
 }
 
+static void CallbackReceiveBroadcastMsg(const char *content, const char *json_extension, const void *callback)
+{
+	if (callback)
+	{
+		Talk::ReceiveBroadcastMsgCallback* cb_pointer = (Talk::ReceiveBroadcastMsgCallback*)callback;
+		if (*cb_pointer)
+		{
+			BroadcastMessage msg;
+			Json::Value values;
+			Json::Reader reader;
+			if (reader.parse(PCharToString(content), values) && values.isObject())
+			{
+				msg.body_ = values[kNIMBroadcastMsgKeyBody].asString();
+				msg.from_id_ = values[kNIMBroadcastMsgKeyFromAccid].asString();
+				msg.id_ = values[kNIMBroadcastMsgKeyID].asUInt64();
+				msg.time_ = values[kNIMBroadcastMsgKeyTime].asUInt64();
+			}
+			PostTaskToUIThread(std::bind((*cb_pointer), msg));
+			//(*cb_pointer)(msg);
+		}
+	}
+}
+
+static void CallbackReceiveBroadcastMessages(const char *content, const char *json_extension, const void *callback)
+{
+	if (callback)
+	{
+		Talk::ReceiveBroadcastMsgsCallback* cb_pointer = (Talk::ReceiveBroadcastMsgsCallback*)callback;
+		if (*cb_pointer)
+		{
+			std::list<BroadcastMessage> msgs;
+			Json::Reader reader;
+			Json::Value value;
+			if (reader.parse(PCharToString(content), value) && value.isArray())
+			{
+				int size = value.size();
+				for (int i = 0; i < size; i++)
+				{
+					BroadcastMessage msg;
+					msg.body_ = value[i][kNIMBroadcastMsgKeyBody].asString();
+					msg.from_id_ = value[i][kNIMBroadcastMsgKeyFromAccid].asString();
+					msg.id_ = value[i][kNIMBroadcastMsgKeyID].asUInt64();
+					msg.time_ = value[i][kNIMBroadcastMsgKeyTime].asUInt64();
+					msgs.push_back(msg);
+				}
+			}
+			PostTaskToUIThread(std::bind((*cb_pointer), msgs));
+			//(*cb_pointer)(msgs);
+		}
+	}
+}
+
+static Talk::ReceiveBroadcastMsgCallback* g_cb_broadcast_pointer = nullptr;
+void Talk::RegReceiveBroadcastMsgCb(const ReceiveBroadcastMsgCallback& cb, const std::string& json_extension)
+{
+	delete g_cb_broadcast_pointer;
+	if (cb)
+	{
+		g_cb_broadcast_pointer = new ReceiveBroadcastMsgCallback(cb);
+	}
+	return NIM_SDK_GET_FUNC(nim_talk_reg_receive_broadcast_cb)(json_extension.c_str(), &CallbackReceiveBroadcastMsg, g_cb_broadcast_pointer);
+}
+
+static Talk::ReceiveBroadcastMsgsCallback* g_cb_broadcast_msgs_pointer = nullptr;
+void Talk::RegReceiveBroadcastMsgsCb(const ReceiveBroadcastMsgsCallback& cb, const std::string& json_extension/* = ""*/)
+{
+	delete g_cb_broadcast_msgs_pointer;
+	if (cb)
+	{
+		g_cb_broadcast_msgs_pointer = new ReceiveBroadcastMsgsCallback(cb);
+	}
+	return NIM_SDK_GET_FUNC(nim_talk_reg_receive_broadcast_msgs_cb)(json_extension.c_str(), &CallbackReceiveBroadcastMessages, g_cb_broadcast_msgs_pointer);
+}
+
 void Talk::UnregTalkCb()
 {
 	if (g_cb_send_msg_ack_)
@@ -588,6 +713,16 @@ void Talk::UnregTalkCb()
 	{
 		delete g_recall_msg_cb_;
 		g_recall_msg_cb_ = nullptr;
+	}
+	if (g_cb_broadcast_msgs_pointer)
+	{
+		delete g_cb_broadcast_msgs_pointer;
+		g_cb_broadcast_msgs_pointer = nullptr;
+	}
+	if (g_cb_broadcast_pointer)
+	{
+		delete g_cb_broadcast_pointer;
+		g_cb_broadcast_pointer = nullptr;
 	}
 }
 

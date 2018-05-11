@@ -1,6 +1,6 @@
 ﻿#include "bubble_file.h"
 #include "shared/modal_wnd/file_dialog_ex.h"
-#include "module/msglog/msg_extend_db.h"
+#include "module/db/user_db.h"
 #include "module/session/session_manager.h"
 #include "shared/tool.h"
 
@@ -81,7 +81,7 @@ void MsgBubbleFile::InitInfo(const nim::IMMessage &msg)
 	file_url_ = file_data.url_;
 
 	std::string path, extend;
-	MsgExDB::GetInstance()->QueryDataWithMsgId(msg.client_msg_id_, path, extend);
+	UserDB::GetInstance()->QueryDataWithMsgId(msg.client_msg_id_, path, extend);
 	if (!path.empty())
 	{
 		local_path_ = path;
@@ -141,7 +141,6 @@ void MsgBubbleFile::InitInfo(const nim::IMMessage &msg)
 void MsgBubbleFile::SetMsgStatus(nim::NIMMsgLogStatus status)
 {
 	__super::SetMsgStatus(status);
-	msg_.status_ = status;
 
 	file_saveas_->SetVisible(false);
 	//file_save_->SetVisible(false);
@@ -177,12 +176,19 @@ void MsgBubbleFile::SetMsgStatus(nim::NIMMsgLogStatus status)
 			file_reup_->SetVisible(true);
 			status_resend_->SetVisible(false);
 		}
+		else if (status == nim::kNIMMsgLogStatusRefused)
+		{
+			//http_status_->SetText(mls->GetStringViaID(L"STRID_SESSION_FILESTATUS_UPLOADERROR"));
+			//file_reup_->SetVisible(false);
+			progress_vertlayout_->SetVisible(false);
+			http_status_->SetText(mls->GetStringViaID(L"STRID_SESSION_FILESTATUS_UPLOADED"));
+		}
 		else if (status == nim::kNIMMsgLogStatusSendFailed
 			|| file_url_.empty())
 		{
 			http_status_->SetText(mls->GetStringViaID(L"STRID_SESSION_FILESTATUS_UPLOADERROR"));
 			file_reup_->SetVisible(true);
-		}
+		}		
 	} 
 	else
 	{
@@ -483,7 +489,7 @@ void MsgBubbleFile::DownloadResourceCallback(bool is_ok, int response_code)
 		}
 		if (!download_fail_)
 		{
-			MsgExDB::GetInstance()->InsertData(msg_.client_msg_id_, local_path_, "");
+			UserDB::GetInstance()->InsertData(msg_.client_msg_id_, local_path_, "");
 		}
 	}
 	SetMsgStatus(nim::kNIMMsgLogStatusNone);

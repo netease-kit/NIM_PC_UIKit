@@ -14,6 +14,7 @@
 #include "json.h"
 #include "nim_sdk_util.h"
 #include "nim_user_helper.h"
+#include "nim_sdk_defines.h"
 
 /**
 * @namespace nim
@@ -21,11 +22,6 @@
 */
 namespace nim
 {
-
-#include "nim_team_def.h"
-#include "nim_msglog_def.h"
-#include "nim_res_code_def.h"
-
 /** @brief 群组信息 */
 struct TeamInfo
 {
@@ -98,8 +94,10 @@ public:
 			SetUpdateTimetag(new_info.GetUpdateTimetag());
 		if (new_info.ExistValue(kNIMTeamInfoKeyServerCustom))
 			SetServerCustom(new_info.GetServerCustom());
-		if (new_info.ExistValue(kNIMTeamInfoKeyMuteAll))
-			SetAllMemberMute(new_info.IsAllMemberMute());
+#ifdef NIMAPI_UNDER_WIN_DESKTOP_ONLY
+		if (new_info.ExistValue(kNIMTeamInfoKeyMuteAll) || new_info.ExistValue(kNIMTeamInfoKeyMuteType))
+			SetMute(new_info.GetMuteType());
+#endif
 	}
 
 public:
@@ -378,18 +376,21 @@ public:
 	{
 		return (NIMTeamUpdateCustomMode)team_info_json_value_[nim::kNIMTeamInfoKeyUpdateCustomMode].asUInt();
 	}
-
+#ifdef NIMAPI_UNDER_WIN_DESKTOP_ONLY
 	/** 设置全员禁言（除管理员） */
-	void SetAllMemberMute(bool mute)
+	void SetMute(NIMTeamMuteType mute_type)
 	{
-		team_info_json_value_[nim::kNIMTeamInfoKeyMuteAll] = mute ? 1: 0;
+		team_info_json_value_[nim::kNIMTeamInfoKeyMuteType] = mute_type;
 	}
 
-	/** 是否全员禁言（除管理员） */
-	bool IsAllMemberMute() const
+	/** 获取群禁言状态 */
+	NIMTeamMuteType GetMuteType() const
 	{
-		return team_info_json_value_[nim::kNIMTeamInfoKeyMuteAll].asUInt() == 1;
+		if (team_info_json_value_.isMember(nim::kNIMTeamInfoKeyMuteAll) && team_info_json_value_[nim::kNIMTeamInfoKeyMuteAll].asUInt() == 1)
+			return kNIMTeamMuteTypeNomalMute;
+		return (NIMTeamMuteType)team_info_json_value_[nim::kNIMTeamInfoKeyMuteType].asUInt(); 
 	}
+#endif
 
 	/** @fn bool ExistValue(const std::string& nim_team_info_key) const
 	  * @brief 群组信息数据标记Key对应的数据是否有效（存在，非初始值状态）
@@ -601,11 +602,13 @@ struct TeamEvent
 	NIMNotificationId notification_id_;		/**< 通知类型ID */
 	std::string team_id_;					/**< 群组ID */
 	std::list<std::string> ids_;			/**< 通知可能涉及到的群成员ID */
+	std::list<std::string> invalid_ids_;	/**< 通知可能涉及到的失效的群成员ID，比如邀请入群的成员的群数量超限导致当次邀请失败 */
 	std::list<UserNameCard> namecards_;		/**< 通知可能涉及到的群成员的用户名片 */
 	TeamInfo	team_info_;					/**< 通知可能涉及到的群信息 */
 	TeamMemberProperty member_property_;	/**< 群成员属性 */
 	bool	opt_;							/**< 操作*/
 	std::string attach_;					/**< 扩展字段,目前仅kick和invite事件可选*/
+	Json::Value src_data_;					/**< 未解析过的原信息，目前仅支持群消息未读数相关事件*/
 };
 
 /** @fn void ParseTeamEvent(int rescode, const std::string& team_id, const NIMNotificationId notification_id, const std::string& team_event_json, TeamEvent& team_event)
@@ -619,7 +622,7 @@ struct TeamEvent
   */
 void ParseTeamEvent(int rescode, const std::string& team_id, const NIMNotificationId notification_id, const std::string& team_event_json, TeamEvent& team_event);
 
-/** @fn ParseTeamInfoJson(const Json::Value& team_info_json, TeamInfo& team_info)
+/** @fn bool ParseTeamInfoJson(const Json::Value& team_info_json, TeamInfo& team_info)
   * @brief 解析群组信息
   * @param[in] team_info_json 群组信息（Json Value数据）
   * @param[out] team_info 群组信息
@@ -627,7 +630,7 @@ void ParseTeamEvent(int rescode, const std::string& team_id, const NIMNotificati
   */
 void ParseTeamInfoJson(const Json::Value& team_info_json, TeamInfo& team_info);
 
-/** @fn ParseTeamInfoJson(const std::string& team_info_json, TeamInfo& team_info)
+/** @fn bool ParseTeamInfoJson(const std::string& team_info_json, TeamInfo& team_info)
   * @brief 解析群组信息
   * @param[in] team_info_json 群组信息（Json Value数据字符串）
   * @param[out] team_info 群组信息
@@ -635,7 +638,7 @@ void ParseTeamInfoJson(const Json::Value& team_info_json, TeamInfo& team_info);
   */
 bool ParseTeamInfoJson(const std::string& team_info_json, TeamInfo& team_info);
 
-/** @fn const std::string& team_infos_json, bool include_invalid_team, std::list<TeamInfo>& team_infos
+/** @fn bool ParseTeamInfosJson(const std::string& team_infos_json, std::list<TeamInfo>& team_infos)
   * @brief 解析群组信息
   * @param[in] team_info_json 群组信息（Json Value数据字符串）
   * @param[out] team_infos 群组信息

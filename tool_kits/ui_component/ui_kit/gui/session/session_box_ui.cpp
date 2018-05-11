@@ -20,6 +20,8 @@
 #include "module/service/user_service.h"
 
 #include "shared/modal_wnd/file_dialog_ex.h"
+#include "gui/session/unread_form.h"
+#include "gui/video/multi_video_form.h"
 
 using namespace ui;
 
@@ -112,7 +114,52 @@ void SessionBox::OnEsc(BOOL &bHandled)
 bool SessionBox::Notify(ui::EventArgs* param)
 {
 	std::wstring name = param->pSender->GetName();
-	if (param->Type == kEventScrollChange)
+	if (param->Type == kEventCustomLinkClick)
+	{
+		RichEdit* text_edit = dynamic_cast<RichEdit*>(param->pSender);
+		std::wstring link_info;
+		if (text_edit->HittestCustomLink(param->ptMouse, link_info))
+		{
+			Json::Value values;
+			Json::Reader reader;
+			if (reader.parse(nbase::UTF16ToUTF8((std::wstring)link_info), values) && values.isObject())
+			{
+				std::string type = values["type"].asString();
+				if (type == "url")
+				{
+					std::string url = values["target"].asString();
+					Post2GlobalMisc(nbase::Bind(&shared::tools::SafeOpenUrl, nbase::UTF8ToUTF16(url), SW_SHOW));
+				}
+				else if (type == "block")
+				{
+					std::string robot_id = values[nim::kNIMBotRobotMsgKeyRobotID].asString();
+					std::string content = values["link_text"].asString();
+					nim::IMMessage msg;
+					PackageMsg(msg);
+					nim::MessageSetting setting;
+					msg.type_ = nim::kNIMMessageTypeRobot;
+					msg.content_ = content;
+					nim::IMBotRobot bot;
+					bot.robot_accid_ = robot_id;
+					bot.sent_param_["target"] = values["target"].asString();
+					bot.sent_param_["type"] = "03";
+					bot.sent_param_["params"] = values["params"].asString();
+					msg.attach_ = bot.ToJsonString();
+					std::string json_msg = nim::Talk::CreateBotRobotMessage(msg.receiver_accid_, msg.session_type_, msg.client_msg_id_, content, bot, setting, msg.timetag_);
+					AddSendingMsg(msg);
+					nim::Talk::SendMsg(json_msg);
+
+				}
+				else
+				{
+					assert(0);
+					QLOG_ERR(L"\r\nError custom click: {0}") << (std::wstring)link_info;
+				}
+			}
+		}
+
+	}
+	else if (param->Type == kEventScrollChange)
 	{
 		if (name == L"msg_list")
 		{
@@ -120,6 +167,7 @@ bool SessionBox::Notify(ui::EventArgs* param)
 			{
 				SendReceiptIfNeeded(true);
 			}
+			SendTeamReceiptIfNeeded(true);
 		}
 	}
 	else if (param->Type == ui::kEventNotify)
@@ -132,6 +180,23 @@ bool SessionBox::Notify(ui::EventArgs* param)
 		{
 			RemoveMsgItem(md.client_msg_id_);
 			ReSendMsg(md);
+		}
+		else if (param->wParam == BET_UNREAD_COUNT)
+		{
+			UnreadForm *window = (UnreadForm*)(WindowsManager::GetInstance()->GetWindow(UnreadForm::kClassName, UnreadForm::kClassName));
+			if (!window)
+			{
+				window = new UnreadForm;
+				window->Create(session_form_->GetHWND(), UnreadForm::kClassName, WS_OVERLAPPEDWINDOW & ~WS_MAXIMIZEBOX, 0);
+				window->CenterWindow();
+				window->ShowWindow();
+			}
+			else
+			{
+				window->ActiveWindow();
+			}
+			if (window)
+				window->LoadList(md, team_member_info_list_);
 		}
 		else if (param->wParam == BET_RELOAD)
 		{
@@ -176,15 +241,64 @@ bool SessionBox::Notify(ui::EventArgs* param)
 		}
 		else if (param->wParam == BET_SHOWPROFILE)
 		{
+			bool is_robot_id = false;
+			std::string robot_id;
+			if (md.type_ == nim::kNIMMessageTypeRobot)
+			{
+				nim::IMBotRobot robot;
+				nim::Talk::ParseBotRobotMessageAttach(md, robot);
+				is_robot_id = robot.out_msg_;
+				robot_id = robot.robot_accid_;
+			}
+
 			if (session_type_ == nim::kNIMSessionTypeTeam)
 			{
-				nim::NIMTeamUserType type = team_member_info_list_[LoginManager::GetInstance()->GetAccount()].GetUserType();
-				ProfileForm::ShowProfileForm(session_id_, md.sender_accid_, type);
+				if (is_robot_id)
+				{
+					ProfileForm::ShowProfileForm(robot_id, is_robot_id);
+				}
+				else
+				{
+					nim::NIMTeamUserType type = team_member_info_list_[LoginManager::GetInstance()->GetAccount()].GetUserType();
+					ProfileForm::ShowProfileForm(session_id_, md.sender_accid_, type);
+				}
 			}
 			else
 			{
-				ProfileForm::ShowProfileForm(md.sender_accid_);
+				ProfileForm::ShowProfileForm(is_robot_id ? robot_id : md.sender_accid_, is_robot_id);
 			}
+		}
+		else if (param->wParam == BET_MENUATTA)
+		{
+			AtSomeone at;
+			at.is_robot_ = md.type_ == nim::kNIMMessageTypeRobot;
+			at.uid_ = item->GetSenderId();
+			std::string show_name;
+			if (!at.is_robot_)
+			{
+				auto i = team_member_info_list_.find(at.uid_);
+				if (i != team_member_info_list_.end())
+				{
+					show_name = i->second.GetNick();
+				}
+				if (show_name.empty())
+				{
+					show_name = nbase::UTF16ToUTF8(UserService::GetInstance()->GetUserName(at.uid_, false));
+				}
+			}
+			else
+			{
+				nim::RobotInfo info;
+				UserService::GetInstance()->GetRobotInfo(at.uid_, info);
+				show_name = info.GetName();
+			}
+			uid_at_someone_[show_name] = at;
+
+			std::wstring show_text = L"@";
+			show_text.append(nbase::UTF8ToUTF16(show_name));
+			show_text.append(L" ");
+
+			input_edit_->ReplaceSel(show_text, false);
 		}
 	}
 	else if (param->Type == ui::kEventTextChange)
@@ -322,6 +436,10 @@ bool SessionBox::OnClicked(ui::EventArgs* param)
 			//msg.from_nick = user_info.name;
 			nim::MsgLog::WriteMsglogToLocalAsync(session_id_, msg, false, nim::MsgLog::WriteMsglogCallback());
 		}
+	}
+	else if (name == L"btn_team_ack_msg")
+	{
+		SendText(nim::Tool::GetUuid(), true);
 	}
 	return true;
 }
@@ -602,9 +720,19 @@ void SessionBox::OnBtnAudio()
 
 void SessionBox::OnBtnVideo()
 {
-	if (session_type_ == nim::kNIMSessionTypeP2P)
+	switch (session_type_)
 	{
+	case nim::kNIMSessionTypeP2P:
 		VideoManager::GetInstance()->ShowVideoChatForm(session_id_, true);
+		break;
+	case nim::kNIMSessionTypeTeam:
+	{
+		VideoManager::GetInstance()->ShowVideoChatForm(session_id_, true,0,true);
+	}
+
+	break;
+	default:
+		break;
 	}
 }
 
@@ -636,13 +764,14 @@ void SessionBox::OnSelectedRetweetList(nim::IMMessage msg, const std::list<std::
 	if (friend_list.empty() && team_list.empty())
 		return;
 
-	auto retweet_cb = [this](const std::string &msg, const std::string &receiver_accid)
+	auto retweet_cb = [this](const std::string &msg, const std::string &receiver_accid, nim::NIMSessionType receiver_type)
 	{
 		nim::IMMessage sending_msg;
 		nim::Talk::ParseIMMessage(msg, sending_msg);
 		sending_msg.sender_accid_ = LoginManager::GetInstance()->GetAccount();
+		sending_msg.msg_setting_.team_msg_ack_sent_ = nim::BS_FALSE;
 
-		SessionBox *form = SessionManager::GetInstance()->FindSessionBox(receiver_accid);
+		SessionBox *form = SessionManager::GetInstance()->OpenSessionBox(receiver_accid, receiver_type);
 		if (form)
 		{
 			form->AddRetweetMsg(sending_msg);
@@ -653,13 +782,13 @@ void SessionBox::OnSelectedRetweetList(nim::IMMessage msg, const std::list<std::
 	for (auto &it : friend_list)
 	{
 		std::string send_msg = nim::Talk::CreateRetweetMessage(msg.ToJsonString(false), QString::GetGUID(), nim::kNIMSessionTypeP2P, it, msg.msg_setting_, 1000 * nbase::Time::Now().ToTimeT());
-		retweet_cb(send_msg, it);
+		retweet_cb(send_msg, it, nim::kNIMSessionTypeP2P);
 	}
 
 	for (auto &it : team_list)
 	{
 		std::string send_msg = nim::Talk::CreateRetweetMessage(msg.ToJsonString(false), QString::GetGUID(), nim::kNIMSessionTypeTeam, it, msg.msg_setting_, 1000 * nbase::Time::Now().ToTimeT());
-		retweet_cb(send_msg, it);
+		retweet_cb(send_msg, it, nim::kNIMSessionTypeTeam);
 	}
 }
 
@@ -794,26 +923,13 @@ bool SessionBox::OnBtnHeaderClick(ui::EventArgs* param)
 	if (!is_header_enable_)
 		return true;
 
-	if (session_type_ == nim::kNIMSessionTypeTeam) {
-		std::wstring session_id = nbase::UTF8ToUTF16(session_id_);
-		TeamInfoForm* team_info_form = (TeamInfoForm*)WindowsManager::GetInstance()->GetWindow\
-			(TeamInfoForm::kClassName, session_id);
-		if (team_info_form == NULL)
-		{
-			team_info_form = new TeamInfoForm(false, team_info_.GetType(), session_id_, team_info_);
-			team_info_form->Create(NULL, L"", WS_OVERLAPPEDWINDOW& ~WS_MAXIMIZEBOX, 0L);
-			team_info_form->CenterWindow();
-			team_info_form->ShowWindow(true);
-		}
-		else
-		{
-			team_info_form->ActiveWindow();
-		}
+	if (session_type_ == nim::kNIMSessionTypeTeam)
+	{
+		TeamInfoForm::ShowTeamInfoForm(false, team_info_.GetType(), session_id_, team_info_);
 	}
 	else if (session_type_ == nim::kNIMSessionTypeP2P)
 	{
-		std::wstring session_id = nbase::UTF8ToUTF16(session_id_);
-		ProfileForm::ShowProfileForm(nbase::UTF16ToUTF8(session_id));
+		ProfileForm::ShowProfileForm(session_id_, is_robot_session_);
 	}
 	return true;
 }
@@ -834,12 +950,17 @@ void SessionBox::OnActivate()
 
 		if (input_edit_)
 			input_edit_->SetFocus();
+
+		SendTeamReceiptIfNeeded();
 	}
 
+	UpdateTaskbarInfo();
+}
+void SessionBox::UpdateTaskbarInfo()
+{
 	SetTaskbarIcon(btn_header_->GetBkImage());
 	SetTaskbarTitle(label_title_->GetText());
 }
-
 void SessionBox::ShowCustomMsgForm()
 {
 	CustomMsgForm* f = WindowsManager::SingletonShow<CustomMsgForm>(CustomMsgForm::kClassName);

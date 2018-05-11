@@ -3,12 +3,13 @@
 #include "gui/main/control/session_item.h"
 #include "gui/profile_form/profile_form.h"
 #include "callback/session/session_callback.h"
-
+#include "nim_cpp_team.h"
 using namespace ui;
 
 namespace nim_comp
 {
-MsgBubbleItem::MsgBubbleItem()
+MsgBubbleItem::MsgBubbleItem():
+team_member_getter_(nullptr)
 {
 	action_menu_ = true;
 }
@@ -32,6 +33,7 @@ void MsgBubbleItem::InitControl(bool bubble_right)
 	status_sending_ = this->FindSubControl(L"status_sending");
 	status_resend_ = (Button*) this->FindSubControl(L"status_resend");
 	status_send_failed_ = this->FindSubControl(L"status_send_failed");
+	status_read_count_ = (Button*) this->FindSubControl(L"status_read_count");
 
 	status_loading_ = this->FindSubControl(L"status_loading");
 	status_reload_ = (Button*) this->FindSubControl(L"status_reload");
@@ -53,6 +55,33 @@ void MsgBubbleItem::InitInfo(const nim::IMMessage &msg)
 	//只显示最后一个回执
 	if (msg.status_ != nim::kNIMMsgLogStatusReceipt)
 		SetMsgStatus(msg.status_);
+
+	if (!my_msg_ && msg_.session_type_ == nim::kNIMSessionTypeTeam)
+	{
+		msg_header_button_->SetContextMenuUsed(true);
+		msg_header_button_->AttachMenu(nbase::Bind(&MsgBubbleItem::OnRightClick, this, std::placeholders::_1));
+	}
+}
+
+void MsgBubbleItem::SetUnreadCount(int count)
+{
+	if (msg_.session_type_ == nim::kNIMSessionTypeP2P || !my_msg_)
+		return;
+
+	std::wstring txt;
+	if (count == 0)
+	{
+		txt = ui::MutiLanSupport::GetInstance()->GetStringViaID(L"STRID_SESSION_UNREAD_ZERO");
+		//status_read_count_->SetEnabled(false);
+	}
+	else
+	{
+		txt = ui::MutiLanSupport::GetInstance()->GetStringViaID(L"STRID_SESSION_UNREAD_COUNT");
+		txt = nbase::StringPrintf(txt.c_str(), count);
+		//status_read_count_->SetEnabled(true);
+	}
+	status_read_count_->SetText(txt);
+	status_read_count_->SetVisible(true);
 }
 
 void MsgBubbleItem::SetSessionId( const std::string &sid )
@@ -102,7 +131,7 @@ void MsgBubbleItem::SetShowTime(bool show)
 
 void MsgBubbleItem::SetShowHeader()
 {
-	msg_header_button_->SetBkImage(PhotoService::GetInstance()->GetUserPhoto(msg_.sender_accid_));
+	msg_header_button_->SetBkImage(PhotoService::GetInstance()->GetUserPhoto(msg_.sender_accid_, false));
 }
 
 void MsgBubbleItem::SetShowName(bool show, const std::string& from_nick)
@@ -116,6 +145,7 @@ void MsgBubbleItem::SetShowName(bool show, const std::string& from_nick)
 void MsgBubbleItem::SetMsgStatus(nim::NIMMsgLogStatus status)
 {
 	HideAllStatus(0);
+	msg_.status_ = status;
 	switch(status)
 	{
 	case nim::kNIMMsgLogStatusSending:
@@ -130,6 +160,10 @@ void MsgBubbleItem::SetMsgStatus(nim::NIMMsgLogStatus status)
 		break;
 	case nim::kNIMMsgLogStatusReceipt:
 		status_receipt_->SetVisible(true);
+		break;
+	case nim::kNIMMsgLogStatusRefused:
+		//被对方拒绝，可能是被加入了黑名单，此时不设置消息的任何状态
+		//HideAllStatus(0);
 		break;
 	default:
 		break;
@@ -168,6 +202,24 @@ void MsgBubbleItem::SetPlayed(bool play)
 	}
 }
 
+bool MsgBubbleItem::OnRightClick(ui::EventArgs* param)
+{
+	POINT point;
+	::GetCursorPos(&point);
+
+	CMenuWnd* pMenu = new CMenuWnd(NULL);
+	STRINGorID xml(L"cell_head_menu.xml");
+	pMenu->Init(xml, _T("xml"), point);
+
+	CMenuElementUI* at_ta = (CMenuElementUI*)pMenu->FindControl(L"at_ta");
+	at_ta->AttachSelect(nbase::Bind(&MsgBubbleItem::OnMenu, this, std::placeholders::_1));
+	at_ta->SetVisible(true);
+
+	pMenu->Show();
+
+	return true;
+}
+
 bool MsgBubbleItem::OnClicked(ui::EventArgs* arg)
 {
 	std::wstring name = arg->pSender->GetName();
@@ -182,6 +234,10 @@ bool MsgBubbleItem::OnClicked(ui::EventArgs* arg)
 	else if (name == L"msg_header_button")
 	{
 		m_pWindow->SendNotify(this, ui::kEventNotify, BET_SHOWPROFILE, 0);
+	}
+	else if (name == L"status_read_count")
+	{
+		m_pWindow->SendNotify(this, ui::kEventNotify, BET_UNREAD_COUNT, 0);
 	}
 	return true;
 }
@@ -229,7 +285,7 @@ void MsgBubbleItem::PopupMenu(bool copy, bool recall, bool retweet/* = true*/)
 
 	CMenuElementUI* rec = (CMenuElementUI*)pMenu->FindControl(L"recall");
 	rec->AttachSelect(nbase::Bind(&MsgBubbleItem::OnMenu, this, std::placeholders::_1));
-	rec->SetVisible(my_msg_ && recall && msg_.receiver_accid_ != LoginManager::GetInstance()->GetAccount());
+	rec->SetVisible(recall && IsShowRecallButton());
 
 	CMenuElementUI* ret = (CMenuElementUI*)pMenu->FindControl(L"retweet");
 	ret->AttachSelect(nbase::Bind(&MsgBubbleItem::OnMenu, this, std::placeholders::_1));
@@ -251,6 +307,8 @@ bool MsgBubbleItem::OnMenu( ui::EventArgs* arg )
 		m_pWindow->SendNotify(this, ui::kEventNotify, BET_RETWEET, 0);
 	else if (name == L"recall")
 		m_pWindow->SendNotify(this, ui::kEventNotify, BET_RECALL, 0);
+	else if (name == L"at_ta")
+		m_pWindow->SendNotify(this, ui::kEventNotify, BET_MENUATTA, 0);
 	return false;
 }
 
@@ -262,5 +320,36 @@ void MsgBubbleItem::OnMenuDelete()
 void MsgBubbleItem::OnMenuTransform()
 {
 	m_pWindow->SendNotify(this, ui::kEventNotify, BET_TRANSFORM, 0);
+}
+bool MsgBubbleItem::IsShowRecallButton()
+{
+	bool ret = false;
+	if (msg_.session_type_ == nim::kNIMSessionTypeP2P)
+	{
+		ret = my_msg_ && msg_.receiver_accid_ != LoginManager::GetInstance()->GetAccount() && msg_.status_ != nim::kNIMMsgLogStatusRefused;
+	}
+	else if (msg_.session_type_ == nim::kNIMSessionTypeTeam)
+	{		
+		if (my_msg_ && msg_.receiver_accid_ != LoginManager::GetInstance()->GetAccount())
+			ret = true;
+		else
+		{
+			if (team_member_getter_ != nullptr)
+			{
+				auto members = team_member_getter_();
+				auto it = members.find(LoginManager::GetInstance()->GetAccount());
+				if (it != members.end())
+				{
+					auto user_type = it->second.GetUserType();
+					ret = (user_type == nim::kNIMTeamUserTypeCreator || user_type == nim::kNIMTeamUserTypeManager);
+				}
+			}
+		}		
+	}
+	else
+	{
+		ret = false;
+	}
+	return ret;
 }
 }

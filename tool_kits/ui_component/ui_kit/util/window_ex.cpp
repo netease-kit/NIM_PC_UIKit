@@ -84,10 +84,16 @@ void WindowEx::ActiveWindow()
 {
 	if(::IsWindow(m_hWnd))
 	{
-		if(::IsIconic(m_hWnd))
+		if (::IsIconic(m_hWnd))
+		{
 			::ShowWindow(m_hWnd, SW_RESTORE);
-		else 
+		}
+		else
+		{
+			if (!::IsWindowVisible(m_hWnd))
+				::ShowWindow(m_hWnd, SW_SHOW);
 			::SetForegroundWindow(m_hWnd);
+		}
 	}
 }
 
@@ -95,7 +101,6 @@ void WindowEx::SetTaskbarTitle( const std::wstring &title )
 {
 	::SetWindowTextW(m_hWnd, title.c_str());
 }
-
 
 POINT GetPopupWindowPos( WindowEx* window )
 {

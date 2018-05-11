@@ -40,6 +40,13 @@ public:
 	SessionItem* AddSessionItem(const nim::SessionData &msg);
 
 	/**
+	* 从会话列表查找会话控件
+	* @param[in] session_id 会话id
+	* @return SessionItem* 会话控件的指针
+	*/
+	SessionItem* GetSessionItem(const std::string &session_id);
+
+	/**
 	* 移除某个会话控件
 	* @param[in] item 会话控件指针
 	* @return void 无返回值
@@ -154,6 +161,24 @@ private:
 	*/
 	void OnTeamNameChange(const nim::TeamInfo& team_info);
 
+	/**
+	* 响应接收事件的回调函数
+	* @param[in] event_type 事件类型
+	* @param[in] accid 用户id
+	* @param[in] data 事件信息
+	* @return void 无返回值
+	*/
+	void OnReceiveEvent(int event_type, const std::string &accid, const EventDataEx &data);
+
+	/**
+	* 响应机器人信息改变的回调函数
+	* @param[in] rescode 错误码
+	* @param[in] type 类型
+	* @param[in] robots 机器人列表
+	* @return void 无返回值
+	*/
+	void OnRobotChange(nim::NIMResCode rescode, nim::NIMRobotInfoChangeType type, const nim::RobotInfos& robots);
+
 private:
 	/**
 	* 响应会话控件的通知事件
@@ -175,6 +200,19 @@ private:
 	* @return bool true 继续传递控件消息，false 停止传递控件消息
 	*/
 	bool OnMultispotClick(ui::EventArgs* param);
+
+	/**
+	* 响应用户列表改变的回调函数
+	* @param[in] change_type 好友变化类型
+	* @param[in] accid 用户id
+	* @return void 无返回值
+	*/
+	void OnFriendListChange(FriendChangeType change_type, const std::string& accid);
+
+	void OnNotifyChangeCallback(std::string id, bool mute);
+	void OnTeamNotificationModeChangeCallback(const std::string &tid, const int64_t bits);
+
+	bool OnReturnEventsClick(ui::EventArgs* param);
 	
 private:
 	ui::ListBox*	session_list_;

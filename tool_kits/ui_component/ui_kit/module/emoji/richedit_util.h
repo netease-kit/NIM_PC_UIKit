@@ -20,6 +20,7 @@ enum
 	RE_OLE_TYPE_IMAGELOADING,//正在加载的图片
 	RE_OLE_TYPE_FILE,
 	RE_OLE_TYPE_ERROR,
+	RE_OLE_TYPE_DESCRIPTION,
 };
 
 struct RE_OLE_ITEM_CONTENT 
@@ -72,8 +73,11 @@ IRichEditOle* Re_GetOleInterface(ITextServices *text_service);
 * @param[in] cp 图片在RichEdit中插入的位置
 * @return bool true 成功，false 失败
 */
-bool Re_InsertCustomItem(ITextServices *text_service, InsertCustomItemErrorCallback callback, const std::wstring& file, const std::wstring& face_tag, int ole_type
+bool Re_InsertCustomItem(ITextServices *text_service, InsertCustomItemErrorCallback callback, bool total_count_limit, const std::wstring& file, const std::wstring& face_tag, int ole_type
 					, int face_id, bool scale, int scale_width = 0, int scale_height = 0, LONG cp = REO_CP_SELECTION);
+
+bool Re_InsertDescriptionItem(ITextServices *text_service, InsertCustomItemErrorCallback callback, bool total_count_limit, const std::wstring& description
+	, const std::wstring& face_tag, int ole_type, COLORREF clrBg = RGB(255, 255, 255), COLORREF clrfont = RGB(35, 142, 250), int fontSize = 20, LONG cp = REO_CP_SELECTION);
 
 /**
 * 向RichEdit插入一个表情
@@ -100,11 +104,12 @@ bool Re_InsertJsb(ITextServices *text_service, const std::wstring& file, const s
 * @param[in] text_service RichEdit控件内部ITextServices*指针
 * @param[in] callback 插入错误的回调通知函数
 * @param[in] file 图片文件路径
+* @param[in] file_tag 图片对应的标签
 * @param[in] loading 是否插入正在加载中的图片
 * @param[in] cp 图片在RichEdit中插入的位置
 * @return bool true 成功，false 失败
 */
-bool Re_InsertImage(ITextServices *text_service, InsertCustomItemErrorCallback callback, const std::wstring& file, bool loading = false, LONG cp=REO_CP_SELECTION);
+bool Re_InsertImage(ITextServices *text_service, InsertCustomItemErrorCallback callback, bool total_count_limit, const std::wstring& file, const std::wstring& file_tag = L"", bool loading = false, LONG cp = REO_CP_SELECTION);
 
 /**
 * 向RichEdit插入一个文件图片
@@ -310,7 +315,9 @@ RE_OLE_ITEM_CONTENT Re_CustomImageOleHitTest(ITextServices * text_service, POINT
 * @param[in] succeed 是否加载成功
 * @return int ole对象的位置
 */
-int Re_ImageLoadingFinish(ITextServices * text_service, const std::wstring& file_path, bool succeed);
+int Re_ImageLoadingFinish(ITextServices * text_service, const std::wstring& file_path, bool succeed, bool total_count_limit);
+
+int Re_RemoveCustomItem(ITextServices * text_service, const std::wstring& face_tag);
 
 /**
 * 清除RichEditt中所有ole对象

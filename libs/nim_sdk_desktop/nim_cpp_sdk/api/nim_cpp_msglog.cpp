@@ -1,21 +1,21 @@
 ﻿/** @file nim_cpp_msglog.cpp
   * @brief NIM SDK提供的消息历史接口
-  * @copyright (c) 2015-2016, NetEase Inc. All rights reserved
-  * @author towik, Oleg
+  * @copyright (c) 2015-2017, NetEase Inc. All rights reserved
+  * @author towik, Oleg, Harrison
   * @date 2015/2/1
   */
 
 #include "nim_cpp_msglog.h"
 #include "nim_sdk_util.h"
 #include "nim_json_util.h"
+#include "nim_string_util.h"
 #include "nim_cpp_talk.h"
 #include "nim_cpp_win32_demo_helper.h"
-#include "nim_string_util.h"
 
 namespace nim
 {
-
-typedef void(*nim_msglog_query_msg_async)(const char* account_id, nim::NIMSessionType to_type, int limit_count, __int64 last_time, const char *json_extension, nim_msglog_query_cb_func cb, const void* user_data);
+#ifdef NIM_SDK_DLL_IMPORT
+typedef void(*nim_msglog_query_msg_async)(const char* account_id, nim::NIMSessionType to_type, int limit_count, int64_t last_time, const char *json_extension, nim_msglog_query_cb_func cb, const void* user_data);
 typedef void(*nim_msglog_batch_status_read_async)(const char* account_id, nim::NIMSessionType to_type, const char *json_extension, nim_msglog_res_ex_cb_func cb, const void* user_data);
 typedef void(*nim_msglog_set_status_async)(const char* msg_id, nim::NIMMsgLogStatus msglog_status, const char *json_extension, nim_msglog_res_cb_func cb, const void* user_data);
 typedef void(*nim_msglog_set_sub_status_async)(const char* msg_id, nim::NIMMsgLogSubStatus msglog_sub_status, const char *json_extension, nim_msglog_res_cb_func cb, const void* user_data);
@@ -24,9 +24,9 @@ typedef void(*nim_msglog_insert_msglog_async)(const char *talk_id, const char *j
 typedef void(*nim_msglog_delete_by_session_type_async)(bool delete_sessions, NIMSessionType to_type, const char *json_extension, nim_msglog_res_ex_cb_func cb, const void *user_data);
 typedef void(*nim_msglog_delete_async)(const char *account_id, NIMSessionType to_type, const char *msg_id, const char *json_extension, nim_msglog_res_cb_func cb, const void *user_data);
 typedef void(*nim_msglog_delete_all_async)(bool delete_sessions, const char *json_extension, nim_msglog_modify_res_cb_func cb, const void *user_data);
-typedef void(*nim_msglog_query_msg_online_async)(const char *id, nim::NIMSessionType to_type, int limit_count, __int64 from_time, __int64 end_time, __int64 end_msg_id, bool reverse, bool need_save_to_local, const char *json_extension, nim_msglog_query_cb_func cb, const void *user_data);
+typedef void(*nim_msglog_query_msg_online_async)(const char *id, nim::NIMSessionType to_type, int limit_count, int64_t from_time, int64_t end_time, int64_t end_msg_id, bool reverse, bool need_save_to_local, const char *json_extension, nim_msglog_query_cb_func cb, const void *user_data);
 typedef void(*nim_msglog_query_msg_by_id_async)(const char *client_msg_id, const char *json_extension, nim_msglog_query_single_cb_func cb, const void *user_data);
-typedef void(*nim_msglog_query_msg_by_options_async)(NIMMsgLogQueryRange query_range, const char *ids, int limit_count, __int64 from_time, __int64 end_time, const char *end_client_msg_id, bool reverse, NIMMessageType msg_type, const char *search_content, const char *json_extension, nim_msglog_query_cb_func cb, const void *user_data);
+typedef void(*nim_msglog_query_msg_by_options_async)(NIMMsgLogQueryRange query_range, const char *ids, int limit_count, int64_t from_time, int64_t end_time, const char *end_client_msg_id, bool reverse, NIMMessageType msg_type, const char *search_content, const char *json_extension, nim_msglog_query_cb_func cb, const void *user_data);
 typedef void(*nim_msglog_update_localext_async)(const char *msg_id, const char *local_ext, const char *json_extension, nim_msglog_res_cb_func cb, const void *user_data);
 						
 typedef void(*nim_msglog_export_db_async)(const char *dst_path, const char *json_extension, nim_msglog_modify_res_cb_func cb, const void *user_data);
@@ -36,7 +36,22 @@ typedef void(*nim_msglog_send_receipt_async)(const char *json_msg, const char *j
 typedef bool(*nim_msglog_query_be_readed)(const char *json_msg, const char *json_extension);
 typedef bool(*nim_msglog_query_receipt_sent)(const char *json_msg, const char *json_extension);
 typedef void(*nim_msglog_reg_status_changed_cb)(const char *json_extension, nim_msglog_status_changed_cb_func cb, const void *user_data);
+typedef void(*nim_msglog_read_all_async)(const char *json_extension, nim_msglog_modify_res_cb_func cb, const void *user_data);
 
+typedef void(*nim_msglog_query_the_message_of_the_specified_type_async)(enum NIMSessionType to_type, 
+	const char *id,
+	int limit_count,
+	int64_t from_time,
+	int64_t end_time,
+	const char *end_client_msg_id,
+	bool reverse,
+	const char *msg_types,
+	const char *json_extension,
+	nim_msglog_query_cb_func cb,
+	const void *user_data);
+#else
+#include "nim_msglog.h"
+#endif
 
 struct ImportDbCallbackUserData
 {
@@ -122,8 +137,8 @@ static void CallbackMsglogRes(int res_code
 	}
 }
 
-static void CallbackImportDBProgress(__int64 imported_count
-	, __int64 total_count
+static void CallbackImportDBProgress(int64_t imported_count
+	, int64_t total_count
 	, const char *json_extension
 	, const void *callback)
 {
@@ -175,7 +190,7 @@ bool MsgLog::QueryMsgByIDAysnc(const std::string &client_msg_id, const QuerySing
 bool MsgLog::QueryMsgAsync(const std::string& account_id
 	, nim::NIMSessionType to_type
 	, int limit_count
-	, __int64 anchor_msg_time
+	, int64_t anchor_msg_time
 	, const QueryMsgCallback& cb
 	, const std::string& json_extension/* = ""*/)
 {
@@ -201,9 +216,9 @@ bool MsgLog::QueryMsgAsync(const std::string& account_id
 bool MsgLog::QueryMsgOnlineAsync(const std::string &id
 	, nim::NIMSessionType to_type
 	, int limit_count
-	, __int64 from_time
-	, __int64 end_time
-	, __int64 end_msg_id
+	, int64_t from_time
+	, int64_t end_time
+	, int64_t end_msg_id
 	, bool reverse
 	, bool need_save_to_local
 	, const QueryMsgCallback& cb
@@ -232,11 +247,50 @@ bool MsgLog::QueryMsgOnlineAsync(const std::string &id
 	return true;
 }
 
+bool MsgLog::QueryMsgOfSpecifiedTypeInASessionAsync(nim::NIMSessionType to_type
+	, const std::string &id
+	, int limit_count
+	, int64_t from_time
+	, int64_t end_time
+	, const std::string &end_client_msg_id
+	, bool reverse
+	, std::list<NIMMessageType> msg_type
+	, const QueryMsgCallback& cb
+	, const std::string& json_extension/* = ""*/)
+{
+	QueryMsgCallback* cb_pointer = nullptr;
+	if (cb)
+	{
+		cb_pointer = new QueryMsgCallback(cb);
+	}
+
+	Json::Value values;
+	Json::FastWriter fw;
+	for (auto iter = msg_type.begin(); iter != msg_type.end(); ++iter)
+	{
+		values.append(*iter);
+	}
+
+	NIM_SDK_GET_FUNC(nim_msglog_query_the_message_of_the_specified_type_async)(to_type
+		, id.c_str()
+		, limit_count
+		, from_time
+		, end_time
+		, end_client_msg_id.c_str()
+		, reverse
+		, fw.write(values).c_str()
+		, json_extension.c_str()
+		, &CallbackQueryMsg
+		, cb_pointer);
+
+	return true;
+}
+
 bool MsgLog::QueryMsgByOptionsAsync(NIMMsgLogQueryRange query_range
 	, const std::list<std::string> &ids
 	, int limit_count
-	, __int64 from_time
-	, __int64 end_time
+	, int64_t from_time
+	, int64_t end_time
 	, const std::string &end_client_msg_id
 	, bool reverse
 	, NIMMessageType msg_type
@@ -490,7 +544,8 @@ static void CallbackMsgStatusChanged(int rescode, const char *result, const char
 		MsgLog::MessageStatusChangedCallback* cb_pointer = (MsgLog::MessageStatusChangedCallback*)callback;
 		if (*cb_pointer)
 		{
-			MessageStatusChangedResult result(rescode, PCharToString(result));
+			std::string res = PCharToString(result);
+			MessageStatusChangedResult result(rescode, res);
 			PostTaskToUIThread(std::bind((*cb_pointer), result));
 //			(*cb_pointer)(result);
 		}
@@ -552,4 +607,15 @@ bool MsgLog::UpdateLocalExtAsync(const std::string& msg_id
 
 }
 
+bool MsgLog::ReadAllAsync(const DBFunctionCallback& cb, const std::string& json_extension/* = ""*/)
+{
+	DBFunctionCallback* cb_pointer = nullptr;
+	if (cb)
+	{
+		cb_pointer = new DBFunctionCallback(cb);
+	}
+	NIM_SDK_GET_FUNC(nim_msglog_read_all_async)(json_extension.c_str(), &CallbackMsglogRes, cb_pointer);
+
+	return true;
+}
 }

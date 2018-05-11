@@ -35,7 +35,10 @@ void MsgBubbleImage::InitInfo(const nim::IMMessage &msg)
 	{
 		if (CheckImageBubble())
 		{
-			SetLoadStatus(RS_LOAD_OK);
+			if (!my_msg_ || !msg_.status_ == nim::kNIMMsgLogStatusSendFailed)
+				SetLoadStatus(RS_LOAD_OK);
+			if (my_msg_ && msg_.status_ == nim::kNIMMsgLogStatusSending)
+				SetMsgStatus(nim::kNIMMsgLogStatusSending);
 			SetCanView(true);
 		}
 		else //图片有错误
@@ -262,7 +265,7 @@ bool MsgBubbleImage::OnMenu( ui::EventArgs* arg )
 	if (msg_.type_ == nim::kNIMMessageTypeCustom)
 	{
 		Json::Value json;
-		if (StringToJson(msg_.attach_, json))
+		if (StringToJson(msg_.attach_, json) && json.isObject())
 		{
 			int sub_type = json["type"].asInt();
 			if (sub_type == CustomMsgType_SnapChat)

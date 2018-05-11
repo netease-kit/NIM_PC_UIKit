@@ -1,5 +1,5 @@
 ﻿/** @file nim_cpp_plugin_in.h
-  * @brief NIM SDK 提供的plugin接入接口
+  * @brief 插件接入，接入聊天室需要调用该接口
   * @copyright (c) 2015-2017, NetEase Inc. All rights reserved
   * @author Oleg
   * @date 2015/12/29
@@ -10,6 +10,7 @@
 
 #include <string>
 #include <functional>
+#include "nim_sdk_defines.h"
 
 /**
 * @namespace nim
@@ -18,7 +19,7 @@
 namespace nim
 {
 
-#include "nim_plugin_in_def.h"
+
 /** @class PluginIn
   * @brief NIM SDK 提供的plugin接入接口类
   */
@@ -28,7 +29,7 @@ public:
 	typedef std::function<void(int error_code, const std::string& result)>	ChatRoomRequestEnterCallback;	/**<  获取聊天室登录信息回调*/
 
 public:
-	/** @fn void ChatRoomRequestEnter(const __int64 room_id, const ChatRoomRequestEnterCallback &callback, const std::string& json_extension = "")
+	/** @fn void ChatRoomRequestEnter(const int64_t room_id, const ChatRoomRequestEnterCallback &callback, const std::string& json_extension = "")
   * 异步获取聊天室登录信息
   * @param[in] room_id				聊天室ID
   * @param[in] callback				回调函数
@@ -41,7 +42,7 @@ public:
   *				415:服务不可用，没有聊天室服务器可分配
   *				13003:在黑名单中
   */
-	static void ChatRoomRequestEnterAsync(const __int64 room_id, const ChatRoomRequestEnterCallback &callback, const std::string& json_extension = "");
+	static void ChatRoomRequestEnterAsync(const int64_t room_id, const ChatRoomRequestEnterCallback &callback, const std::string& json_extension = "");
 };
 
 } 

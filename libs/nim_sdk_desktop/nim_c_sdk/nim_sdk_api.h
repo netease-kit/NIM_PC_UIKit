@@ -1,8 +1,8 @@
 ﻿/** @file nim_sdk_api.h
-  * @brief 接口头文件集合
+  * @brief 接口头文件集合，在需要使用即时通讯 SDK 的地方包含该头文件即可
   * @copyright (c) 2015-2017, NetEase Inc. All rights reserved
   * @author Oleg
-  * @date 2017/01/01
+  * @date 2017/02/01
   */
 
 //客户端登录，注销以及相关回调接口注册API
@@ -12,9 +12,9 @@
 //数据同步通知API
 #include "nim_data_sync.h"
 //音视频设备相关API
-#include "nim_devie.h"
+#include "nim_device.h"
 //音视频相关API
-#include "nim_vchat"
+#include "nim_vchat.h"
 //数据通道相关API(白板等)
 #include "nim_rts.h"
 //文档共享相关API
@@ -39,3 +39,5 @@
 #include "nim_plugin_in.h"
 //工具辅助类API
 #include "nim_tools.h"
+//机器人
+#include "nim_robot.h"
