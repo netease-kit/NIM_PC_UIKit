@@ -422,6 +422,8 @@ UI组件的窗口和界面效果，是由`bin\themes\default`目录中的素材�
 您可以替换为自己的图片素材来改变界面效果。  
 修改XML布局文件可以重新定义UI组件的布局效果。**但是我们只建议您在熟练使用`云信DuiLib`之后再修改XML布局。**
 
-**推荐客户得比特币,首次推荐得0.02BTC,连续推荐得0.03BTC/单,上不封顶。点击参与https://yunxin.163.com/promotion/recommend**
+**#推荐好友使用云信，即享1500元京东卡奖励# 点击立即参与https://yunxin.163.com/promotion/recommend?channel=github**
 
-![main](https://github.com/netease-im/NIM_iOS_UIKit/blob/master/800x160.png)
+[![main](https://yx-web-nosdn.netease.im/quickhtml%2Fassets%2Fyunxin%2Fdefault%2F2022%2Fgithub%2F233.png)](https://yunxin.163.com/promotion/recommend?channel=github)
+
+
